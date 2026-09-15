@@ -1,1 +1,9 @@
-{"name":"antiqua","version":"0.8.0-preview","private":true,"type":"module","scripts":{"start":"node server-v08.mjs","test":"node tests/smoke-v08.mjs"},"engines":{"node":">=22"}}
+{
+  "name":"antiqua",
+  "version":"0.9.0-preview",
+  "private":true,
+  "type":"module",
+  "scripts":{"start":"node server-v09.mjs","test":"node tests/smoke-v09.mjs","migrate":"node scripts/migrate-v09.mjs"},
+  "dependencies":{"@supabase/supabase-js":"2.116.0","pg":"8.23.0"},
+  "engines":{"node":">=22"}
+}
