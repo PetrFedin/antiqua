@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import {spawn} from 'node:child_process';
+
+const port=11994,base=`http://127.0.0.1:${port}`;
+const child=spawn(process.execPath,['server-v10.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port),PREVIEW_MODE:'true',APP_SECRET:crypto.randomBytes(32).toString('hex'),NODE_ENV:'test'},stdio:['ignore','pipe','pipe']});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+class Client{constructor(){this.cookies=new Map()}header(){return[...this.cookies].map(([k,v])=>`${k}=${v}`).join('; ')}async call(path,opts={}){const headers={'content-type':'application/json',...(opts.headers||{})};if(this.cookies.size)headers.cookie=this.header();if(!['GET','HEAD'].includes((opts.method||'GET').toUpperCase())&&this.cookies.get('antiqua_csrf'))headers['x-csrf-token']=decodeURIComponent(this.cookies.get('antiqua_csrf'));const r=await fetch(base+path,{...opts,headers});for(const s of r.headers.getSetCookie?.()||[]){const [kv]=s.split(';'),i=kv.indexOf('=');if(i>0)this.cookies.set(kv.slice(0,i),kv.slice(i+1))}let body;try{body=await r.json()}catch{body=null}return{r,body}}}
+try{
+ let ready=false;for(let i=0;i<80;i++){try{if((await fetch(base+'/api/health')).ok){ready=true;break}}catch{}await sleep(100)}assert.equal(ready,true);
+ let r=await fetch(base+'/api/health'),h=await r.json();assert.equal(h.version,'0.10.0');assert.equal(h.collectionGraph.distributedEnsembles,true);assert.equal(h.auctionIntegrity.idempotencyRequired,true);
+ r=await fetch(base+'/api/collections');let data=await r.json();assert.ok(data.collections.length>=1);assert.ok(data.collections[0].items.length>=1);
+ r=await fetch(base+'/api/ensembles');data=await r.json();assert.ok(data.ensembles.length>=1);const ensemble=data.ensembles[0];assert.ok(ensemble.completeness.total>=ensemble.completeness.known);assert.ok(ensemble.completeness.missing>=1);
+ r=await fetch(base+`/api/ensembles/${ensemble.id}`);data=await r.json();assert.ok(data.ensemble.slots.some(x=>x.status==='MISSING'));
+ r=await fetch(base+'/api/exhibitions');data=await r.json();assert.ok(data.exhibitions.length>=1);r=await fetch(base+`/api/exhibitions/${data.exhibitions[0].id}`);data=await r.json();assert.ok(data.exhibition.sections.length>=1);
+ r=await fetch(base+'/api/lots/lot-101/iiif/manifest');data=await r.json();assert.equal(data.type,'Manifest');assert.ok(Array.isArray(data.items));
+ r=await fetch(base+'/api/lots/lot-101/linked-art');data=await r.json();assert.equal(data.type,'HumanMadeObject');
+ const c1=new Client();let x=await c1.call('/api/auth/demo-login',{method:'POST',body:JSON.stringify({persona:'BUYER'})});assert.equal(x.r.status,200);x=await c1.call('/api/catalog');const auction=x.body.auctions[0],sale=x.body.sale;assert.ok(auction);
+ x=await c1.call(`/api/sales/${sale.id}/register`,{method:'POST',body:JSON.stringify({acceptTerms:true,termsVersion:'ci-v10'})});assert.equal(x.r.status,200);
+ const idem='ci-'+crypto.randomUUID(),max1=auction.currentBid+auction.increment*8;x=await c1.call(`/api/auctions/${auction.id}/bid`,{method:'POST',headers:{'idempotency-key':idem},body:JSON.stringify({maxAmount:max1})});assert.equal(x.r.status,201);const countAfter=x.body.auction.bidCount;x=await c1.call(`/api/auctions/${auction.id}/bid`,{method:'POST',headers:{'idempotency-key':idem},body:JSON.stringify({maxAmount:max1})});assert.equal(x.r.status,200);assert.equal(x.body.idempotent,true);assert.equal(x.body.auction.bidCount,countAfter);
+ const c2=new Client(),password=`Aa1!${crypto.randomBytes(18).toString('base64url')}`;x=await c2.call('/api/auth/register',{method:'POST',body:JSON.stringify({email:`ci-${crypto.randomUUID()}@example.test`,displayName:'CI Buyer 2',password,accountType:'BUYER'})});assert.equal(x.r.status,201);x=await c2.call(`/api/sales/${sale.id}/register`,{method:'POST',body:JSON.stringify({acceptTerms:true,termsVersion:'ci-v10'})});assert.equal(x.r.status,200);
+ const current=(await (await fetch(base+'/api/catalog')).json()).auctions.find(a=>a.id===auction.id),aMax=current.currentBid+current.increment*20,bMax=current.currentBid+current.increment*24;
+ const [ba,bb]=await Promise.all([c1.call(`/api/auctions/${auction.id}/bid`,{method:'POST',headers:{'idempotency-key':'a-'+crypto.randomUUID()},body:JSON.stringify({maxAmount:aMax})}),c2.call(`/api/auctions/${auction.id}/bid`,{method:'POST',headers:{'idempotency-key':'b-'+crypto.randomUUID()},body:JSON.stringify({maxAmount:bMax})})]);assert.equal(ba.r.status,201);assert.equal(bb.r.status,201);
+ const finalCat=await (await fetch(base+'/api/catalog')).json(),finalA=finalCat.auctions.find(a=>a.id===auction.id);assert.equal(finalA.bidCount,countAfter+2);assert.ok(finalA.currentBid>current.currentBid);
+ x=await c1.call(`/api/ensembles/${ensemble.id}/claims`,{method:'POST',body:JSON.stringify({slotId:data.ensemble?.slots?.find?.(s=>s.status==='MISSING')?.id||'slot-5',evidence:[],displayOwner:false,displayLocation:false})});if(x.r.status===404){const ed=await (await fetch(base+`/api/ensembles/${ensemble.id}`)).json();x=await c1.call(`/api/ensembles/${ensemble.id}/claims`,{method:'POST',body:JSON.stringify({slotId:ed.ensemble.slots.find(s=>s.status==='MISSING').id,evidence:[]})})}assert.equal(x.r.status,201);assert.equal(x.body.claim.status,'PENDING');
+ r=await fetch(base);assert.equal(r.status,200);assert.match(await r.text(),/app-v10\.js/);for(const f of ['app-v10.js','styles-addon-v10.css'])assert.equal((await fetch(`${base}/${f}`)).status,200);
+ console.log('ANTIQUA 0.10 smoke: collection graph + auction integrity passed');
+}finally{child.kill('SIGTERM')}
