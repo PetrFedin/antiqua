@@ -4,26 +4,28 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#f4f1ea" />
-  <meta name="description" content="ANTIQUA — collections, private sales and auctions." />
-  <title>ANTIQUA — Collect · Present · Acquire</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <meta name="description" content="ANTIQUA — antique marketplace, private sales, collections and auctions." />
+  <title>ANTIQUA — Antiques · Collections · Auctions</title>
+  <link rel="stylesheet" href="/styles-v07.css" />
 </head>
 <body>
-  <div class="utility-bar"><div class="page utility-inner"><span>ANTIQUA · Preview</span><span>London · Paris · Amsterdam · Online</span></div></div>
+  <div class="utility-bar"><div class="page utility-inner"><span>ANTIQUA · Preview 0.7</span><span>Antiques · Private Sales · Auctions · Collections</span></div></div>
   <header class="site-header">
     <div class="page masthead">
       <button class="icon-button mobile-menu" id="mobileMenu" aria-label="Menu">☰</button>
       <a class="wordmark" href="#" data-route="home">ANTIQUA</a>
       <nav class="main-nav" id="mainNav">
-        <a href="#auctions" data-route="auctions">Auctions</a>
-        <a href="#private" data-route="private">Private Sales</a>
-        <a href="#collect" data-route="collect">Collections</a>
-        <a href="#stories" data-route="stories">Stories</a>
-        <a href="#sell" data-route="sell">Sell with ANTIQUA</a>
+        <a href="#shop" data-route="shop" data-i18n="shop">Магазин</a>
+        <a href="#auctions" data-route="auctions" data-i18n="auctions">Аукционы</a>
+        <a href="#private" data-route="private" data-i18n="private">Частные продажи</a>
+        <a href="#collect" data-route="collect" data-i18n="collections">Коллекции</a>
+        <a href="#stories" data-route="stories" data-i18n="stories">Истории</a>
+        <a href="#sell" data-route="sell" data-i18n="sell">Продать</a>
       </nav>
       <div class="header-actions">
+        <div class="lang-switch" aria-label="Language"><button data-lang="ru">RU</button><button data-lang="en">EN</button></div>
         <button class="icon-button" id="searchButton" aria-label="Search">⌕</button>
-        <button class="account-button" data-route="account">Account</button>
+        <button class="account-button" data-route="account" data-i18n="account">Кабинет</button>
       </div>
     </div>
   </header>
@@ -32,23 +34,37 @@
 
   <footer class="footer">
     <div class="page footer-grid">
-      <div><div class="wordmark footer-mark">ANTIQUA</div><p>Collect · Present · Acquire</p></div>
-      <div><h4>Buying</h4><a href="#auctions">Auctions</a><a href="#private">Private Sales</a><a href="#collect">Collections</a></div>
-      <div><h4>Selling</h4><a href="#sell">Request an estimate</a><a href="#sell">Consign a collection</a><a href="#sell">Private sale</a></div>
-      <div><h4>About</h4><a href="#stories">Stories</a><a href="#account">Client services</a><a href="#account">Contact</a></div>
+      <div><div class="wordmark footer-mark">ANTIQUA</div><p>Antiques · Collections · Auctions</p></div>
+      <div><h4>Buy</h4><a href="#shop" data-route="shop">Antique Shop</a><a href="#auctions" data-route="auctions">Auctions</a><a href="#private" data-route="private">Private Sales</a></div>
+      <div><h4>Sell</h4><a href="#sell" data-route="sell">Sell with ANTIQUA</a><a href="#account" data-route="account">Seller Cabinet</a><a href="#account" data-route="account">Consignments</a></div>
+      <div><h4>Collect</h4><a href="#collect" data-route="collect">Private Collections</a><a href="#stories" data-route="stories">Research</a><a href="#account" data-route="account">My ANTIQUA</a></div>
     </div>
-    <div class="page footer-legal">Preview environment. Payments, KYC/KYB, escrow, shipping contracts and legal transfer of title are not yet connected.</div>
+    <div class="page footer-legal" id="footerPreview"></div>
   </footer>
 
   <dialog id="lotDialog" class="lot-dialog"><div id="lotDialogBody"></div></dialog>
   <dialog id="searchDialog" class="search-dialog">
     <form method="dialog" class="search-shell">
       <div class="search-top"><span class="eyebrow">Search ANTIQUA</span><button class="close-button" aria-label="Close">×</button></div>
-      <input id="globalSearch" class="global-search" placeholder="Artist, maker, period, category, lot…" autocomplete="off" />
+      <input id="globalSearch" class="global-search" autocomplete="off" />
       <div id="searchResults" class="search-results"></div>
     </form>
   </dialog>
+  <dialog id="registrationDialog" class="registration-dialog">
+    <form id="registrationForm" class="registration-form">
+      <div class="registration-head"><div><div class="eyebrow">ANTIQUA</div><h2 id="registrationTitle"></h2></div><button type="button" class="close-button" data-dialog-close>×</button></div>
+      <label class="field"><span id="registrationCountryLabel"></span><select id="registrationCountry"><option>Netherlands</option><option>Russia</option><option>United Kingdom</option><option>France</option><option>Germany</option><option>Other</option></select></label>
+      <label class="terms-check"><input id="registrationTerms" type="checkbox"><span id="registrationTermsText"></span></label>
+      <div class="dialog-actions"><button type="button" class="secondary-button" data-dialog-close id="registrationCancel"></button><button type="submit" class="primary-button" id="registrationSubmit"></button></div>
+    </form>
+  </dialog>
+  <dialog id="actionDialog" class="registration-dialog"><div id="actionDialogBody"></div></dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script type="module" src="/app.js"></script>
+  <script src="/i18n-v07.js"></script>
+  <script src="/core-v07.js"></script>
+  <script src="/views-shop-v07.js"></script>
+  <script src="/views-account-v07.js"></script>
+  <script src="/dialogs-v07.js"></script>
+  <script src="/app-v07.js"></script>
 </body>
 </html>
