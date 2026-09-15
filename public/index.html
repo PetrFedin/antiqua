@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f1ea" />
+  <meta name="description" content="ANTIQUA — collections, private sales and auctions." />
+  <title>ANTIQUA — Collect · Present · Acquire</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="utility-bar"><div class="page utility-inner"><span>ANTIQUA · Preview</span><span>London · Paris · Amsterdam · Online</span></div></div>
+  <header class="site-header">
+    <div class="page masthead">
+      <button class="icon-button mobile-menu" id="mobileMenu" aria-label="Menu">☰</button>
+      <a class="wordmark" href="#" data-route="home">ANTIQUA</a>
+      <nav class="main-nav" id="mainNav">
+        <a href="#auctions" data-route="auctions">Auctions</a>
+        <a href="#private" data-route="private">Private Sales</a>
+        <a href="#collect" data-route="collect">Collections</a>
+        <a href="#stories" data-route="stories">Stories</a>
+        <a href="#sell" data-route="sell">Sell with ANTIQUA</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-button" id="searchButton" aria-label="Search">⌕</button>
+        <button class="account-button" data-route="account">Account</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" aria-live="polite"></main>
+
+  <footer class="footer">
+    <div class="page footer-grid">
+      <div><div class="wordmark footer-mark">ANTIQUA</div><p>Collect · Present · Acquire</p></div>
+      <div><h4>Buying</h4><a href="#auctions">Auctions</a><a href="#private">Private Sales</a><a href="#collect">Collections</a></div>
+      <div><h4>Selling</h4><a href="#sell">Request an estimate</a><a href="#sell">Consign a collection</a><a href="#sell">Private sale</a></div>
+      <div><h4>About</h4><a href="#stories">Stories</a><a href="#account">Client services</a><a href="#account">Contact</a></div>
+    </div>
+    <div class="page footer-legal">Preview environment. Payments, KYC/KYB, escrow, shipping contracts and legal transfer of title are not yet connected.</div>
+  </footer>
+
+  <dialog id="lotDialog" class="lot-dialog"><div id="lotDialogBody"></div></dialog>
+  <dialog id="searchDialog" class="search-dialog">
+    <form method="dialog" class="search-shell">
+      <div class="search-top"><span class="eyebrow">Search ANTIQUA</span><button class="close-button" aria-label="Close">×</button></div>
+      <input id="globalSearch" class="global-search" placeholder="Artist, maker, period, category, lot…" autocomplete="off" />
+      <div id="searchResults" class="search-results"></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
