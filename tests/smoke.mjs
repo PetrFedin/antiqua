@@ -1,21 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-
 const port=11991;
-const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']});
-const base=`http://127.0.0.1:${port}`;
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-try{
-  let ready=false;
-  for(let i=0;i<40;i++){try{const r=await fetch(`${base}/api/health`);if(r.ok){ready=true;break}}catch{}await sleep(100)}
-  assert.equal(ready,true,'server should become ready');
-  const health=await (await fetch(`${base}/api/health`)).json();assert.equal(health.status,'ok');
-  const catalog=await (await fetch(`${base}/api/catalog`)).json();assert.ok(catalog.lots.length>=8);assert.ok(catalog.auctions.length>=1);
-  const home=await fetch(base);assert.equal(home.status,200);assert.match(await home.text(),/ANTIQUA/);
-  const css=await fetch(`${base}/styles.css`);assert.equal(css.status,200);
-  const js=await fetch(`${base}/app.js`);assert.equal(js.status,200);
-  const a=catalog.auctions[0];
-  const tooLow=await fetch(`${base}/api/auctions/${a.id}/bid`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount:a.currentBid})});assert.equal(tooLow.status,400);
-  const bid=await fetch(`${base}/api/auctions/${a.id}/bid`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({amount:a.currentBid+a.increment})});assert.equal(bid.status,201);const bd=await bid.json();assert.equal(bd.preview,true);assert.equal(bd.auction.bidCount,a.bidCount+1);
-  console.log('ANTIQUA smoke: 7/7 passed');
-} finally {child.kill('SIGTERM')}
+const child=spawn(process.execPath,['server.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']});
+const base=`http://127.0.0.1:${port}`;const sleep=ms=>new Promise(r=>setTimeout(r,ms));const clientHeaders={'x-preview-client':'smoke-client'};const call=(path,opts={})=>fetch(`${base}${path}`,{...opts,headers:{...clientHeaders,...(opts.headers||{})}});
+try{let ready=false;for(let i=0;i<50;i++){try{const r=await fetch(`${base}/api/health`);if(r.ok){ready=true;break}}catch{}await sleep(100)}assert.equal(ready,true);const health=await (await call('/api/health')).json();assert.equal(health.version,'0.6.0');const catalog=await (await call('/api/catalog')).json();assert.equal(catalog.sale.id,'sale-collector-2026-09');assert.ok(catalog.lots[0].title.ru);assert.ok(catalog.lots[0].title.en);assert.ok(catalog.auctions.length>=6);const home=await call('/');assert.equal(home.status,200);assert.match(await home.text(),/ANTIQUA/);const a=catalog.auctions[0];const blocked=await call(`/api/auctions/${a.id}/bid`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({maxAmount:a.currentBid+a.increment})});assert.equal(blocked.status,403);const reg=await call(`/api/sales/${catalog.sale.id}/register`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({acceptTerms:true,country:'Netherlands'})});assert.equal(reg.status,200);const tooLow=await call(`/api/auctions/${a.id}/bid`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({maxAmount:a.currentBid})});assert.equal(tooLow.status,400);const bid=await call(`/api/auctions/${a.id}/bid`,{method:'POST',headers:{'content-type':'application/json','idempotency-key':'smoke-1'},body:JSON.stringify({maxAmount:a.currentBid+a.increment*2})});assert.equal(bid.status,201);const bd=await bid.json();assert.equal(bd.preview,true);assert.equal(typeof bd.leading,'boolean');const hist=await (await call(`/api/auctions/${a.id}/history`)).json();assert.ok(hist.history.length>=2);assert.equal(JSON.stringify(hist.history).includes('maxAmount'),false);const alert=await call(`/api/lots/${a.lotId}/alert`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({enabled:true})});assert.equal(alert.status,200);const cs=await (await call('/api/client-state')).json();assert.ok(cs.registeredSales.includes(catalog.sale.id));assert.ok(cs.watchAlerts.includes(a.lotId));assert.ok(cs.bids.length>=1);console.log('ANTIQUA smoke: 11/11 passed')}finally{child.kill('SIGTERM')}
