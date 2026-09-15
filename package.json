@@ -3,7 +3,7 @@
   "version":"0.11.0-preview",
   "private":true,
   "type":"module",
-  "scripts":{"start":"node server-v11.mjs","test":"node tests/smoke-v10.mjs && node tests/smoke-v11.mjs","migrate":"node scripts/migrate-v10.mjs"},
+  "scripts":{"start":"node server-v11.mjs","test":"node --check public/ux-v11.js && node --check server-v11.mjs && node tests/smoke-v10.mjs && node tests/smoke-v11.mjs","migrate":"node scripts/migrate-v10.mjs"},
   "dependencies":{"pg":"8.23.0","@aws-sdk/client-s3":"3.1132.0","@aws-sdk/s3-request-presigner":"3.1132.0"},
   "engines":{"node":">=22"}
 }
