@@ -1,8 +1,8 @@
 {
   "name":"antiqua",
-  "version":"0.6.0-preview",
+  "version":"0.7.0-preview",
   "private":true,
   "type":"module",
-  "scripts":{"start":"node server.mjs","test":"node tests/smoke.mjs"},
+  "scripts":{"start":"node server-v07.mjs","test":"node tests/smoke-v07.mjs"},
   "engines":{"node":">=22"}
 }
