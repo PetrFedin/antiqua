@@ -8,7 +8,8 @@ const migrations=[
  {version:'006_v14_discovery_matches',file:'./migrations/006_v14_discovery_matches.sql'},
  {version:'007_v14_ownership_history',file:'./migrations/007_v14_ownership_history.sql'},
  {version:'008_v15_financial_exactly_once',file:'./migrations/008_v15_financial_exactly_once.sql'},
- {version:'009_v15_ownership_invariants',file:'./migrations/009_v15_ownership_invariants.sql'}
+ {version:'009_v15_ownership_invariants',file:'./migrations/009_v15_ownership_invariants.sql'},
+ {version:'010_v15_worker_outbox',file:'./migrations/010_v15_worker_outbox.sql'}
 ].map(x=>({...x,path:fileURLToPath(new URL(x.file,import.meta.url))}));
 
 export async function migrateV14(db){
