@@ -6,7 +6,8 @@ const migrations=[
  {version:'004_v14_verification_states',file:'./migrations/004_v14_verification_states.sql'},
  {version:'005_v14_account_object_flags',file:'./migrations/005_v14_account_object_flags.sql'},
  {version:'006_v14_discovery_matches',file:'./migrations/006_v14_discovery_matches.sql'},
- {version:'007_v14_ownership_history',file:'./migrations/007_v14_ownership_history.sql'}
+ {version:'007_v14_ownership_history',file:'./migrations/007_v14_ownership_history.sql'},
+ {version:'008_v15_financial_exactly_once',file:'./migrations/008_v15_financial_exactly_once.sql'}
 ].map(x=>({...x,path:fileURLToPath(new URL(x.file,import.meta.url))}));
 
 export async function migrateV14(db){
