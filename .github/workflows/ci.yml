@@ -46,3 +46,55 @@ jobs:
       - run: npm install
       - run: npm run migrate
       - run: npm run test:postgres
+
+  object-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: antiqua
+          POSTGRES_PASSWORD: antiqua
+          POSTGRES_DB: antiqua_storage_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U antiqua -d antiqua_storage_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      DATABASE_URL: postgresql://antiqua:antiqua@127.0.0.1:5432/antiqua_storage_test
+      PGSSL: disable
+      PREVIEW_MODE: "true"
+      OBJECT_STORAGE_ENDPOINT: http://127.0.0.1:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_ID: antiqua-access
+      OBJECT_STORAGE_ACCESS_SECRET: antiqua-secret
+      OBJECT_STORAGE_BUCKET: antiqua-ci
+      OBJECT_STORAGE_UPLOAD_TTL_SECONDS: 30
+      OBJECT_STORAGE_READ_TTL_SECONDS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Start MinIO
+        run: >-
+          docker run -d --name antiqua-minio -p 9000:9000
+          -e MINIO_ROOT_USER="${OBJECT_STORAGE_ACCESS_ID}"
+          -e MINIO_ROOT_PASSWORD="${OBJECT_STORAGE_ACCESS_SECRET}"
+          quay.io/minio/minio:latest server /data --address ":9000"
+      - name: Wait for MinIO
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          docker logs antiqua-minio
+          exit 1
+      - run: npm run migrate
+      - run: node scripts/prepare-object-storage-v15.mjs
+      - run: npm run test:storage
