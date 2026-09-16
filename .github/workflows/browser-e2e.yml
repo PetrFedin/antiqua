@@ -1,0 +1,28 @@
+name: ANTIQUA Browser E2E
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, hardening/v015-provider-webhook-security]
+jobs:
+  chromium-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PREVIEW_MODE: "true"
+      NODE_ENV: test
+      BROWSER_E2E_PORT: "12026"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Install pinned Playwright runner
+        run: npm install --no-save @playwright/test@1.55.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Syntax check browser suite
+        run: node --check tests/browser/core-journey.spec.mjs
+      - name: Run real browser journeys
+        run: npx playwright test -c playwright.config.mjs
