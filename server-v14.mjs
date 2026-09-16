@@ -12,6 +12,7 @@ import {routePreferencesV14} from './routes-preferences-v14.mjs';
 import {routeMediaV14} from './routes-media-v14.mjs';
 import {routeOperatorHooksV14} from './routes-operator-hooks-v14.mjs';
 import {settleDueAuctions} from './domain-e2e-v14.mjs';
+import {runOperationalSweeps} from './sweeps-v14.mjs';
 import {routeProductPublicV13} from './routes-product-v13.mjs';
 import {routeExperiencePublicV12,routeExperienceMutationsV12} from './routes-experience-v12.mjs';
 import {routeFoundationPublicV10,routeCollectionMutationsV10} from './routes-foundation-v10.mjs';
@@ -24,7 +25,8 @@ import {routeOperator} from './routes-operator-v09.mjs';
 await migrateV10(db);
 await migrateV14(db);
 await settleDueAuctions().catch(e=>console.error('initial settlement sweep',e));
-const sweep=setInterval(()=>settleDueAuctions().catch(e=>console.error('settlement sweep',e)),30000);sweep.unref?.();
+await runOperationalSweeps().catch(e=>console.error('initial operational sweep',e));
+const sweep=setInterval(async()=>{await settleDueAuctions().catch(e=>console.error('settlement sweep',e));await runOperationalSweeps().catch(e=>console.error('operational sweep',e))},30000);sweep.unref?.();
 
 const ROOT=fileURLToPath(new URL('.',import.meta.url));
 const PUBLIC=join(ROOT,'public');
