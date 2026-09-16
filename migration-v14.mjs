@@ -4,7 +4,8 @@ import {fileURLToPath} from 'node:url';
 const migrations=[
  {version:'003_v14_e2e_lifecycles',file:'./migrations/003_v14_e2e_lifecycles.sql'},
  {version:'004_v14_verification_states',file:'./migrations/004_v14_verification_states.sql'},
- {version:'005_v14_account_object_flags',file:'./migrations/005_v14_account_object_flags.sql'}
+ {version:'005_v14_account_object_flags',file:'./migrations/005_v14_account_object_flags.sql'},
+ {version:'006_v14_discovery_matches',file:'./migrations/006_v14_discovery_matches.sql'}
 ].map(x=>({...x,path:fileURLToPath(new URL(x.file,import.meta.url))}));
 
 export async function migrateV14(db){
