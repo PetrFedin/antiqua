@@ -1,4 +1,5 @@
 import {db,uid,now} from './runtime-v09.mjs';
+import {providerWebhookSecurityCapabilities} from './provider-webhook-security-v15.mjs';
 
 const memory=new Map();
 const CLAIM_TTL_MS=Number(process.env.PROVIDER_EVENT_CLAIM_TTL_MS||120000);
@@ -60,4 +61,4 @@ export async function markProviderEventFailed(provider,externalEventId,error){
     WHERE provider=$1 AND external_event_id=$2 AND processed_at IS NULL RETURNING *`,[provider,externalEventId,message])).rows[0];return mapEvent(row);
 }
 
-export function providerEventCapabilities(){return{durableClaims:db.kind==='POSTGRES',recoverableApplication:true,claimTtlMs:CLAIM_TTL_MS}}
+export function providerEventCapabilities(){return{durableClaims:db.kind==='POSTGRES',recoverableApplication:true,claimTtlMs:CLAIM_TTL_MS,webhookSecurity:providerWebhookSecurityCapabilities()}}
