@@ -15,4 +15,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS payouts_source_hold_idx
   ON payouts(source_type,source_id,hold_reason)
   WHERE source_type IS NOT NULL AND source_id IS NOT NULL;
 
+ALTER TABLE provider_events ADD COLUMN IF NOT EXISTS processing_started_at timestamptz;
+ALTER TABLE provider_events ADD COLUMN IF NOT EXISTS attempt_count integer NOT NULL DEFAULT 0;
+ALTER TABLE provider_events ADD COLUMN IF NOT EXISTS last_error text;
+CREATE INDEX IF NOT EXISTS provider_events_unprocessed_idx
+  ON provider_events(created_at)
+  WHERE processed_at IS NULL;
+
 INSERT INTO schema_migrations(version) VALUES('008_v15_financial_exactly_once') ON CONFLICT DO NOTHING;
