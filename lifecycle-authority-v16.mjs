@@ -3,7 +3,7 @@ export const LIFECYCLE_CONTRACT_VERSION='v16';
 const up=v=>String(v??'').trim().toUpperCase();
 const arr=v=>Array.isArray(v)?v:[v];
 const rule=(action,from,to,authorities,{preconditions=[],auditAction=null,outboxTopic=null}={})=>Object.freeze({
-  action:up(action),from:Object.freeze(arr(from).map(up)),to:up(to),authorities:Object.freeze(arr(authorities).map(up)),preconditions:Object.freeze(preconditions.map(up)),auditAction:up(auditAction||action),outboxTopic:up(outboxTopic||`${String(action).replaceAll('_','.')}`)
+  action:up(action),from:Object.freeze(arr(from).map(up)),to:up(to),authorities:Object.freeze(arr(authorities).map(up)),preconditions:Object.freeze(preconditions.map(up)),auditAction:auditAction?up(auditAction):null,outboxTopic:outboxTopic?up(outboxTopic):null
 });
 
 const DEFINITIONS=Object.freeze({
@@ -122,9 +122,9 @@ export function planLifecycleTransition({domain,from,to,action=null,authority,fa
   if(!r.authorities.includes(authority))throw error(`${authority||'ANONYMOUS'} cannot perform ${domain}.${r.action}`,{status:403,code:'LIFECYCLE_AUTHORITY_DENIED',details:{domain,from,to,action:r.action,authority,allowed:r.authorities}});
   const missing=r.preconditions.filter(k=>facts[k]!==true);
   if(missing.length)throw error(`Lifecycle preconditions failed for ${domain}.${r.action}`,{code:'LIFECYCLE_PRECONDITION_FAILED',details:{domain,from,to,action:r.action,authority,missing}});
-  return Object.freeze({contractVersion:LIFECYCLE_CONTRACT_VERSION,domain,action:r.action,from,to,authority,preconditions:r.preconditions,auditAction:r.auditAction,outboxTopic:r.outboxTopic,terminal:d.terminal.includes(to)});
+  return Object.freeze({contractVersion:LIFECYCLE_CONTRACT_VERSION,domain,action:r.action,from,to,authority,preconditions:r.preconditions,auditAction:r.auditAction||`${domain}_${r.action}`,outboxTopic:r.outboxTopic||`${domain}.${r.action}`,terminal:d.terminal.includes(to)});
 }
 
 export function canLifecycleTransition(input){try{return{allowed:true,plan:planLifecycleTransition(input)}}catch(e){return{allowed:false,error:{status:e.status||409,code:e.code||'LIFECYCLE_TRANSITION_INVALID',message:e.message,details:e.lifecycle||{}}}}}
 
-export function lifecycleCapabilities(){return Object.fromEntries(Object.entries(DEFINITIONS).map(([domain,d])=>[domain,{initial:d.initial,terminal:[...d.terminal],transitions:d.transitions.map(r=>({action:r.action,from:[...r.from],to:r.to,authorities:[...r.authorities],preconditions:[...r.preconditions],auditAction:r.auditAction,outboxTopic:r.outboxTopic}))}]))}
+export function lifecycleCapabilities(){return Object.fromEntries(Object.entries(DEFINITIONS).map(([domain,d])=>[domain,{initial:d.initial,terminal:[...d.terminal],transitions:d.transitions.map(r=>({action:r.action,from:[...r.from],to:r.to,authorities:[...r.authorities],preconditions:[...r.preconditions],auditAction:r.auditAction||`${domain}_${r.action}`,outboxTopic:r.outboxTopic||`${domain}.${r.action}`}))}]))}
