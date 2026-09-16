@@ -18,7 +18,12 @@ try{
   p=await transitionPayout(payout.id,'SUBMITTED',{provider:'PG_LIFECYCLE_PSP',providerReference:`transfer-${token}`,sourceKey:`submit-${token}`});
   assert.equal(p.status,'SUBMITTED');
   p=await transitionPayout(payout.id,'PAID',{provider:'PG_LIFECYCLE_PSP',providerReference:`transfer-${token}`,sourceKey:`paid-${token}`});
-  assert.equal(p.status,'PAID');
+  assert.equal(p.status,'PAID');assert.equal(p.idempotentTransition,false);
+
+  const replay=await transitionPayout(payout.id,'PAID',{provider:'PG_LIFECYCLE_PSP',providerReference:`transfer-${token}`,sourceKey:`paid-${token}`});
+  assert.equal(replay.status,'PAID');assert.equal(replay.idempotentTransition,true);
+  await assert.rejects(()=>transitionPayout(payout.id,'FAILED',{provider:'PG_LIFECYCLE_PSP',providerReference:`transfer-${token}`,sourceKey:`paid-${token}`}),e=>e.code==='LIFECYCLE_EVENT_CONFLICT');
+  await assert.rejects(()=>transitionPayout(payout.id,'PAID',{provider:'DIFFERENT_PSP',providerReference:`transfer-${token}`,sourceKey:`paid-${token}`}),e=>e.code==='LIFECYCLE_EVENT_CONFLICT');
 
   let q=await db.pool.query(`SELECT action,from_state,to_state,authority,audit_action,outbox_topic
     FROM lifecycle_events WHERE domain='PAYOUT' AND aggregate_id=$1 ORDER BY created_at,id`,[payout.id]);
@@ -45,7 +50,7 @@ try{
   const after=(await db.pool.query("SELECT count(*)::int AS count FROM lifecycle_events WHERE domain='PAYOUT' AND aggregate_id=$1",[payout.id])).rows[0].count;
   assert.equal(after,before);
 
-  console.log('ANTIQUA v16 PostgreSQL lifecycle: payout row lock + immutable journal + atomic outbox + worker delivery + invalid rollback passed');
+  console.log('ANTIQUA v16 PostgreSQL lifecycle: payout row lock + immutable journal + atomic outbox + source replay + conflict detection + worker delivery + invalid rollback passed');
 }finally{
   await db.pool.end();
 }
