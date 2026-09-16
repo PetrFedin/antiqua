@@ -1,4 +1,4 @@
-import {PREVIEW,db,send,storageConfig,SALE,sellers,lots,auctions,listings,bi,publicAuction,seller,lot,objectRiskFlags} from './runtime-v09.mjs';
+import {PREVIEW,db,send,storageConfig,SALE,lots,auctions,listings,bi,publicAuction,seller,lot,objectRiskFlags} from './runtime-v09.mjs';
 import {financeCapabilities} from './finance-v10.mjs';
 import {publicOwnershipHistory} from './ownership-v14.mjs';
 import {listAuthoritativePublicAuctions,getAuthoritativePublicAuction,getAuthoritativePublicAuctionForObject} from './auction-authority-v15.mjs';
@@ -26,7 +26,7 @@ function auctionFor(id,auctionByLot=null){if(auctionByLot)return auctionByLot.ge
 function purchaseMethodsFor(o,auctionByLot=null){const out=[],li=activeListingFor(o.id),au=auctionFor(o.id,auctionByLot);if(li)out.push(li.saleType);if(au&&au.state!=='CLOSED')out.push('AUCTION');return unique(out)}
 function enrichLot(o,auctionByLot=null){const methods=purchaseMethodsFor(o,auctionByLot);return{...o,restoration:restorationFor(o),technique:techniqueFor(o),locationLabel:locationFor(o),conditionLabel:statusLabels[o.conditionGrade]||bi(o.conditionGrade||'Not graded',o.conditionGrade||'Без оценки'),purchaseMethods:methods,primaryPurchaseMethod:methods[0]||'NOT_FOR_SALE'}}
 function publicListingV13(x,auctionByLot=null,sellerById=null){return{...x,purchaseMethod:x.saleType,lot:enrichLot(lot(x.lotId),auctionByLot),seller:sellerById?.get(x.sellerId)||seller(x.sellerId)}}
-function facetOptions(values){return unique(values,pairKey).sort((a,b)=>String(a.en||'').localeCompare(String(b.en||'')).map?0:0).map(x=>({value:x.en,label:x}))}
+function facetOptions(values){return unique(values,pairKey).sort((a,b)=>String(a.en||'').localeCompare(String(b.en||''))).map(x=>({value:x.en,label:x}))}
 function materialOptions(objects){const all=[];for(const o of objects){const en=String(o.materials?.en||'').split(',').map(x=>x.trim()).filter(Boolean),ru=String(o.materials?.ru||'').split(',').map(x=>x.trim()).filter(Boolean);en.forEach((x,i)=>all.push(bi(x,ru[i]||x)))}return facetOptions(all)}
 function buildFacets(objects,activeListings,publicAuctions,sellerProfiles){const prices=[...activeListings.map(x=>Number(x.price)),...publicAuctions.filter(x=>x.state!=='CLOSED').map(x=>Number(x.currentBid))].filter(Number.isFinite);return{
  categories:facetOptions(objects.map(x=>x.department)),
