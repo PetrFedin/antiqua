@@ -1,31 +1,35 @@
 import {test,expect} from '@playwright/test';
 
-async function clickVisibleText(page,pattern){
-  const candidates=page.getByText(pattern,{exact:false});
-  for(let i=0;i<await candidates.count();i++){const node=candidates.nth(i);if(await node.isVisible().catch(()=>false)){await node.click();return node}}
-  throw new Error(`No visible element matched ${pattern}`);
+const nav=(page,key)=>page.locator(`[data-nav="${key}"]:visible`).first();
+
+async function clickNav(page,key){
+  const node=nav(page,key);
+  await expect(node,`visible navigation target: ${key}`).toBeVisible();
+  await node.click();
+  return node;
 }
 
 async function switchLocale(page,label){
-  const exact=page.getByText(new RegExp(`^${label}$`,'i'));
-  for(let i=0;i<await exact.count();i++){const node=exact.nth(i);if(await node.isVisible().catch(()=>false)){await node.click();return true}}
-  return false;
+  const node=page.locator(`[data-lang="${String(label).toLowerCase()}"]:visible`).first();
+  if(!await node.isVisible().catch(()=>false))return false;
+  await node.click();
+  return true;
 }
 
-test('catalog -> object dossier -> locale -> authenticated My Antiqua works in a real browser',async({page,request})=>{
+test('catalog -> object dossier -> locale -> authenticated account works in a real browser',async({page,request})=>{
   const pageErrors=[],consoleErrors=[];
   page.on('pageerror',e=>pageErrors.push(String(e?.message||e)));
   page.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource/i.test(m.text()))consoleErrors.push(m.text())});
 
   const response=await page.goto('/',{waitUntil:'domcontentloaded'});expect(response?.ok()).toBeTruthy();
   await expect(page.locator('body')).toContainText('ANTIQUA');
-  await expect(page.getByText(/Catalog|Каталог/).first()).toBeVisible();
-  await expect(page.getByText(/Auctions|Аукционы/).first()).toBeVisible();
-  await expect(page.getByText(/My Antiqua|Моя Antiqua/i).first()).toBeVisible();
+  await expect(nav(page,'shop')).toBeVisible();
+  await expect(nav(page,'auctions')).toBeVisible();
+  await expect(nav(page,'account')).toBeVisible();
 
-  await clickVisibleText(page,/Auctions|Аукционы/);
+  await clickNav(page,'auctions');
   await expect(page.locator('body')).toContainText(/Auction|Аукцион/i);
-  await clickVisibleText(page,/Catalog|Каталог/);
+  await clickNav(page,'shop');
 
   const catalogResponse=await request.get('/api/catalog');expect(catalogResponse.ok()).toBeTruthy();
   const catalog=await catalogResponse.json(),lot=catalog.lots?.[0];expect(lot).toBeTruthy();
@@ -41,7 +45,7 @@ test('catalog -> object dossier -> locale -> authenticated My Antiqua works in a
 
   const login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);expect(login.body.account?.id).toBeTruthy();
   const me=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return{status:r.status,body:await r.json()}});expect(me.status).toBe(200);expect(me.body.account?.id).toBe(login.body.account.id);
-  await page.reload({waitUntil:'domcontentloaded'});await clickVisibleText(page,/My Antiqua|Моя Antiqua/i);
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
   const displayName=String(me.body.account?.displayName||'').trim();if(displayName)await expect(page.locator('body')).toContainText(displayName);
 
   expect(pageErrors,`page errors: ${pageErrors.join(' | ')}`).toEqual([]);
@@ -54,7 +58,7 @@ test('browser session changes identity without leaking the previous authenticate
   let me=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return r.json()});expect(me.account?.id).toBe(buyer.account.id);
   const seller=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'SELLER'})});return r.json()});expect(seller.account?.id).toBeTruthy();expect(seller.account.id).not.toBe(buyer.account.id);
   me=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return r.json()});expect(me.account?.id).toBe(seller.account.id);expect(me.account?.id).not.toBe(buyer.account.id);
-  await page.reload({waitUntil:'domcontentloaded'});await clickVisibleText(page,/My Antiqua|Моя Antiqua/i);
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
   const sellerName=String(me.account?.displayName||'').trim();if(sellerName)await expect(page.locator('body')).toContainText(sellerName);
   const buyerName=String(buyer.account?.displayName||'').trim();if(buyerName&&buyerName!==sellerName)await expect(page.locator('body')).not.toContainText(buyerName);
 });
