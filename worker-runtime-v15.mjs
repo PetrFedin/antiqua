@@ -23,8 +23,25 @@ async function deliverNotification(event,workerId){
   }catch(e){try{await c.query('ROLLBACK')}catch{}throw e}finally{c.release()}
 }
 
+async function deliverLifecycle(event,workerId){
+  const lifecycleEventId=String(event.payload?.lifecycleEventId||'');if(!lifecycleEventId)throw Object.assign(new Error('Lifecycle outbox payload is incomplete'),{code:'INVALID_LIFECYCLE_OUTBOX'});
+  const c=await db.pool.connect();try{
+    await c.query('BEGIN');
+    const owned=(await c.query("SELECT id FROM outbox_events WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 FOR UPDATE",[event.id,String(workerId)])).rows[0];
+    if(!owned)throw Object.assign(new Error('Outbox event is not owned by worker'),{code:'OUTBOX_LEASE_LOST'});
+    const journal=(await c.query('SELECT id,domain,aggregate_id,outbox_topic FROM lifecycle_events WHERE id=$1',[lifecycleEventId])).rows[0];
+    if(!journal)throw Object.assign(new Error('Lifecycle journal entry is missing'),{code:'LIFECYCLE_JOURNAL_MISSING'});
+    if(journal.domain!==event.aggregateType||String(journal.aggregate_id)!==String(event.aggregateId)||journal.outbox_topic!==event.topic)throw Object.assign(new Error('Lifecycle outbox does not match journal entry'),{code:'LIFECYCLE_OUTBOX_MISMATCH'});
+    const completed=(await c.query(`UPDATE outbox_events SET status='COMPLETED',processed_at=now(),locked_at=NULL,locked_by=NULL,last_error=NULL
+      WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING id`,[event.id,String(workerId)])).rows[0];
+    if(!completed)throw Object.assign(new Error('Outbox lease was lost before completion'),{code:'OUTBOX_LEASE_LOST'});
+    await c.query('COMMIT');return{eventId:event.id,topic:event.topic,lifecycleEventId,delivered:true};
+  }catch(e){try{await c.query('ROLLBACK')}catch{}throw e}finally{c.release()}
+}
+
 async function dispatch(event,workerId){
   if(event.topic==='NOTIFICATION')return deliverNotification(event,workerId);
+  if(event.payload?.kind==='LIFECYCLE_TRANSITION')return deliverLifecycle(event,workerId);
   throw Object.assign(new Error(`Unsupported outbox topic ${event.topic}`),{code:'UNSUPPORTED_OUTBOX_TOPIC'});
 }
 
@@ -51,4 +68,4 @@ export async function runWorkerCycle({workerId='worker',limit=25,leaseMs=120000}
   return{scheduled,outbox:{...totals,cycles},stats:await outboxStats(db)};
 }
 
-export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL'}}
+export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',lifecycleDelivery:'JOURNAL_VERIFIED_INTERNAL'}}
