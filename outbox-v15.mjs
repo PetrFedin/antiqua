@@ -43,8 +43,8 @@ export async function completeOutboxEvent(db,id,workerId){
 }
 
 export async function failOutboxEvent(db,id,workerId,error,{baseDelayMs=1000}={}){
-  if(db?.kind!=='POSTGRES')return null;const message=String(error?.message||error||'Outbox handler failed').slice(0,2000),row0=(await db.pool.query('SELECT attempt_count,max_attempts FROM outbox_events WHERE id=$1 AND status=$2 AND locked_by=$3',[id,'PROCESSING',String(workerId)])).rows[0];if(!row0)throw Object.assign(new Error('Outbox event is not owned by worker'),{status:409,code:'OUTBOX_LEASE_LOST'});const dead=Number(row0.attempt_count)>=Number(row0.max_attempts),delay=Math.min(300000,Math.max(0,Math.trunc(Number(baseDelayMs)||1000))*Math.max(1,2**Math.min(8,Number(row0.attempt_count)-1)));const row=(await db.pool.query(`UPDATE outbox_events SET status=$4,locked_at=NULL,locked_by=NULL,last_error=$5,
-    available_at=CASE WHEN $4='DEAD' THEN available_at ELSE now()+($6::bigint * interval '1 millisecond') END WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING *`,[id,String(workerId),row0.attempt_count,dead?'DEAD':'PENDING',message,delay])).rows[0];return mapRow(row);
+  if(db?.kind!=='POSTGRES')return null;const message=String(error?.message||error||'Outbox handler failed').slice(0,2000),row0=(await db.pool.query('SELECT attempt_count,max_attempts FROM outbox_events WHERE id=$1 AND status=$2 AND locked_by=$3',[id,'PROCESSING',String(workerId)])).rows[0];if(!row0)throw Object.assign(new Error('Outbox event is not owned by worker'),{status:409,code:'OUTBOX_LEASE_LOST'});const dead=Number(row0.attempt_count)>=Number(row0.max_attempts),delay=Math.min(300000,Math.max(0,Math.trunc(Number(baseDelayMs)||1000))*Math.max(1,2**Math.min(8,Number(row0.attempt_count)-1)));const row=(await db.pool.query(`UPDATE outbox_events SET status=$3,locked_at=NULL,locked_by=NULL,last_error=$4,
+    available_at=CASE WHEN $3='DEAD' THEN available_at ELSE now()+($5::bigint * interval '1 millisecond') END WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING *`,[id,String(workerId),dead?'DEAD':'PENDING',message,delay])).rows[0];return mapRow(row);
 }
 
 export async function outboxStats(db){
