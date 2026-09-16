@@ -34,8 +34,10 @@ export async function ensureSellerOrganization(account){
 export async function listOrganizationsForAccount(account){
   if(account?.sellerId)await ensureSellerOrganization(account);
   if(db.kind!=='POSTGRES'){const org=account?.sellerId?await ensureSellerOrganization(account):null;return org?[{organization:org,role:'OWNER',status:'ACTIVE'}]:[]}
-  const rows=(await db.pool.query(`${orgSelect} JOIN organization_members m ON m.organization_id=o.id WHERE m.account_id=$1 AND m.status='ACTIVE' ORDER BY o.updated_at DESC`,[account.id])).rows;
-  return rows.map(r=>({organization:mapOrg(r),role:r.role,status:r.status}));
+  const rows=(await db.pool.query(`SELECT o.*,d.website,d.public_email,d.public_phone,d.shipping_policy,d.return_policy,d.storefront_metadata,m.role AS membership_role,m.status AS membership_status
+    FROM organizations o LEFT JOIN dealer_profiles d ON d.organization_id=o.id JOIN organization_members m ON m.organization_id=o.id
+    WHERE m.account_id=$1 AND m.status='ACTIVE' ORDER BY o.updated_at DESC`,[account.id])).rows;
+  return rows.map(r=>({organization:mapOrg(r),role:r.membership_role,status:r.membership_status}));
 }
 
 async function membership(accountId,organizationId,client=db.pool){const r=(await client.query('SELECT role,status FROM organization_members WHERE organization_id=$1 AND account_id=$2',[organizationId,accountId])).rows[0];return r&&r.status==='ACTIVE'?{role:r.role,status:r.status}:null}
