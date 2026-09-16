@@ -15,7 +15,7 @@ async function deliverNotification(event,workerId){
     const owned=(await c.query("SELECT id FROM outbox_events WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 FOR UPDATE",[event.id,String(workerId)])).rows[0];
     if(!owned)throw Object.assign(new Error('Outbox event is not owned by worker'),{code:'OUTBOX_LEASE_LOST'});
     await c.query(`INSERT INTO notifications(id,account_id,type,payload,source_outbox_id,created_at)
-      VALUES($1,$2,$3,$4,$5,now()) ON CONFLICT(source_outbox_id) DO NOTHING`,[notificationId(),accountId,type,payload,event.id]);
+      VALUES($1,$2,$3,$4,$5,now()) ON CONFLICT DO NOTHING`,[notificationId(),accountId,type,payload,event.id]);
     const completed=(await c.query(`UPDATE outbox_events SET status='COMPLETED',processed_at=now(),locked_at=NULL,locked_by=NULL,last_error=NULL
       WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING id`,[event.id,String(workerId)])).rows[0];
     if(!completed)throw Object.assign(new Error('Outbox lease was lost before completion'),{code:'OUTBOX_LEASE_LOST'});
@@ -46,9 +46,9 @@ export async function runScheduledWork({workerId='worker'}={}){
 
 export async function runWorkerCycle({workerId='worker',limit=25,leaseMs=120000}={}){
   const scheduled=await runScheduledWork({workerId});
-  let outbox={claimed:0,completed:0,failed:0},cycles=0;
-  do{outbox=await processOutboxBatch({workerId,limit,leaseMs});cycles++}while(outbox.claimed===limit&&cycles<20);
-  return{scheduled,outbox,stats:await outboxStats(db)};
+  const totals={claimed:0,completed:0,failed:0};let cycles=0,batch;
+  do{batch=await processOutboxBatch({workerId,limit,leaseMs});totals.claimed+=batch.claimed;totals.completed+=batch.completed;totals.failed+=batch.failed;cycles++}while(batch.claimed===limit&&cycles<20);
+  return{scheduled,outbox:{...totals,cycles},stats:await outboxStats(db)};
 }
 
 export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL'}}
