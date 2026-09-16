@@ -1,5 +1,6 @@
 import {PREVIEW,db,send,readBody,requireCsrf,audit,orders,notify} from './runtime-v09.mjs';
-import {getDispute,decideDispute,getSettlement,getShipment,transitionShipment} from './domain-e2e-v14.mjs';
+import {getDispute,decideDispute,getSettlement,getShipment} from './domain-e2e-v14.mjs';
+import {transitionShipment} from './commerce-lifecycle-v16.mjs';
 import {postLedgerTransaction,getPayout,listPayouts,transitionPayout} from './finance-v10.mjs';
 import {claimProviderEvent,markProviderEventFailed,markProviderEventProcessed} from './provider-events-v15.mjs';
 import {inferLifecycleAuthority,planLifecycleTransition} from './lifecycle-authority-v16.mjs';
@@ -32,7 +33,7 @@ export async function routeInvariantsV14(req,res,url,ctx){
  if(!ctx)return false;const a=ctx.account;
  const ship=url.pathname.match(/^\/api\/shipments\/([^/]+)\/transition$/);
  if(ship&&req.method==='POST'){
-  requireCsrf(req,ctx);const current=await getShipment(a,ship[1]);if(!current)return send(res,404,{error:'Shipment not found'});const body=await readBody(req),next=String(body.status||'').toUpperCase(),providerStates=['IN_TRANSIT','DELIVERED','DELIVERY_FAILED','DAMAGE_REPORTED'];if(!PREVIEW&&providerStates.includes(next))return send(res,403,{error:'Carrier/provider event required for this shipment state',code:'SHIPPING_PROVIDER_EVENT_REQUIRED'});if(!canOperate(a)&&a.sellerId!==current.sellerId)return send(res,403,{error:'Only the seller or operator can advance shipment state',code:'SHIPMENT_AUTHORITY_REQUIRED'});const plan=planLifecycleTransition({domain:'SHIPMENT',from:current.status,to:next,authority:inferLifecycleAuthority({account:a,resource:current}),facts:{PROVIDER_EVENT_OR_PREVIEW:PREVIEW}}),s=await transitionShipment(a,ship[1],plan.to,body);await audit(req,a,plan.auditAction,'SHIPMENT',ship[1],current,{status:s.status},{lifecycle:plan});return send(res,200,{shipment:s})
+  requireCsrf(req,ctx);const current=await getShipment(a,ship[1]);if(!current)return send(res,404,{error:'Shipment not found'});const body=await readBody(req),next=String(body.status||'').toUpperCase(),providerStates=['IN_TRANSIT','DELIVERED','DELIVERY_FAILED','DAMAGE_REPORTED'];if(!PREVIEW&&providerStates.includes(next))return send(res,403,{error:'Carrier/provider event required for this shipment state',code:'SHIPPING_PROVIDER_EVENT_REQUIRED'});if(!canOperate(a)&&a.sellerId!==current.sellerId)return send(res,403,{error:'Only the seller or operator can advance shipment state',code:'SHIPMENT_AUTHORITY_REQUIRED'});const plan=planLifecycleTransition({domain:'SHIPMENT',from:current.status,to:next,authority:inferLifecycleAuthority({account:a,resource:current}),facts:{PROVIDER_EVENT_OR_PREVIEW:PREVIEW}}),s=await transitionShipment(a,ship[1],plan.to,{...body,lifecycleFacts:{PROVIDER_EVENT_OR_PREVIEW:PREVIEW}});await audit(req,a,plan.auditAction,'SHIPMENT',ship[1],current,{status:s.status},{lifecycle:plan});return send(res,200,{shipment:s})
  }
  const manualPayout=url.pathname.match(/^\/api\/payouts\/([^/]+)\/provider-state$/);if(manualPayout&&req.method==='POST'&&!PREVIEW){requireCsrf(req,ctx);return send(res,503,{error:'Payout state must come from the connected payment provider',code:'PAYOUT_PROVIDER_EVENT_REQUIRED'})}
  const ds=url.pathname.match(/^\/api\/disputes\/([^/]+)\/decision$/);

@@ -1,8 +1,8 @@
 import {db} from './runtime-v09.mjs';
-import {transitionSettlement} from './domain-e2e-v14.mjs';
+import {transitionSettlement} from './commerce-lifecycle-v16.mjs';
 import {enqueueOutboxTx} from './outbox-v15.mjs';
 const SYSTEM={id:'system',roles:['ADMIN'],sellerId:null};
-export async function sweepOverdueSettlements(){if(db.kind!=='POSTGRES')return{changed:0,reason:'MEMORY_PREVIEW'};const rows=(await db.pool.query("SELECT id FROM auction_settlements WHERE status='PAYMENT_DUE' AND payment_due_at IS NOT NULL AND payment_due_at<=clock_timestamp() ORDER BY payment_due_at LIMIT 100")).rows;let changed=0;for(const r of rows){try{await transitionSettlement(SYSTEM,r.id,'NONPAYMENT',{reason:'PAYMENT_DUE_EXPIRED',automatic:true});changed++}catch(e){console.error('nonpayment sweep',r.id,e.message)}}return{changed}}
+export async function sweepOverdueSettlements(){if(db.kind!=='POSTGRES')return{changed:0,reason:'MEMORY_PREVIEW'};const rows=(await db.pool.query("SELECT id FROM auction_settlements WHERE status='PAYMENT_DUE' AND payment_due_at IS NOT NULL AND payment_due_at<=clock_timestamp() ORDER BY payment_due_at LIMIT 100")).rows;let changed=0;for(const r of rows){try{await transitionSettlement(SYSTEM,r.id,'NONPAYMENT',{reason:'PAYMENT_DUE_EXPIRED',automatic:true,sourceKey:`automatic-nonpayment:${r.id}`});changed++}catch(e){console.error('nonpayment sweep',r.id,e.message)}}return{changed}}
 export async function sweepExpiredInsurance(){
  if(db.kind!=='POSTGRES')return{changed:0,reason:'MEMORY_PREVIEW'};
  const c=await db.pool.connect();try{
