@@ -1,14 +1,11 @@
 import os from 'node:os';
 import crypto from 'node:crypto';
 import {db} from './runtime-v09.mjs';
-import {migrateV10} from './migration-v10.mjs';
-import {migrateV14} from './migration-v14.mjs';
 import {runWorkerCycle,workerCapabilities} from './worker-runtime-v15.mjs';
 
 if(db.kind!=='POSTGRES')throw new Error('ANTIQUA worker requires DATABASE_URL / PostgreSQL persistence');
-
-await migrateV10(db);
-await migrateV14(db);
+const schema=(await db.pool.query("SELECT to_regclass('public.outbox_events') AS outbox,to_regclass('public.auction_settlements') AS settlements")).rows[0];
+if(!schema?.outbox||!schema?.settlements)throw new Error('ANTIQUA worker schema is not migrated; run the deployment migration step before starting workers');
 
 const workerId=String(process.env.WORKER_ID||`${os.hostname()}-${process.pid}-${crypto.randomUUID().slice(0,8)}`),pollMs=Math.max(250,Math.trunc(Number(process.env.WORKER_POLL_MS)||5000)),leaseMs=Math.max(1000,Math.trunc(Number(process.env.OUTBOX_LEASE_MS)||120000)),limit=Math.max(1,Math.min(100,Math.trunc(Number(process.env.OUTBOX_BATCH_SIZE)||25))),once=String(process.env.WORKER_ONCE||'').toLowerCase()==='true';
 let stopping=false;
