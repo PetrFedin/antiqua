@@ -66,7 +66,7 @@ const DEFINITIONS=Object.freeze({
     ])
   }),
   VERIFICATION:Object.freeze({
-    initial:'PENDING',terminal:Object.freeze(['REJECTED','EXPIRED']),transitions:Object.freeze([
+    initial:'PENDING',terminal:Object.freeze([]),transitions:Object.freeze([
       rule('START',['NONE','NOT_STARTED'],'PENDING',['BUYER','SELLER','SYSTEM'],{outboxTopic:'VERIFICATION.PENDING'}),
       rule('REFRESH_PENDING','PENDING','PENDING',['BUYER','SELLER','PROVIDER','OPERATOR','SYSTEM'],{preconditions:[],outboxTopic:'VERIFICATION.PENDING'}),
       rule('BEGIN_REVIEW',['PENDING','MORE_INFO_REQUIRED'],'IN_PROGRESS',['PROVIDER','OPERATOR','SYSTEM'],{preconditions:['DECISION_SOURCE_VERIFIED']}),
