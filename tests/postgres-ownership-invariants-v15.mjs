@@ -34,7 +34,8 @@ try{
   let count=Number((await db.pool.query('SELECT count(*)::int AS n FROM ownership_events WHERE object_id=$1',[objectId])).rows[0].n);assert.equal(count,12);
   const afterReplay=(await db.pool.query('SELECT owner_account_id FROM object_ownership WHERE object_id=$1',[objectId])).rows[0].owner_account_id;assert.equal(afterReplay,current.owner_account_id);
 
-  await assert.rejects(()=>recordOwnershipTransfer(db,{...originalRequest,newOwnerAccountId:owners[0]}),e=>e.code==='OWNERSHIP_IDEMPOTENCY_CONFLICT');
+  const conflictingOwner=owners.find(id=>id!==originalRequest.newOwnerAccountId);assert.ok(conflictingOwner);
+  await assert.rejects(()=>recordOwnershipTransfer(db,{...originalRequest,newOwnerAccountId:conflictingOwner}),e=>e.code==='OWNERSHIP_IDEMPOTENCY_CONFLICT');
   count=Number((await db.pool.query('SELECT count(*)::int AS n FROM ownership_events WHERE object_id=$1',[objectId])).rows[0].n);assert.equal(count,12);
 
   const sameOwnerNewSource=await recordOwnershipTransfer(db,{objectId,newOwnerAccountId:current.owner_account_id,sourceType:'OTHER',sourceId:`no-change-${token}`,eventType:'TRANSFERRED',idempotencyKey:`no-change-${token}`});assert.equal(sameOwnerNewSource.idempotent,true);assert.equal(sameOwnerNewSource.noOwnershipChange,true);
@@ -45,7 +46,7 @@ try{
 
   const publicHistory=await publicOwnershipHistory(db,objectId);assert.equal(publicHistory.length,12);publicHistory.forEach((e,i)=>{assert.equal(e.sequenceNo,i+1);assert.equal('previousOwnerAccountId' in e,false);assert.equal('newOwnerAccountId' in e,false);assert.equal('sourceId' in e,false)});
 
-  console.log('ANTIQUA 0.15 ownership proof: first-transfer serialization + contiguous chain + replay safety + conflict detection + owner privacy passed');
+  console.log('ANTIQUA 0.15 ownership proof: first-transfer serialization + contiguous chain + replay safety + deterministic conflict detection + owner privacy passed');
 }finally{
   await db.pool.end();
 }
