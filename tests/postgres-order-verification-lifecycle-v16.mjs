@@ -43,9 +43,9 @@ try{
   const reviewReplay=await transitionVerification({id:'provider',roles:[]},verificationId,'IN_PROGRESS',{lifecycleAuthority:'PROVIDER',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:reviewKey});assert.equal(reviewReplay.idempotentTransition,true);
   await assert.rejects(()=>transitionVerification({id:'provider',roles:[]},verificationId,'MORE_INFO_REQUIRED',{lifecycleAuthority:'PROVIDER',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:reviewKey}),e=>e.code==='LIFECYCLE_EVENT_CONFLICT');
 
-  vr=await transitionVerification(operator,verificationId,'REJECTED',{lifecycleAuthority:'OPERATOR',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:`ver-reject-${token}`,patch:{riskLevel:'MEDIUM',decisionReason:'Test rejection'}});assert.equal(vr.verification.status,'REJECTED');
-  vr=await transitionVerification(buyer,verificationId,'PENDING',{sourceKey:`ver-resubmit-${token}`,patch:{submittedAt:new Date().toISOString(),decisionReason:''}});assert.equal(vr.verification.status,'PENDING');assert.equal(vr.lifecycle.action,'RESUBMIT');
-  vr=await transitionVerification(operator,verificationId,'VERIFIED',{lifecycleAuthority:'OPERATOR',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:`ver-verify-${token}`,patch:{riskLevel:'LOW',decisionReason:'Cleared'}});assert.equal(vr.verification.status,'VERIFIED');
+  vr=await transitionVerification(operator,verificationId,'REJECTED',{lifecycleAuthority:'OPERATOR',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:`ver-reject-${token}`,patch:{riskLevel:'MEDIUM',decisionReason:'Test rejection'}});assert.equal(vr.verification.status,'REJECTED');assert.ok(vr.verification.decidedAt);
+  vr=await transitionVerification(buyer,verificationId,'PENDING',{sourceKey:`ver-resubmit-${token}`,patch:{submittedAt:new Date().toISOString(),decisionReason:''}});assert.equal(vr.verification.status,'PENDING');assert.equal(vr.lifecycle.action,'RESUBMIT');assert.equal(vr.verification.decidedAt,null);
+  vr=await transitionVerification(operator,verificationId,'VERIFIED',{lifecycleAuthority:'OPERATOR',lifecycleFacts:{DECISION_SOURCE_VERIFIED:true},sourceKey:`ver-verify-${token}`,patch:{riskLevel:'LOW',decisionReason:'Cleared'}});assert.equal(vr.verification.status,'VERIFIED');assert.ok(vr.verification.decidedAt);
 
   const verificationBeforeInvalid=(await db.pool.query("SELECT count(*)::int AS n FROM lifecycle_events WHERE domain='VERIFICATION' AND aggregate_id=$1",[verificationId])).rows[0].n;
   await assert.rejects(()=>transitionVerification(buyer,verificationId,'REJECTED',{}),e=>['LIFECYCLE_TRANSITION_INVALID','LIFECYCLE_AUTHORITY_DENIED'].includes(e.code));
@@ -59,5 +59,5 @@ try{
   for(let i=0;i<4&&pending;i++){await processOutboxBatch({workerId:`order-ver-life-${token}-${i}`,limit:100,leaseMs:5000});pending=(await db.pool.query("SELECT count(*)::int AS n FROM outbox_events WHERE aggregate_id=ANY($1::text[]) AND status='PENDING' AND payload->>'kind'='LIFECYCLE_TRANSITION'",[[orderId,verificationId]])).rows[0].n}
   assert.equal(pending,0);
 
-  console.log('ANTIQUA v16 order/verification lifecycle: row locks, journal/outbox, provider replay/conflict, resubmit and invalid rollback passed');
+  console.log('ANTIQUA v16 order/verification lifecycle: row locks, journal/outbox, provider replay/conflict, resubmit decision reset and invalid rollback passed');
 }finally{await db.pool.end()}
