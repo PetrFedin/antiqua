@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 if(!process.env.DATABASE_URL){console.log('ANTIQUA v16 order/verification lifecycle: skipped (DATABASE_URL not set)');process.exit(0)}
 
 const {db}=await import('../runtime-v09.mjs');
-const {createOrderAuthority,transitionOrder,startVerificationAuthority,transitionVerification}=await import('../order-verification-lifecycle-v16.mjs');
+const {createOrderAuthority,transitionOrder,captureOrderPaymentAuthority,startVerificationAuthority,transitionVerification}=await import('../order-verification-lifecycle-v16.mjs');
 const {processOutboxBatch}=await import('../worker-runtime-v15.mjs');
 const token=crypto.randomUUID();
 
@@ -12,6 +12,23 @@ try{
   assert.equal(db.kind,'POSTGRES');
   const buyer=await db.findAccountByEmail('buyer@demo.antiqua'),seller=await db.findAccountByEmail('seller@demo.antiqua'),operator=await db.findAccountByEmail('operator@demo.antiqua');
   assert.ok(buyer?.id);assert.ok(seller?.sellerId);assert.ok(operator?.roles?.includes('ADMIN'));
+
+  // One listing can create only one live order under concurrent buy attempts.
+  const listingId=`lst-race-${token}`,listingPayload={id:listingId,lotId:'lot-102',sellerId:seller.sellerId,status:'ACTIVE',price:2100,currency:'EUR'};
+  await db.pool.query("INSERT INTO listings(id,object_id,seller_id,status,payload,updated_at) VALUES($1,'lot-102',$2,'ACTIVE',$3,now())",[listingId,seller.sellerId,listingPayload]);
+  const makeRaceOrder=n=>({id:`ord-race-${n}-${token}`,listingId,lotId:'lot-102',sellerId:seller.sellerId,buyerClientId:buyer.id,price:2100,currency:'EUR',paymentStatus:'NOT_CONFIGURED',invoiceStatus:'DRAFT_NOT_ISSUED',shippingStatus:'QUOTE_REQUIRED',taxStatus:'NOT_CALCULATED',timeline:[{status:'ORDER_CREATED',at:new Date().toISOString()}],createdAt:new Date().toISOString()});
+  const raced=await Promise.allSettled([createOrderAuthority(buyer,makeRaceOrder(1),{sourceKey:`race-1-${token}`}),createOrderAuthority(buyer,makeRaceOrder(2),{sourceKey:`race-2-${token}`})]);
+  assert.equal(raced.filter(x=>x.status==='fulfilled').length,1);const rejected=raced.find(x=>x.status==='rejected');assert.equal(rejected?.reason?.code,'ITEM_UNAVAILABLE');
+  const raceOrder=raced.find(x=>x.status==='fulfilled').value;assert.equal((await db.pool.query('SELECT status FROM listings WHERE id=$1',[listingId])).rows[0].status,'RESERVED');assert.equal(Number((await db.pool.query('SELECT count(*) AS n FROM orders WHERE listing_id=$1',[listingId])).rows[0].n),1);
+  const cancelledRace=await transitionOrder(buyer,raceOrder.id,'CANCELLED',{sourceKey:`cancel-race-${token}`});assert.equal(cancelledRace.status,'CANCELLED');assert.equal((await db.pool.query('SELECT status FROM listings WHERE id=$1',[listingId])).rows[0].status,'ACTIVE');
+
+  // Payment authority holds the order lock across the recoverable effect; cancel loses after payment wins.
+  const payListingId=`lst-payrace-${token}`,payListingPayload={id:payListingId,lotId:'lot-103',sellerId:seller.sellerId,status:'ACTIVE',price:3300,currency:'EUR'};
+  await db.pool.query("INSERT INTO listings(id,object_id,seller_id,status,payload,updated_at) VALUES($1,'lot-103',$2,'ACTIVE',$3,now())",[payListingId,seller.sellerId,payListingPayload]);
+  const payRaceOrder=await createOrderAuthority(buyer,{id:`ord-payrace-${token}`,listingId:payListingId,lotId:'lot-103',sellerId:seller.sellerId,buyerClientId:buyer.id,price:3300,currency:'EUR',paymentStatus:'NOT_CONFIGURED',invoiceStatus:'DRAFT_NOT_ISSUED',shippingStatus:'QUOTE_REQUIRED',taxStatus:'NOT_CALCULATED',timeline:[{status:'ORDER_CREATED',at:new Date().toISOString()}],createdAt:new Date().toISOString()},{sourceKey:`create-payrace-${token}`});
+  let effectStartedResolve;const effectStarted=new Promise(r=>{effectStartedResolve=r});
+  const payment=captureOrderPaymentAuthority({id:'provider',roles:[]},payRaceOrder.id,{lifecycleAuthority:'PROVIDER',sourceKey:`payrace-${token}`,effect:async current=>{effectStartedResolve();await new Promise(r=>setTimeout(r,75));return{paymentEffectRecorded:true,patch:{paymentStatus:'PAID',finance:{provider:'TEST_PSP',externalReference:`payrace-${token}`},timeline:[...(current.timeline||[]),{status:'PAID',at:new Date().toISOString()}]}}}});
+  await effectStarted;const cancellation=transitionOrder(buyer,payRaceOrder.id,'CANCELLED',{sourceKey:`cancel-payrace-${token}`});const [paid,cancelled]=await Promise.allSettled([payment,cancellation]);assert.equal(paid.status,'fulfilled');assert.equal(paid.value.order.status,'PAID');assert.equal(cancelled.status,'rejected');assert.equal(cancelled.reason.code,'LIFECYCLE_TRANSITION_INVALID');assert.equal((await db.pool.query('SELECT status FROM listings WHERE id=$1',[payListingId])).rows[0].status,'RESERVED');
 
   const orderId=`ord-life-${token}`,orderKey=`order-create-${token}`;
   const created=await createOrderAuthority(buyer,{id:orderId,listingId:null,lotId:'lot-101',sellerId:seller.sellerId,buyerClientId:buyer.id,price:5500,currency:'EUR',paymentStatus:'NOT_CONFIGURED',invoiceStatus:'DRAFT_NOT_ISSUED',shippingStatus:'QUOTE_REQUIRED',taxStatus:'NOT_CALCULATED',timeline:[{status:'ORDER_CREATED',at:new Date().toISOString()}],createdAt:new Date().toISOString()},{sourceKey:orderKey});
@@ -59,5 +76,5 @@ try{
   for(let i=0;i<4&&pending;i++){await processOutboxBatch({workerId:`order-ver-life-${token}-${i}`,limit:100,leaseMs:5000});pending=(await db.pool.query("SELECT count(*)::int AS n FROM outbox_events WHERE aggregate_id=ANY($1::text[]) AND status='PENDING' AND payload->>'kind'='LIFECYCLE_TRANSITION'",[[orderId,verificationId]])).rows[0].n}
   assert.equal(pending,0);
 
-  console.log('ANTIQUA v16 order/verification lifecycle: row locks, journal/outbox, provider replay/conflict, resubmit decision reset and invalid rollback passed');
+  console.log('ANTIQUA v16 order/verification lifecycle: listing serialization + payment/cancel lock + journal/outbox + provider replay/conflict + resubmit decision reset + invalid rollback passed');
 }finally{await db.pool.end()}
