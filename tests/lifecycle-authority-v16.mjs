@@ -47,12 +47,12 @@ const denied=(input,code)=>{const x=canLifecycleTransition(input);assert.equal(x
   denied({domain:'VERIFICATION',from:'IN_PROGRESS',to:'MORE_INFO_REQUIRED',action:'REQUEST_MORE_INFO',authority:'PROVIDER'},'LIFECYCLE_PRECONDITION_FAILED');
   ok({domain:'VERIFICATION',from:'IN_PROGRESS',to:'MORE_INFO_REQUIRED',action:'REQUEST_MORE_INFO',authority:'PROVIDER',facts:fact});
   ok({domain:'VERIFICATION',from:'IN_PROGRESS',to:'IN_PROGRESS',action:'REFRESH_REVIEW',authority:'PROVIDER',facts:fact});
-  ok({domain:'VERIFICATION',from:'REJECTED',to:'PENDING',action:'RESUBMIT',authority:'BUYER'});
-  ok({domain:'VERIFICATION',from:'EXPIRED',to:'PENDING',action:'RESUBMIT',authority:'SELLER'});
-  ok({domain:'VERIFICATION',from:'PENDING',to:'PENDING',action:'REFRESH_PENDING',authority:'BUYER'});
-  assert.equal(ok({domain:'VERIFICATION',from:'VERIFIED',to:'EXPIRED',action:'EXPIRE',authority:'OPERATOR',facts:fact}).terminal,true);
-  assert.equal(ok({domain:'VERIFICATION',from:'REJECTED',to:'REJECTED',action:'REFRESH_REJECTED',authority:'PROVIDER',facts:fact}).terminal,true);
-  assert.equal(ok({domain:'VERIFICATION',from:'EXPIRED',to:'EXPIRED',action:'REFRESH_EXPIRED',authority:'PROVIDER',facts:fact}).terminal,true);
+  assert.equal(ok({domain:'VERIFICATION',from:'REJECTED',to:'PENDING',action:'RESUBMIT',authority:'BUYER'}).terminal,false);
+  assert.equal(ok({domain:'VERIFICATION',from:'EXPIRED',to:'PENDING',action:'RESUBMIT',authority:'SELLER'}).terminal,false);
+  assert.equal(ok({domain:'VERIFICATION',from:'PENDING',to:'PENDING',action:'REFRESH_PENDING',authority:'BUYER'}).terminal,false);
+  assert.equal(ok({domain:'VERIFICATION',from:'VERIFIED',to:'EXPIRED',action:'EXPIRE',authority:'OPERATOR',facts:fact}).terminal,false);
+  assert.equal(ok({domain:'VERIFICATION',from:'REJECTED',to:'REJECTED',action:'REFRESH_REJECTED',authority:'PROVIDER',facts:fact}).terminal,false);
+  assert.equal(ok({domain:'VERIFICATION',from:'EXPIRED',to:'EXPIRED',action:'REFRESH_EXPIRED',authority:'PROVIDER',facts:fact}).terminal,false);
   denied({domain:'VERIFICATION',from:'REJECTED',to:'REJECTED',action:'REFRESH_REJECTED',authority:'OPERATOR',facts:fact},'LIFECYCLE_AUTHORITY_DENIED');
 }
 
@@ -83,6 +83,7 @@ const denied=(input,code)=>{const x=canLifecycleTransition(input);assert.equal(x
 
 const capabilities=lifecycleCapabilities();
 assert.deepEqual(Object.keys(capabilities).sort(),['DISPUTE','MEDIA','ORDER','PAYOUT','PUBLICATION','SETTLEMENT','SHIPMENT','VERIFICATION']);
+assert.deepEqual(capabilities.VERIFICATION.terminal,[]);
 for(const [domain,d] of Object.entries(capabilities)){assert.ok(d.initial,domain);assert.ok(d.transitions.length>0,domain);for(const t of d.transitions){assert.ok(t.action);assert.ok(t.from.length);assert.ok(t.to);assert.ok(t.authorities.length);assert.ok(t.auditAction);assert.ok(t.outboxTopic)}}
 
 console.log('ANTIQUA lifecycle authority v16: 8 domains + authority + preconditions + retry/recovery + preview + terminal/negative contracts passed');
