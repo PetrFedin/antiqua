@@ -9,6 +9,8 @@ const denied=(input,code)=>{const x=canLifecycleTransition(input);assert.equal(x
   assert.equal(x.outboxTopic,'ORDER.PAID');
   denied({domain:'ORDER',from:'AWAITING_PAYMENT_CONNECTOR',to:'PAID',action:'CAPTURE_PAYMENT',authority:'PROVIDER'},'LIFECYCLE_PRECONDITION_FAILED');
   denied({domain:'ORDER',from:'AWAITING_PAYMENT_CONNECTOR',to:'CANCELLED',action:'CANCEL',authority:'SELLER'},'LIFECYCLE_AUTHORITY_DENIED');
+  denied({domain:'ORDER',from:'PAID',to:'OWNERSHIP_TRANSFERRED',action:'CONFIRM_OWNERSHIP',authority:'BUYER'},'LIFECYCLE_PRECONDITION_FAILED');
+  assert.equal(ok({domain:'ORDER',from:'PAID',to:'OWNERSHIP_TRANSFERRED',action:'CONFIRM_OWNERSHIP',authority:'BUYER',facts:{RECEIPT_CONFIRMED:true}}).terminal,true);
 }
 
 {
@@ -45,6 +47,9 @@ const denied=(input,code)=>{const x=canLifecycleTransition(input);assert.equal(x
   denied({domain:'VERIFICATION',from:'IN_PROGRESS',to:'MORE_INFO_REQUIRED',action:'REQUEST_MORE_INFO',authority:'PROVIDER'},'LIFECYCLE_PRECONDITION_FAILED');
   ok({domain:'VERIFICATION',from:'IN_PROGRESS',to:'MORE_INFO_REQUIRED',action:'REQUEST_MORE_INFO',authority:'PROVIDER',facts:fact});
   ok({domain:'VERIFICATION',from:'IN_PROGRESS',to:'IN_PROGRESS',action:'REFRESH_REVIEW',authority:'PROVIDER',facts:fact});
+  ok({domain:'VERIFICATION',from:'REJECTED',to:'PENDING',action:'RESUBMIT',authority:'BUYER'});
+  ok({domain:'VERIFICATION',from:'EXPIRED',to:'PENDING',action:'RESUBMIT',authority:'SELLER'});
+  ok({domain:'VERIFICATION',from:'PENDING',to:'PENDING',action:'REFRESH_PENDING',authority:'BUYER'});
   assert.equal(ok({domain:'VERIFICATION',from:'VERIFIED',to:'EXPIRED',action:'EXPIRE',authority:'OPERATOR',facts:fact}).terminal,true);
   assert.equal(ok({domain:'VERIFICATION',from:'REJECTED',to:'REJECTED',action:'REFRESH_REJECTED',authority:'PROVIDER',facts:fact}).terminal,true);
   assert.equal(ok({domain:'VERIFICATION',from:'EXPIRED',to:'EXPIRED',action:'REFRESH_EXPIRED',authority:'PROVIDER',facts:fact}).terminal,true);
