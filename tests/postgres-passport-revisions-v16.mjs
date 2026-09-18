@@ -6,7 +6,7 @@ if(!process.env.DATABASE_URL){console.log('ANTIQUA v16 passport revisions: skipp
 const {db}=await import('../runtime-v09.mjs');
 const {ensurePassportBaseline,reviseObjectPassport,passportRevisionHistory,canonicalPassportHash}=await import('../passport-revisions-v16.mjs');
 const {processOutboxBatch}=await import('../worker-runtime-v15.mjs');
-const token=crypto.randomUUID().replaceAll('-',''),objectId=`lot-passport-${token}`,otherObjectId=`lot-passport-other-${token}`,mediaId=`media-passport-${token}`,provId=`prov-passport-${token}`,otherProvId=`prov-passport-other-${token}`;
+const token=crypto.randomUUID().replaceAll('-',''),objectId=`lot-passport-${token}`,otherObjectId=`lot-passport-other-${token}`,mediaId=`media-passport-${token}`,otherMediaId=`media-passport-other-${token}`,provId=`prov-passport-${token}`,otherProvId=`prov-passport-other-${token}`;
 
 const passport={
   id:objectId,objectId:`AQ-PASS-${token.slice(0,8)}`,lotNumber:990001,department:{en:'Decorative Arts',ru:'Декоративное искусство'},maker:{en:'Unknown workshop',ru:'Неизвестная мастерская'},
@@ -33,6 +33,8 @@ try{
     VALUES($1,$2,'seller-preview',$3,'PUBLISHED','CLEARED','PUBLIC',NULL,now(),now())`,[otherObjectId,otherPassport.objectId,otherPassport]);
   await db.pool.query(`INSERT INTO provenance_entries(id,object_id,sequence_no,event,evidence_status,evidence_ref,created_at)
     VALUES($1,$2,1,$3,'PLATFORM_RECORD',NULL,now())`,[otherProvId,otherObjectId,{en:'Other object provenance',ru:'Провенанс другого предмета'}]);
+  await db.pool.query(`INSERT INTO media_assets(id,entity_type,entity_id,storage_key,content_type,bytes,sha256,role,visibility,status,uploaded_at,created_at)
+    VALUES($1,'OBJECT',$2,$3,'image/jpeg',128,$4,'CONDITION','PRIVATE','READY',now(),now())`,[otherMediaId,otherObjectId,`passport/other-${token}.jpg`,'b'.repeat(64)]);
 
   const baseline=await ensurePassportBaseline(objectId);assert.equal(baseline.revision.revisionNo,1);assert.match(baseline.revision.hash,/^[0-9a-f]{64}$/);
   const baseRow=(await db.pool.query('SELECT passport,passport_hash FROM objects WHERE id=$1',[objectId])).rows[0];assert.equal(baseRow.passport_hash,canonicalPassportHash(baseRow.passport));assert.equal(baseRow.passport.passportHash,baseRow.passport_hash);
@@ -52,6 +54,7 @@ try{
 
   await assert.rejects(()=>reviseObjectPassport(operator,objectId,{patch:{conditionGrade:'C'},changeKind:'CONDITION_UPDATE',reason:'Unsupported condition downgrade',publicSummary:{en:'Condition changed',ru:'Изменено состояние'},sourceKey:`no-evidence-${token}`}),e=>e.code==='PASSPORT_EVIDENCE_REQUIRED');
   await assert.rejects(()=>reviseObjectPassport(operator,objectId,{patch:{provenance:{en:['Other claim'],ru:['Другое утверждение']}},changeKind:'PROVENANCE_UPDATE',reason:'Wrong evidence scope',publicSummary:{en:'Provenance changed',ru:'Изменён провенанс'},evidence:[{type:'PROVENANCE',id:otherProvId}],sourceKey:`wrong-scope-${token}`}),e=>e.code==='PASSPORT_EVIDENCE_SCOPE_MISMATCH');
+  await assert.rejects(()=>reviseObjectPassport(operator,objectId,{patch:{conditionGrade:'C',media:[{id:otherMediaId,role:'CONDITION',status:'READY'}]},changeKind:'CONDITION_UPDATE',reason:'Attempt to import foreign media as evidence',publicSummary:{en:'Condition changed',ru:'Изменено состояние'},evidence:[{type:'MEDIA',id:otherMediaId}],sourceKey:`foreign-media-${token}`}),e=>e.code==='PASSPORT_EVIDENCE_SCOPE_MISMATCH');
   await assert.rejects(()=>reviseObjectPassport(operator,objectId,{patch:{sellerId:'attacker-seller'},changeKind:'ADMINISTRATIVE_CORRECTION',reason:'Protected field attempt',publicSummary:{en:'Protected',ru:'Защищено'},sourceKey:`protected-${token}`}),e=>e.code==='PASSPORT_FIELD_PROTECTED');
 
   const provenanceUpdate=await reviseObjectPassport(operator,objectId,{patch:{provenance:{en:['Private collection','Documented platform provenance'],ru:['Частная коллекция','Документированный провенанс платформы']}},changeKind:'PROVENANCE_UPDATE',reason:'Attach verified provenance record',publicSummary:{en:'Provenance evidence added',ru:'Добавлено подтверждение провенанса'},evidence:[{type:'PROVENANCE',id:provId}],sourceKey:`provenance-${token}`});assert.equal(provenanceUpdate.idempotent,false);
@@ -68,6 +71,10 @@ try{
 
   await assert.rejects(()=>db.pool.query('UPDATE object_passport_revisions SET change_reason=$2 WHERE id=$1',[rows[1].id,'tampered']),e=>e.code==='55000');
   assert.equal((await db.pool.query('SELECT change_reason FROM object_passport_revisions WHERE id=$1',[rows[1].id])).rows[0].change_reason,rows[1].change_reason);
+  const evidenceRow=(await db.pool.query('SELECT revision_id,evidence_type,evidence_id FROM object_passport_revision_evidence WHERE revision_id=$1 LIMIT 1',[rows[2].id])).rows[0];assert.ok(evidenceRow);
+  await assert.rejects(()=>db.pool.query('DELETE FROM object_passport_revision_evidence WHERE revision_id=$1 AND evidence_type=$2 AND evidence_id=$3',[evidenceRow.revision_id,evidenceRow.evidence_type,evidenceRow.evidence_id]),e=>e.code==='55000');
+  await assert.rejects(()=>db.pool.query('DELETE FROM object_passport_revisions WHERE id=$1',[rows[1].id]),e=>e.code==='55000');
+  assert.equal(Number((await db.pool.query('SELECT count(*)::int n FROM object_passport_revisions WHERE object_id=$1',[objectId])).rows[0].n),4);
 
   let pending=Number((await db.pool.query("SELECT count(*)::int n FROM outbox_events WHERE aggregate_type='OBJECT' AND aggregate_id=$1 AND status='PENDING' AND payload->>'kind'='OBJECT_PASSPORT_REVISION'",[objectId])).rows[0].n);assert.equal(pending,3);
   for(let i=0;i<5&&pending;i++){await processOutboxBatch({workerId:`passport-proof-${token}-${i}`,limit:100,leaseMs:5000});pending=Number((await db.pool.query("SELECT count(*)::int n FROM outbox_events WHERE aggregate_type='OBJECT' AND aggregate_id=$1 AND status='PENDING' AND payload->>'kind'='OBJECT_PASSPORT_REVISION'",[objectId])).rows[0].n)}assert.equal(pending,0);
@@ -75,7 +82,7 @@ try{
 
   console.log('ANTIQUA v16 passport revisions: baseline + concurrent hash chain + no lost update + evidence scope/privacy + idempotency + immutability + worker delivery passed');
 }finally{
-  await db.pool.query('DELETE FROM media_assets WHERE id=$1',[mediaId]).catch(()=>{});
+  await db.pool.query('DELETE FROM media_assets WHERE id=ANY($1::text[])',[[mediaId,otherMediaId]]).catch(()=>{});
   await db.pool.query('DELETE FROM objects WHERE id=ANY($1::text[])',[[objectId,otherObjectId]]).catch(()=>{});
   await db.pool.end();
 }
