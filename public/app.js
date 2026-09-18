@@ -62,7 +62,7 @@ function purposeBar(){
 function isSaved(id){return state.client?.savedLots?.includes(id)}
 function isCompared(id){return state.compare.includes(id)}
 function card(entry){
- const o=entry.lot,s=entry.seller,auction=entry.auction,shop=entry.listing,purpose=purpose||(auction&&auction.state!=='CLOSED'?'AUCTION':shop?'BUY':'HISTORY'),nextBid=auction?Number(auction.currentBid)+Number(auction.increment):null,isBuyer=state.me.account?.roles?.includes('BUYER');
+ const o=entry.lot,s=entry.seller,auction=entry.auction,shop=entry.listing,purpose=entry.purpose||(auction&&auction.state!=='CLOSED'?'AUCTION':shop?'BUY':'HISTORY'),nextBid=auction?Number(auction.currentBid)+Number(auction.increment):null,isBuyer=state.me.account?.roles?.includes('BUYER');
  let commercial='',action='';
  if(purpose==='AUCTION'&&auction){
   commercial=`<div class="auction-card-price"><div><span>${state.lang==='ru'?'Текущая ставка':'Current bid'}</span><strong>${money(auction.currentBid,auction.currency)}</strong></div><small>${state.lang==='ru'?'Следующая':'Next'}: <b>${money(nextBid,auction.currency)}</b> · ${state.lang==='ru'?'шаг':'step'} ${money(auction.increment,auction.currency)}</small><small class="auction-countdown">⏱ <span data-auction-timer data-ends-at="${esc(auction.endsAt)}">${countdownText(auction.endsAt)}</span></small></div>`;
