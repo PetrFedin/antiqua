@@ -1,5 +1,5 @@
-import {readFile} from 'node:fs/promises';import {fileURLToPath} from 'node:url';import {hashPassword} from './security-v09.mjs';
-const migration=fileURLToPath(new URL('./migrations/001_v09_foundation.sql',import.meta.url)),clone=x=>x==null?x:structuredClone(x);
+import {readFile} from 'node:fs/promises';import {hashPassword} from './security-v09.mjs';import {baselineMigration} from './migration-manifest-v16.mjs';
+const migration=baselineMigration.path,clone=x=>x==null?x:structuredClone(x);
 class MemoryStore{
  constructor(){this.kind='MEMORY_FALLBACK';for(const k of ['accounts','sessions','verifications','notifications','objects','listings','auctions','orders','offers','drafts','reviews','media'])this[k]=new Map();this.bids=[];this.auditRows=[];this.backups=new Map()}
  async health(){return{kind:this.kind,connected:true,persistent:false}} async migrate(){} async close(){}
