@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS object_passport_revisions(
   id text PRIMARY KEY,
-  object_id text NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  object_id text NOT NULL REFERENCES objects(id) ON DELETE RESTRICT,
   revision_no integer NOT NULL CHECK(revision_no>0),
   passport jsonb NOT NULL,
   passport_hash text NOT NULL CHECK(passport_hash ~ '^[0-9a-f]{64}$'),
@@ -21,7 +21,7 @@ CREATE INDEX IF NOT EXISTS object_passport_revision_object_created_idx
   ON object_passport_revisions(object_id,revision_no DESC);
 
 CREATE TABLE IF NOT EXISTS object_passport_revision_evidence(
-  revision_id text NOT NULL REFERENCES object_passport_revisions(id) ON DELETE CASCADE,
+  revision_id text NOT NULL REFERENCES object_passport_revisions(id) ON DELETE RESTRICT,
   evidence_type text NOT NULL CHECK(evidence_type IN('MEDIA','PROVENANCE','CATALOGUE_REVIEW')),
   evidence_id text NOT NULL,
   visibility text NOT NULL DEFAULT 'PRIVATE' CHECK(visibility IN('PUBLIC','PRIVATE','INTERNAL')),
@@ -41,10 +41,10 @@ END $$;
 
 DROP TRIGGER IF EXISTS object_passport_revisions_immutable_update ON object_passport_revisions;
 CREATE TRIGGER object_passport_revisions_immutable_update
-BEFORE UPDATE ON object_passport_revisions
+BEFORE UPDATE OR DELETE ON object_passport_revisions
 FOR EACH ROW EXECUTE FUNCTION antiqua_prevent_passport_revision_update();
 
 DROP TRIGGER IF EXISTS object_passport_revision_evidence_immutable_update ON object_passport_revision_evidence;
 CREATE TRIGGER object_passport_revision_evidence_immutable_update
-BEFORE UPDATE ON object_passport_revision_evidence
+BEFORE UPDATE OR DELETE ON object_passport_revision_evidence
 FOR EACH ROW EXECUTE FUNCTION antiqua_prevent_passport_revision_update();
