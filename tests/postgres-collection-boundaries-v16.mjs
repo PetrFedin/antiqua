@@ -16,7 +16,7 @@ async function start(){child=spawn(process.execPath,['server-v14.mjs'],{cwd:new 
 async function stop(){if(!child)return;const p=child;child=null;if(p.exitCode==null)p.kill('SIGTERM');await Promise.race([new Promise(r=>p.once('exit',r)),sleep(5000)]);if(p.exitCode==null)p.kill('SIGKILL');await sleep(100)}
 async function login(persona){const c=new Client(),x=await c.call('/api/auth/demo-login',{method:'POST',body:JSON.stringify({persona})});assert.equal(x.r.status,200);return c}
 
-let collectionId=null,ownerId=null;
+let collectionId=null,ownerId=null,priorRecord=null;
 try{
  assert.equal(db.kind,'POSTGRES');await start();
  const owner=await login('BUYER'),other=await login('SELLER');
@@ -30,7 +30,8 @@ try{
  const publicList=await(await fetch(base+'/api/collections')).json();assert.equal(publicList.collections.some(c=>c.id===collectionId),false);
 
  let membership=Number((await db.pool.query('SELECT count(*)::int n FROM collection_objects WHERE collection_id=$1',[collectionId])).rows[0].n);assert.equal(membership,0);
- const recordsBefore=Number((await db.pool.query('SELECT count(*)::int n FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-109'])).rows[0].n);
+ priorRecord=(await db.pool.query('SELECT * FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-109'])).rows[0]||null;
+ const recordsBefore=priorRecord?1:0;
  x=await owner.call('/api/collection-records/lot-109',{method:'PUT',body:JSON.stringify({status:'OWNED',privateNotes:`boundary-record-${marker}`,appraisal:{value:7700,currency:'EUR'},storage:{location:'Private vault'}})});
  assert.equal(x.r.status,200);
  membership=Number((await db.pool.query('SELECT count(*)::int n FROM collection_objects WHERE collection_id=$1',[collectionId])).rows[0].n);assert.equal(membership,0,'Collection Record mutation must not create curated membership');
@@ -50,6 +51,6 @@ try{
 }finally{
  await stop();
  if(collectionId)await db.pool.query('DELETE FROM collections WHERE id=$1',[collectionId]).catch(()=>{});
- if(ownerId)await db.pool.query("DELETE FROM collection_records WHERE account_id=$1 AND object_id='lot-109' AND private_notes=$2",[ownerId,`boundary-record-${marker}`]).catch(()=>{});
+ if(ownerId){if(priorRecord)await db.pool.query(`UPDATE collection_records SET acquisition=$3,appraisal=$4,storage=$5,insurance=$6,private_notes=$7,status=$8,updated_at=$9 WHERE account_id=$1 AND object_id=$2`,[ownerId,'lot-109',priorRecord.acquisition,priorRecord.appraisal,priorRecord.storage,priorRecord.insurance,priorRecord.private_notes,priorRecord.status,priorRecord.updated_at]).catch(()=>{});else await db.pool.query("DELETE FROM collection_records WHERE account_id=$1 AND object_id='lot-109' AND private_notes=$2",[ownerId,`boundary-record-${marker}`]).catch(()=>{})}
  await db.pool.end();
 }
