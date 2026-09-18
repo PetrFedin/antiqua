@@ -20,6 +20,7 @@ const passport={
 try{
   assert.equal(db.kind,'POSTGRES');
   const operator=await db.findAccountByEmail('operator@demo.antiqua');assert.ok(operator?.roles?.includes('ADMIN'));
+  const buyer=await db.findAccountByEmail('buyer@demo.antiqua');assert.ok(buyer?.roles?.includes('BUYER'));
 
   await db.pool.query(`INSERT INTO objects(id,object_code,seller_id,passport,catalogue_status,trust_status,publication_status,passport_hash,created_at,updated_at)
     VALUES($1,$2,'seller-preview',$3,'PUBLISHED','CLEARED','PUBLIC','legacy-preview-hash',now(),now())`,[objectId,passport.objectId,passport]);
@@ -38,6 +39,7 @@ try{
 
   const baseline=await ensurePassportBaseline(objectId);assert.equal(baseline.revision.revisionNo,1);assert.match(baseline.revision.hash,/^[0-9a-f]{64}$/);
   const baseRow=(await db.pool.query('SELECT passport,passport_hash FROM objects WHERE id=$1',[objectId])).rows[0];assert.equal(baseRow.passport_hash,canonicalPassportHash(baseRow.passport));assert.equal(baseRow.passport.passportHash,baseRow.passport_hash);
+  await assert.rejects(()=>reviseObjectPassport(buyer,objectId,{patch:{title:{en:'Unauthorized',ru:'Без полномочий'}},changeKind:'CATALOGUE_CORRECTION',reason:'Unauthorized internal call',publicSummary:{en:'Unauthorized',ru:'Без полномочий'},sourceKey:`unauthorized-${token}`}),e=>e.code==='FORBIDDEN');
   assert.equal(Number((await db.pool.query('SELECT count(*)::int n FROM object_passport_revisions WHERE object_id=$1',[objectId])).rows[0].n),1);
 
   const titleKey=`title-${token}`,conditionKey=`condition-${token}`;
