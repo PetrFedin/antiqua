@@ -4,6 +4,7 @@ import {majorToMinor,assertMinorAmount} from './money-v15.mjs';
 import {claimProviderEvent,markProviderEventProcessed,markProviderEventFailed,providerEventCapabilities} from './provider-events-v15.mjs';
 import {createSubscription,listSubscriptions,updateSubscription,createConversation,listConversations,getConversation,postMessage,markConversationRead,upsertCollectionRecord,listCollectionRecords,addMovement,addInsurancePolicy,createSettlementForAuction,settleDueAuctions,ensureShipment,listDisputes,getDispute,addDisputeEvidence,decideDispute,e2eCapabilities} from './domain-e2e-v14.mjs';
 import {getSettlement,listSettlements,transitionSettlement,listShipments,getShipment,quoteShipment,transitionShipment,createDispute,commerceLifecycleCapabilities} from './commerce-lifecycle-v16.mjs';
+import {collectionSurface,collectionSurfaceCapabilities} from './collection-surfaces-v16.mjs';
 
 const SYSTEM={id:null,roles:['ADMIN'],sellerId:null};
 const paymentProvider=()=>process.env.PAYMENT_PROVIDER||'NOT_CONFIGURED';
@@ -49,7 +50,7 @@ export async function routeE2EPublicV14(req,res,url){
 
 export async function routeE2EV14(req,res,url,ctx){
  if(!ctx)return false;requireCsrf(req,ctx);const a=ctx.account;
- if(url.pathname==='/api/e2e/capabilities'&&req.method==='GET')return send(res,200,{capabilities:e2eCapabilities(),commerceLifecycle:commerceLifecycleCapabilities(),persistence:await db.health(),storage:storageConfig(),finance:financeCapabilities()});
+ if(url.pathname==='/api/e2e/capabilities'&&req.method==='GET')return send(res,200,{capabilities:e2eCapabilities(),commerceLifecycle:commerceLifecycleCapabilities(),collectionSurfaces:collectionSurfaceCapabilities(),persistence:await db.health(),storage:storageConfig(),finance:financeCapabilities()});
 
  if(url.pathname==='/api/discovery/subscriptions'&&req.method==='GET')return send(res,200,{subscriptions:await listSubscriptions(a)});
  if(url.pathname==='/api/discovery/subscriptions'&&req.method==='POST'){const x=await createSubscription(a,await readBody(req));await audit(req,a,'DISCOVERY_SUBSCRIPTION_CREATED','DISCOVERY_SUBSCRIPTION',x.id);return send(res,201,{subscription:x})}
@@ -59,8 +60,8 @@ export async function routeE2EV14(req,res,url,ctx){
  if(url.pathname==='/api/conversations'&&req.method==='POST'){const c=await createConversation(a,await readBody(req));await audit(req,a,'CONVERSATION_OPENED','CONVERSATION',c.id);return send(res,201,{conversation:c})}
  const cv=url.pathname.match(/^\/api\/conversations\/([^/]+)(?:\/(messages|read))?$/);if(cv){if(req.method==='GET'&&!cv[2]){const c=await getConversation(a,cv[1]);return c?send(res,200,{conversation:c}):send(res,404,{error:'Conversation not found'})}if(req.method==='POST'&&cv[2]==='messages'){const x=await postMessage(a,cv[1],await readBody(req));await audit(req,a,x.idempotent?'MESSAGE_REPLAY':'MESSAGE_SENT','CONVERSATION',cv[1]);return send(res,x.idempotent?200:201,x)}if(req.method==='POST'&&cv[2]==='read'){const ok=await markConversationRead(a,cv[1]);return ok?send(res,200,{read:true}):send(res,404,{error:'Conversation not found'})}}
 
- if(url.pathname==='/api/collection-records'&&req.method==='GET')return send(res,200,{records:await listCollectionRecords(a)});
- const cr=url.pathname.match(/^\/api\/collection-records\/([^/]+)(?:\/(movements|insurance))?$/);if(cr){if(req.method==='PUT'&&!cr[2]){const r=await upsertCollectionRecord(a,cr[1],await readBody(req));await audit(req,a,'COLLECTION_RECORD_UPSERTED','OBJECT',cr[1],null,{recordId:r.id});return send(res,200,{record:r})}if(req.method==='POST'&&cr[2]==='movements'){const m=await addMovement(a,cr[1],await readBody(req));await audit(req,a,'COLLECTION_MOVEMENT_ADDED','OBJECT',cr[1],null,{movementId:m.id});return send(res,201,{movement:m})}if(req.method==='POST'&&cr[2]==='insurance'){const p=await addInsurancePolicy(a,cr[1],await readBody(req));await audit(req,a,'INSURANCE_POLICY_ADDED','OBJECT',cr[1],null,{policyId:p.id});return send(res,201,{policy:p})}}
+ if(url.pathname==='/api/collection-records'&&req.method==='GET')return send(res,200,{surface:collectionSurface('COLLECTION_RECORD'),records:await listCollectionRecords(a)});
+ const cr=url.pathname.match(/^\/api\/collection-records\/([^/]+)(?:\/(movements|insurance))?$/);if(cr){if(req.method==='PUT'&&!cr[2]){const r=await upsertCollectionRecord(a,cr[1],await readBody(req));await audit(req,a,'COLLECTION_RECORD_UPSERTED','OBJECT',cr[1],null,{recordId:r.id});return send(res,200,{surface:collectionSurface('COLLECTION_RECORD'),record:r})}if(req.method==='POST'&&cr[2]==='movements'){const m=await addMovement(a,cr[1],await readBody(req));await audit(req,a,'COLLECTION_MOVEMENT_ADDED','OBJECT',cr[1],null,{movementId:m.id});return send(res,201,{surface:collectionSurface('COLLECTION_RECORD'),movement:m})}if(req.method==='POST'&&cr[2]==='insurance'){const p=await addInsurancePolicy(a,cr[1],await readBody(req));await audit(req,a,'INSURANCE_POLICY_ADDED','OBJECT',cr[1],null,{policyId:p.id});return send(res,201,{surface:collectionSurface('COLLECTION_RECORD'),policy:p})}}
 
  if(url.pathname==='/api/settlements'&&req.method==='GET')return send(res,200,{settlements:await listSettlements(a)});
  if(url.pathname==='/api/operator/auctions/settle-due'&&req.method==='POST'){requireOperator(a);const made=await settleDueAuctions();await audit(req,a,'AUCTION_SETTLEMENT_SWEEP','AUCTION',null,null,{created:made.length});return send(res,200,{created:made})}
