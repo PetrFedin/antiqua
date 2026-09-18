@@ -62,3 +62,17 @@ test('browser session changes identity without leaking the previous authenticate
   const sellerName=String(me.account?.displayName||'').trim();if(sellerName)await expect(page.locator('body')).toContainText(sellerName);
   const buyerName=String(buyer.account?.displayName||'').trim();if(buyerName&&buyerName!==sellerName)await expect(page.locator('body')).not.toContainText(buyerName);
 });
+
+
+test('operator cockpit is permission-gated and visible only to the operator',async({page})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  let login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);
+  let cockpit=await page.evaluate(async()=>{const r=await fetch('/api/operator/cockpit');return{status:r.status,body:await r.json()}});expect(cockpit.status).toBe(403);
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');await expect(page.locator('#v16Cockpit')).toHaveCount(0);
+
+  login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'OPERATOR'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);expect(login.body.account?.roles||[]).toContain('ADMIN');
+  cockpit=await page.evaluate(async()=>{const r=await fetch('/api/operator/cockpit');return{status:r.status,body:await r.json()}});expect(cockpit.status).toBe(200);expect(cockpit.body.cockpit?.capabilities?.readOnly).toBe(true);
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
+  const panel=page.locator('#v16Cockpit');await expect(panel).toBeVisible();await expect(panel).toContainText(/Operator cockpit|Операторский кокпит|Что требует решения сейчас|What requires action now/i);
+  await expect(panel.locator('.v16-cockpit-metric')).toHaveCount(4);
+});
