@@ -11,7 +11,7 @@ const LEGACY_TECH={
  'lot-106':{en:'Cabinetmaking & gilt-bronze mounting',ru:'Краснодеревное дело и золочёная бронза'},
  'lot-107':{en:'Porcelain forming & glazing',ru:'Формовка фарфора и глазурование'},'lot-108':{en:'Manuscript illumination',ru:'Книжная миниатюра'},
  'lot-109':{en:'Cabinetmaking',ru:'Краснодеревное дело'},'lot-110':{en:'Silversmithing',ru:'Серебряное дело'},
- 'lot-111':{en:'Porcelain modelling',ru:'Моделирование фарфора'),'lot-112':{en:'Bronze casting & patination',ru:'Литьё бронзы и патинирование'}
+ 'lot-111':{en:'Porcelain modelling',ru:'Моделирование фарфора'},'lot-112':{en:'Bronze casting & patination',ru:'Литьё бронзы и патинирование'}
 };
 const bi=(en,ru)=>({en,ru});
 const str=v=>String(v??'').trim();
