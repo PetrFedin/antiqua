@@ -39,7 +39,7 @@ function legacyTechniqueIds(term){
 function snapshot(r){
  const p=r.passport||{},listing=r.listing_payload||null,auction=r.auction_state||null,methods=[];
  if(listing?.saleType)methods.push(listing.saleType);
- if(r.auction_id&&String(r.auction_status||'').toUpperCase()!=='CLOSED')methods.push('AUCTION');
+ if(r.auction_id&&r.auction_ends_at&&new Date(r.auction_ends_at).getTime()>Date.now())methods.push('AUCTION');
  const price=listing?.price!=null?Number(listing.price):r.auction_current_bid!=null?Number(r.auction_current_bid):null;
  return{id:r.id,objectId:r.object_code||p.objectId||r.id,title:p.title||{},maker:p.maker||{},department:p.department||{},period:p.period||{},origin:p.origin||{},materials:p.materials||{},technique:p.technique||LEGACY_TECH[r.id]||bi('Specialist technique review pending','Техника ожидает проверки специалистом'),conditionGrade:p.conditionGrade||null,location:p.location||null,sellerId:r.listing_seller_id||r.object_seller_id||null,purchaseMethods:[...new Set(methods)],price:Number.isFinite(price)?price:null,currency:listing?.currency||auction?.currency||p.currency||'EUR',image:p.image||null}
 }
@@ -47,12 +47,13 @@ function snapshot(r){
 export async function searchDiscoveryPostgres(criteria={}, {client=null,objectId=null,limit=100}={}){
  if(db.kind!=='POSTGRES')throw Object.assign(new Error('PostgreSQL discovery authority required'),{status:503,code:'DISCOVERY_POSTGRES_REQUIRED'});
  const cx=client||db.pool,c=normalizeDiscoveryCriteria(criteria),args=[],where=["o.publication_status='PUBLIC'"];
- const add=v=>{args.push(v);return `$${args.length}`};
+ const add=v=>{args.push(v);return `${args.length}`};
+ const qText=`(coalesce(o.object_code,'')||' '||coalesce((o.passport->'title')::text,'')||' '||coalesce((o.passport->'maker')::text,'')||' '||coalesce((o.passport->'department')::text,'')||' '||coalesce((o.passport->'period')::text,'')||' '||coalesce((o.passport->'origin')::text,'')||' '||coalesce((o.passport->'materials')::text,'')||' '||coalesce((o.passport->'technique')::text,''))`;
  if(objectId)where.push(`o.id=${add(String(objectId))}`);
  if(c.objectId){const p=add(c.objectId);where.push(`(o.id=${p} OR o.object_code=${p})`)}
  if(c.q){
   const raw=add(c.q),pat=add(like(c.q)),legacy=legacyTechniqueIds(c.q),ids=legacy.length?add(legacy):null;
-  where.push(`(to_tsvector('simple',coalesce(o.passport::text,'')) @@ plainto_tsquery('simple',${raw}) OR lower(o.passport::text) ILIKE '%'||lower(${pat})||'%' ESCAPE '\\'${ids?` OR o.id=ANY(${ids}::text[])`:''})`)
+  where.push(`(to_tsvector('simple',${qText}) @@ plainto_tsquery('simple',${raw}) OR lower(${qText}) ILIKE '%'||lower(${pat})||'%' ESCAPE '\\'${ids?` OR o.id=ANY(${ids}::text[])`:''})`)
  }
  for(const [criterion,field] of Object.entries(TEXT_FIELDS)){
   if(!c[criterion])continue;
@@ -63,18 +64,18 @@ export async function searchDiscoveryPostgres(criteria={}, {client=null,objectId
  if(c.condition)where.push(`coalesce(o.passport->>'conditionGrade','')=${add(c.condition)}`);
  if(c.location)where.push(`coalesce(o.passport->>'location','')=${add(c.location)}`);
  if(c.seller)where.push(`coalesce(l.seller_id,o.seller_id,'')=${add(c.seller)}`);
- if(c.purchaseMethod){const p=add(c.purchaseMethod);where.push(`(coalesce(l.payload->>'saleType','')=${p} OR (${p}='AUCTION' AND a.id IS NOT NULL AND coalesce(a.status,'')<>'CLOSED'))`)}
+ if(c.purchaseMethod){const p=add(c.purchaseMethod);where.push(`(coalesce(l.payload->>'saleType','')=${p} OR (${p}='AUCTION' AND a.id IS NOT NULL AND a.ends_at>clock_timestamp()))`)}
  const priceExpr=`coalesce(nullif(l.payload->>'price','')::numeric,a.current_bid::numeric)`;
- if(c.priceMin!=null)where.push(`(${priceExpr} IS NOT NULL AND ${priceExpr}>=${add(c.priceMin)})`);
- if(c.priceMax!=null)where.push(`(${priceExpr} IS NOT NULL AND ${priceExpr}<=${add(c.priceMax)})`);
+ if(c.priceMin!=null)where.push(`(${priceExpr} IS NULL OR ${priceExpr}>=${add(c.priceMin)})`);
+ if(c.priceMax!=null)where.push(`(${priceExpr} IS NULL OR ${priceExpr}<=${add(c.priceMax)})`);
  limit=Math.max(1,Math.min(MAX_RESULTS,Math.trunc(Number(limit)||100)));const lp=add(limit);
  const rows=(await cx.query(`SELECT o.id,o.object_code,o.seller_id AS object_seller_id,o.passport,
    l.id AS listing_id,l.seller_id AS listing_seller_id,l.payload AS listing_payload,
-   a.id AS auction_id,a.status AS auction_status,a.current_bid AS auction_current_bid,a.state AS auction_state,
+   a.id AS auction_id,a.status AS auction_status,a.current_bid AS auction_current_bid,a.ends_at AS auction_ends_at,a.state AS auction_state,
    count(*) OVER()::int AS match_count
    FROM objects o
-   LEFT JOIN LATERAL (SELECT li.id,li.seller_id,li.payload FROM listings li WHERE li.object_id=o.id AND li.status='ACTIVE' ORDER BY li.updated_at DESC,li.id LIMIT 1) l ON true
-   LEFT JOIN LATERAL (SELECT au.id,au.status,au.current_bid,au.state FROM auctions au WHERE au.object_id=o.id AND au.status<>'CLOSED' ORDER BY au.updated_at DESC,au.id LIMIT 1) a ON true
+   LEFT JOIN LATERAL (SELECT li.id,li.seller_id,li.payload FROM listings li WHERE li.object_id=o.id AND li.status IN ('ACTIVE','RESERVED') ORDER BY li.updated_at DESC,li.id LIMIT 1) l ON true
+   LEFT JOIN LATERAL (SELECT au.id,au.status,au.current_bid,au.ends_at,au.state FROM auctions au WHERE au.object_id=o.id ORDER BY au.updated_at DESC,au.id LIMIT 1) a ON true
    WHERE ${where.join(' AND ')}
    ORDER BY o.updated_at DESC,o.id
    LIMIT ${lp}`,args)).rows;
