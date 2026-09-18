@@ -11,7 +11,8 @@ const migrations=[
  {version:'009_v15_ownership_invariants',file:'./migrations/009_v15_ownership_invariants.sql'},
  {version:'010_v15_worker_outbox',file:'./migrations/010_v15_worker_outbox.sql'},
  {version:'011_v15_durable_organizations',file:'./migrations/011_v15_durable_organizations.sql'},
- {version:'012_v16_lifecycle_events',file:'./migrations/012_v16_lifecycle_events.sql'}
+ {version:'012_v16_lifecycle_events',file:'./migrations/012_v16_lifecycle_events.sql'},
+ {version:'013_v16_passport_revisions',file:'./migrations/013_v16_passport_revisions.sql'}
 ].map(x=>({...x,path:fileURLToPath(new URL(x.file,import.meta.url))}));
 
 export async function migrateV14(db){

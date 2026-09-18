@@ -148,3 +148,10 @@ body{overflow-x:hidden}
 .v16-cockpit-sidebox dl{display:grid;gap:7px;margin:0}.v16-cockpit-sidebox dl>div{display:flex;justify-content:space-between;gap:10px;padding:7px 5px;border-top:1px solid var(--line)}.v16-cockpit-sidebox dt,.v16-cockpit-sidebox dd{margin:0;font-size:9px}.v16-cockpit-sidebox dd{font-weight:700}.v16-life-list{display:grid}.v16-life-row{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;padding:8px 5px;border-top:1px solid var(--line)}.v16-life-row b{font-size:8px}.v16-life-row span{font-size:9px}.v16-life-row small{grid-column:1/-1;font-size:8px;color:var(--muted)}
 @media(max-width:980px){.v16-cockpit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v16-cockpit-grid{grid-template-columns:1fr}}
 @media(max-width:620px){.v16-cockpit{padding:13px}.v16-cockpit-head{align-items:start;flex-direction:column}.v16-cockpit-head h3{font-size:25px}.v16-cockpit-metrics{grid-template-columns:1fr 1fr}.v16-cockpit-row{grid-template-columns:1fr}.v16-cockpit-row-meta{display:flex;justify-items:start;justify-content:flex-start;flex-wrap:wrap;min-width:0}}
+
+
+/* Object Passport revision history */
+.passport-revision-list{display:grid;gap:7px;margin:8px 0 22px}
+.passport-revision{display:grid;gap:5px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.62)}
+.passport-revision>div{display:flex;gap:10px;align-items:baseline}.passport-revision strong{font-family:var(--display);font-size:16px;font-weight:500}.passport-revision span{font-size:10px;line-height:1.45}
+.passport-revision small{font-size:8px;color:var(--muted);letter-spacing:.025em}

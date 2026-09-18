@@ -35,8 +35,11 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
   const catalog=await catalogResponse.json(),lot=catalog.lots?.[0];expect(lot).toBeTruthy();
   const titleEn=String(lot.title?.en||lot.title||'').trim(),titleRu=String(lot.title?.ru||'').trim();expect(titleEn||titleRu).toBeTruthy();
   const titlePattern=new RegExp([titleEn,titleRu].filter(Boolean).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
-  const cardTitle=page.getByText(titlePattern,{exact:false}).first();await expect(cardTitle).toBeVisible();await cardTitle.click();
-  await expect(page.locator('body')).toContainText(/Provenance|Провенанс|Object passport|Паспорт объекта/i);
+  const cardTitle=page.getByText(titlePattern,{exact:false}).first();await expect(cardTitle).toBeVisible();
+  const dossierAction=page.locator(`[data-passport="${lot.id}"]:visible`).first();await expect(dossierAction).toBeVisible();await dossierAction.click();
+  await expect(page.locator('#dialog[open]')).toBeVisible();await expect(page.locator('#dialog[open]')).toContainText(/Provenance|Провенанс|Passport history|История паспорта/i);
+  const revision=page.locator('#dialog[open] .passport-revision-list .passport-revision').first();await expect(revision).toBeVisible();await expect(revision).toContainText(/v1/i);
+  const closeDossier=page.locator('#dialog[open] [data-close-dialog]').first();await expect(closeDossier).toBeVisible();await closeDossier.click();await expect(page.locator('#dialog[open]')).toHaveCount(0);
 
   const switchedRu=await switchLocale(page,'RU');
   if(switchedRu)await expect(page.locator('body')).toContainText(/Каталог|Аукцион|Коллекц/i);
