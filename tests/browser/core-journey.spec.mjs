@@ -153,6 +153,7 @@ test('seller workspace creates complete object drafts and safely toggles storefr
   const login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'SELLER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);
 
   await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
+  const createPanel=page.locator('.seller-workspace-form');await expect(createPanel.locator('summary')).toBeVisible();await createPanel.locator('summary').click();
   const form=page.locator('#sellerDraftCreateForm');await expect(form).toBeVisible();
   const token=Date.now().toString();
   const values={
