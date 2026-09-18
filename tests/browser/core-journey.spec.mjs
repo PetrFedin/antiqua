@@ -123,3 +123,77 @@ test('collection records and curated Collections are separate workflows',async({
   const curated=after.mine.collections.find(c=>c.id===collection.id);expect(curated.items.some(i=>i.objectId===lot.id)).toBe(true);
   expect(after.records.records.some(r=>r.objectId===lot.id)).toBe(false);
 });
+
+
+test('purpose-led catalogue exposes next bid, live timer and whole-card dossier navigation',async({page})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await clickNav(page,'shop');
+
+  const purposeBar=page.locator('.purpose-bar');await expect(purposeBar).toBeVisible();
+  for(const mode of ['ALL','BUY','AUCTION','EXHIBIT','HISTORY'])await expect(purposeBar.locator(`[data-purpose-filter="${mode}"]`)).toBeVisible();
+
+  await purposeBar.locator('[data-purpose-filter="AUCTION"]').click();
+  const cards=page.locator('#catalogGrid [data-open-passport]');
+  expect(await cards.count()).toBeGreaterThan(0);
+  const first=cards.first();await expect(first).toBeVisible();
+  await expect(first.locator('[data-auction-timer]')).toBeVisible();
+  await expect(first).toContainText(/Следующая|Next/i);
+  await expect(first).toContainText(/шаг|step/i);
+
+  await first.locator('h3').click();
+  const dossier=page.locator('#dialog[open]');await expect(dossier).toBeVisible();
+  await expect(dossier.locator('[data-auction-timer]')).toBeVisible();
+  await expect(dossier).toContainText(/Следующая ставка|Next bid/i);
+  await dossier.locator('[data-close-dialog]').click();
+  await expect(page.locator('#dialog[open]')).toHaveCount(0);
+});
+
+test('seller workspace creates complete object drafts and safely toggles storefront visibility',async({page})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  const login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'SELLER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);
+
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
+  const form=page.locator('#sellerDraftCreateForm');await expect(form).toBeVisible();
+  const token=Date.now().toString();
+  const values={
+    titleRu:`Браузерный предмет ${token}`,titleEn:`Browser object ${token}`,
+    categoryRu:'Декоративное искусство',categoryEn:'Decorative Arts',
+    makerRu:'Тестовый мастер',makerEn:'Test maker',
+    periodRu:'XX век',periodEn:'20th century',
+    originRu:'Франция',originEn:'France',
+    materialsRu:'Бронза',materialsEn:'Bronze',
+    dimensionsRu:'20 × 10 см',dimensionsEn:'20 × 10 cm',
+    descriptionRu:'Описание предмета для браузерного теста',descriptionEn:'Object description for browser proof',
+    provenanceRu:'Частная коллекция, тестовая запись',provenanceEn:'Private collection, test record',
+    conditionRu:'Хорошее состояние',conditionEn:'Good condition',
+    shippingFrom:'Paris'
+  };
+  for(const [name,value] of Object.entries(values))await form.locator(`[name="${name}"]`).fill(value);
+  await form.locator('[name="saleRoute"]').selectOption('AUCTION');
+  await form.locator('[name="estimateLow"]').fill('1000');
+  await form.locator('[name="estimateHigh"]').fill('1500');
+
+  const createdResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/seller/drafts'&&r.request().method()==='POST');
+  await form.locator('button[type="submit"]').click();
+  const created=await createdResponse;expect(created.status()).toBe(201);
+  const createdBody=await created.json();expect(createdBody.draft?.id).toBeTruthy();
+
+  const mediaSheet=page.locator('#actionSheet[open]');await expect(mediaSheet).toBeVisible();
+  await expect(mediaSheet).toContainText(/Object Storage|Медиа предмета|Object media/i);
+  await expect(mediaSheet).toContainText(/не настроен|not configured/i);
+  await mediaSheet.locator('[data-close-sheet]').click();
+
+  const manage=page.locator('[data-manage-listing]').first();await expect(manage).toBeVisible();
+  const listingId=await manage.getAttribute('data-manage-listing');expect(listingId).toBeTruthy();
+  await manage.click();
+  let listingForm=page.locator('#sellerListingForm');await expect(listingForm).toBeVisible();
+  await listingForm.locator('[name="status"]').selectOption('INACTIVE');
+  let patched=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/seller/listings/${listingId}`&&r.request().method()==='PATCH');
+  await listingForm.locator('button[type="submit"]').click();expect((await patched).status()).toBe(200);
+
+  const manageAgain=page.locator(`[data-manage-listing="${listingId}"]`);await expect(manageAgain).toBeVisible();await manageAgain.click();
+  listingForm=page.locator('#sellerListingForm');await expect(listingForm.locator('[name="status"]')).toHaveValue('INACTIVE');
+  await listingForm.locator('[name="status"]').selectOption('ACTIVE');
+  patched=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/seller/listings/${listingId}`&&r.request().method()==='PATCH');
+  await listingForm.locator('button[type="submit"]').click();expect((await patched).status()).toBe(200);
+});
