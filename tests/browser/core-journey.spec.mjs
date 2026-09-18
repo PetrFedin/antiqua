@@ -37,6 +37,7 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
   const titlePattern=new RegExp([titleEn,titleRu].filter(Boolean).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
   const cardTitle=page.getByText(titlePattern,{exact:false}).first();await expect(cardTitle).toBeVisible();await cardTitle.click();
   await expect(page.locator('body')).toContainText(/Provenance|Провенанс|Object passport|Паспорт объекта/i);
+  const revision=page.locator('.passport-revision-list .passport-revision').first();await expect(revision).toBeVisible();await expect(revision).toContainText(/v1/i);
 
   const switchedRu=await switchLocale(page,'RU');
   if(switchedRu)await expect(page.locator('body')).toContainText(/Каталог|Аукцион|Коллекц/i);
