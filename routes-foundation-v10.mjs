@@ -1,10 +1,11 @@
 import {db,send,readBody,requireCsrf,requirePermission,audit,authContext} from './runtime-v09.mjs';
-import {listCollections,getReadableCollection,listEnsembles,getEnsemble,listExhibitions,getExhibition,createCollection,addCollectionObject,submitEnsembleClaim,iiifManifest,linkedArtRecord} from './collection-graph-v10.mjs';
+import {listCollections,listMyCollections,getReadableCollection,listEnsembles,getEnsemble,listExhibitions,getExhibition,createCollection,addCollectionObject,submitEnsembleClaim,iiifManifest,linkedArtRecord} from './collection-graph-v10.mjs';
 import {canReadExhibition} from './access-policy.mjs';
 
 export async function routeFoundationPublicV10(req,res,url){
   const origin=`${String(req.headers['x-forwarded-proto']||'https').split(',')[0]}://${req.headers.host||'antiqua-preview.onrender.com'}`;
   if(url.pathname==='/api/health'&&req.method==='GET')return send(res,200,{status:'ok',service:'antiqua-preview',version:'0.10.0',uiVersion:'0.11.1',preview:process.env.PREVIEW_MODE!=='false',persistence:await db.health(),auctionIntegrity:{engine:db.kind==='POSTGRES'?'POSTGRES_ROW_LOCK':'SERIALIZED_MEMORY_PREVIEW',serverClock:true,idempotencyRequired:true,proxyMaxPrivate:true},collectionGraph:{collections:true,distributedEnsembles:true,virtualExhibitions:true,iiif:true,linkedArt:true},interaction:{touchFirst:true,directManipulation:true,bottomSheets:true,safeArea:true,reducedMotion:true,dossierCommerce:true,swipeGallery:true},payments:{ledgerSchema:true,providerConfigured:false},verification:{providerAdapter:true,providerConfigured:false},time:new Date().toISOString()});
+  if(url.pathname==='/api/collections/mine'&&req.method==='GET'){const ctx=await authContext(req);if(!ctx)return send(res,401,{error:'Authentication required',code:'AUTH_REQUIRED'});requirePermission(ctx.account,'collection.manage');return send(res,200,{collections:await listMyCollections(ctx.account)});}
   if(url.pathname==='/api/collections'&&req.method==='GET')return send(res,200,{collections:await listCollections()});
   const cm=url.pathname.match(/^\/api\/collections\/([^/]+)$/);if(cm&&req.method==='GET'){const ctx=await authContext(req),c=await getReadableCollection(cm[1],ctx?.account?.id||null);return c?send(res,200,{collection:c}):send(res,404,{error:'Collection not found'});}
   if(url.pathname==='/api/ensembles'&&req.method==='GET')return send(res,200,{ensembles:await listEnsembles()});

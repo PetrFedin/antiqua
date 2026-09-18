@@ -33,6 +33,9 @@ try{
   assert.equal((await fetch(`${base}/api/collections/${privateId}`)).status,404);
   assert.equal((await other.call(`/api/collections/${privateId}`)).r.status,404);
   x=await owner.call(`/api/collections/${privateId}`);assert.equal(x.r.status,200);assert.equal(x.body.collection.id,privateId);
+  assert.equal((await fetch(base+'/api/collections/mine')).status,401);
+  x=await owner.call('/api/collections/mine');assert.equal(x.r.status,200);assert.equal(x.body.collections.some(c=>c.id===privateId),true);assert.equal(x.body.collections.find(c=>c.id===privateId)?.accessRole,'OWNER');
+  x=await other.call('/api/collections/mine');assert.equal(x.r.status,200);assert.equal(x.body.collections.some(c=>c.id===privateId),false);
   let list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===privateId),false);
 
   x=await owner.call('/api/collections',{method:'POST',body:JSON.stringify({title:'Unlisted regression collection',visibility:'UNLISTED'})});assert.equal(x.r.status,201);const unlistedId=x.body.collection.id;
@@ -46,5 +49,5 @@ try{
   list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),true);
 
   assert.equal((await fetch(base+'/api/exhibitions/ex-objects-in-dialogue')).status,200);
-  console.log('ANTIQUA 0.15 access smoke: private/unlisted isolation + owner access + public visibility passed');
+  console.log('ANTIQUA 0.16 access smoke: public collections + owner-scoped /mine + private/unlisted isolation passed');
 }finally{child.kill('SIGTERM')}
