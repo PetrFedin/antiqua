@@ -60,14 +60,14 @@ async function evidenceRowsTx(cx,revisionId){return(await cx.query('SELECT * FRO
 async function revisionBySourceTx(cx,objectId,sourceKey){if(!sourceKey)return null;return(await cx.query('SELECT * FROM object_passport_revisions WHERE object_id=$1 AND source_key=$2',[objectId,String(sourceKey)])).rows[0]||null}
 async function latestRevisionTx(cx,objectId){return(await cx.query('SELECT * FROM object_passport_revisions WHERE object_id=$1 ORDER BY revision_no DESC LIMIT 1',[objectId])).rows[0]||null}
 
-async function validateEvidenceTx(cx,objectId,passport,refs){
-  const out=[],passportMediaIds=new Set((Array.isArray(passport?.media)?passport.media:[]).map(x=>String(x?.id||'')).filter(Boolean));
+async function validateEvidenceTx(cx,objectId,passport,refs,{existingPassport=null,allowCurrentPassportMedia=false}={}){
+  const out=[],passportMediaIds=new Set((Array.isArray((existingPassport||passport)?.media)?(existingPassport||passport).media:[]).map(x=>String(x?.id||'')).filter(Boolean));
   for(const ref of refs){
     if(ref.type==='MEDIA'){
       const row=(await cx.query('SELECT id,entity_type,entity_id,role,visibility,status,content_type FROM media_assets WHERE id=$1',[ref.id])).rows[0];
       if(!row)throw err('Media evidence not found',{status:404,code:'PASSPORT_EVIDENCE_NOT_FOUND',details:ref});
       if(row.status!=='READY')throw err('Media evidence is not READY',{code:'PASSPORT_EVIDENCE_NOT_READY',details:ref});
-      if(!(row.entity_type==='OBJECT'&&row.entity_id===objectId)&&!passportMediaIds.has(ref.id))throw err('Media evidence does not belong to this object',{status:403,code:'PASSPORT_EVIDENCE_SCOPE_MISMATCH',details:ref});
+      const objectOwned=row.entity_type==='OBJECT'&&row.entity_id===objectId,draftCarried=row.entity_type==='DRAFT'&&allowCurrentPassportMedia&&passportMediaIds.has(ref.id);if(!objectOwned&&!draftCarried)throw err('Media evidence does not belong to this object',{status:403,code:'PASSPORT_EVIDENCE_SCOPE_MISMATCH',details:ref});
       out.push({...ref,visibility:row.visibility==='PUBLIC'?'PUBLIC':'PRIVATE',status:row.status,metadata:{role:row.role,contentType:row.content_type,entityType:row.entity_type}});
     }else if(ref.type==='PROVENANCE'){
       const row=(await cx.query('SELECT id,evidence_status FROM provenance_entries WHERE id=$1 AND object_id=$2',[ref.id,objectId])).rows[0];
@@ -104,7 +104,7 @@ export async function recordInitialPassportRevisionTx(cx,{objectId,passport,acto
   await cx.query('UPDATE objects SET passport=$2,passport_hash=$3 WHERE id=$1',[objectId,normalized,normalized.passportHash]);
   const inserted=(await cx.query(`INSERT INTO object_passport_revisions(id,object_id,revision_no,passport,passport_hash,previous_hash,change_kind,change_reason,public_summary,actor_account_id,authority,source_key,request_hash)
     VALUES($1,$2,1,$3,$4,NULL,'INITIAL',$5,$6,$7,'CATALOGUER',$8,$9) RETURNING *`,[revisionId,objectId,normalized,normalized.passportHash,reason,summary(publicSummary),actorAccountId,sourceKey,requestHash])).rows[0];
-  const validated=await validateEvidenceTx(cx,objectId,normalized,normalizeEvidence(evidence));await insertEvidenceTx(cx,revisionId,validated);
+  const validated=await validateEvidenceTx(cx,objectId,normalized,normalizeEvidence(evidence),{existingPassport:normalized,allowCurrentPassportMedia:true});await insertEvidenceTx(cx,revisionId,validated);
   await enqueueOutboxTx(cx,{topic:'OBJECT.PASSPORT_CREATED',aggregateType:'OBJECT',aggregateId:objectId,payload:{kind:'OBJECT_PASSPORT_REVISION',objectId,revisionId,revisionNo:1,passportHash:normalized.passportHash,previousHash:null},idempotencyKey:sourceKey?`passport:${objectId}:${sourceKey}`:`passport:${objectId}:initial`});
   return inserted;
 }
@@ -136,7 +136,7 @@ export async function reviseObjectPassport(actor,objectId,{patch={},changeKind=n
     }
     const current=(await cx.query('SELECT passport FROM objects WHERE id=$1',[objectId])).rows[0].passport,nextPassport=mergePatch(current,patch),latest=await latestRevisionTx(cx,objectId);
     if(nextPassport.passportHash===latest.passport_hash&&kind!=='EVIDENCE_UPDATE')throw err('Passport content did not change',{code:'PASSPORT_NO_CHANGE'});
-    validated=await validateEvidenceTx(cx,objectId,nextPassport,refs);
+    validated=await validateEvidenceTx(cx,objectId,nextPassport,refs,{existingPassport:current,allowCurrentPassportMedia:true});
     const revisionId=id(),revisionNo=Number(latest.revision_no)+1;
     inserted=(await cx.query(`INSERT INTO object_passport_revisions(id,object_id,revision_no,passport,passport_hash,previous_hash,change_kind,change_reason,public_summary,actor_account_id,authority,source_key,request_hash)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,[revisionId,objectId,revisionNo,nextPassport,nextPassport.passportHash,latest.passport_hash,kind,reason,pub,actor?.id||null,actorAuthority(actor),sourceKey,requestHash])).rows[0];
