@@ -79,3 +79,44 @@ test('operator cockpit is permission-gated and visible only to the operator',asy
   const panel=page.locator('#v16Cockpit');await expect(panel).toBeVisible();await expect(panel).toContainText(/Operator cockpit|Операторский кокпит|Что требует решения сейчас|What requires action now/i);
   await expect(panel.locator('.v16-cockpit-metric')).toHaveCount(4);
 });
+
+
+test('Collection, Collection Record and Personal List are distinct user surfaces',async({page,request})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  const login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);
+
+  await page.reload({waitUntil:'domcontentloaded'});
+  await switchLocale(page,'EN');
+  await clickNav(page,'shop');
+
+  const catalogResponse=await request.get('/api/catalog');expect(catalogResponse.ok()).toBeTruthy();
+  const catalog=await catalogResponse.json(),lot=catalog.lots?.[0];expect(lot?.id).toBeTruthy();
+
+  const dossierAction=page.locator(`[data-passport="${lot.id}"]:visible`).first();await expect(dossierAction).toBeVisible();await dossierAction.click();
+  const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();
+  const personalButton=dialog.locator(`[data-collect="${lot.id}"]`);await expect(personalButton).toBeVisible();await expect(personalButton).toContainText(/personal list/i);
+  await personalButton.click();
+  await expect(dialog.locator(`[data-collect="${lot.id}"]`)).toContainText(/personal list/i);
+  await dialog.locator('[data-close-dialog]').first().click();
+
+  await clickNav(page,'account');
+  const personal=page.locator('.personal-list-block');await expect(personal).toBeVisible();await expect(personal).toContainText(/Personal list/i);
+  await expect(personal).toContainText(/not an ownership record/i);
+  await expect(personal.locator(`[data-personal-list-object="${lot.id}"]`)).toHaveCount(1);
+
+  const operations=page.locator('#v14Operations');await expect(operations).toBeVisible();
+  const recordTab=operations.locator('[data-v14-tab="collection"]');await expect(recordTab).toContainText(/Private records/i);await recordTab.click();
+  const recordPanel=operations.locator('[data-v14-panel="collection"]');await expect(recordPanel).toBeVisible();await expect(recordPanel).toContainText(/Private object records, storage & insurance/i);await expect(recordPanel).toContainText(/not a public Collection/i);await expect(recordPanel).toContainText(/not proof of legal ownership/i);
+
+  await clickNav(page,'collections');
+  await expect(page.locator('main')).toContainText(/Curated collections/i);
+  await expect(page.locator('main')).toContainText(/controlled visibility/i);
+
+  const surfaces=await page.evaluate(async()=>{const [v,c,r]=await Promise.all([fetch('/api/collection-surfaces').then(x=>x.json()),fetch('/api/collections').then(x=>x.json()),fetch('/api/collection-records').then(x=>x.json())]);return{v,c,r}});
+  expect(surfaces.v.collectionSurfaces.distinctSurfaces).toBe(true);
+  expect(surfaces.c.surface.kind).toBe('CURATED_COLLECTION');
+  expect(surfaces.r.surface.kind).toBe('COLLECTION_RECORD');
+
+  const state=await page.evaluate(async()=>fetch('/api/client-state').then(x=>x.json()));
+  expect(state.personalList).toContain(lot.id);
+});
