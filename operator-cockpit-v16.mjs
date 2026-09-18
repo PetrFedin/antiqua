@@ -5,7 +5,7 @@ const SEVERITY_ORDER={CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3,INFO:4};
 const iso=v=>v?.toISOString?.()||v||null;
 const ageMinutes=v=>v?Math.max(0,Math.floor((Date.now()-new Date(v).getTime())/60000)):0;
 const byStatus=rows=>Object.fromEntries(rows.map(r=>[String(r.status),Number(r.count||0)]));
-const q=async(sql,args=[])=>{try{return(await db.pool.query(sql,args)).rows}catch(e){if(['42P01','42703'].includes(e?.code))return[];throw e}};
+const q=async(sql,args=[])=>(await db.pool.query(sql,args)).rows;
 const makeItem=(kind,row,{severity='MEDIUM',ownerRole='ADMIN',nextAction,reason,entityType=kind,entityId=row?.id||null,status=row?.status||null,link=null,metadata={}}={})=>({
   id:`${kind}:${entityId||'unknown'}`,kind,severity,ownerRole,nextAction,reason,entityType,entityId,status,
   ageMinutes:ageMinutes(row?.updated_at||row?.locked_at||row?.processing_started_at||row?.created_at),
@@ -22,7 +22,7 @@ export async function operatorCockpitSnapshot({limit=100}={}){
   const finance=financeCapabilities(),storage=storageConfig(),reconciliation=await reconciliationSnapshot(),integrations={
     identity:{provider:process.env.KYC_PROVIDER||'NOT_CONFIGURED',configured:Boolean(process.env.KYC_PROVIDER&&process.env.KYC_PROVIDER!=='NOT_CONFIGURED')},
     payments:{provider:finance.paymentProvider,configured:finance.providerConfigured},
-    storage:{provider:storage?.provider||storage?.kind||'S3_COMPATIBLE',configured:Boolean(storage?.configured),bucket:storage?.bucket||null},
+    storage:{provider:storage?.driver||'S3_COMPATIBLE',configured:Boolean(storage?.configured),bucket:storage?.bucket||null},
     database:{provider:db.kind,configured:db.kind==='POSTGRES'}
   };
   if(db.kind!=='POSTGRES')return{
@@ -31,7 +31,7 @@ export async function operatorCockpitSnapshot({limit=100}={}){
     system:{preview:PREVIEW,outbox:{},unprocessedProviderEvents:0,staleMediaVerifications:0},recentLifecycle:[]
   };
 
-  const [drafts,verifications,disputes,payouts,settlements,shipments,outbox,providerEvents,media,lifecycle,outboxCounts]=await Promise.all([
+  const [drafts,verifications,disputes,payouts,settlements,shipments,outbox,providerEvents,media,lifecycle,outboxCounts,providerCount,staleMediaCount]=await Promise.all([
     q(`SELECT d.id,d.seller_id,d.status,d.updated_at,d.created_at,d.payload,r.catalogue_status,r.trust_status,r.risk_flags,r.assigned_to,
       v.status AS verification_status
       FROM seller_drafts d
@@ -60,7 +60,9 @@ export async function operatorCockpitSnapshot({limit=100}={}){
       WHERE status IN ('VERIFYING','REJECTED') ORDER BY created_at ASC LIMIT $1`,[limit]),
     q(`SELECT id,domain,aggregate_id,action,from_state,to_state,authority,outbox_topic,metadata,created_at
       FROM lifecycle_events ORDER BY created_at DESC LIMIT 40`),
-    q(`SELECT status,count(*)::int AS count FROM outbox_events GROUP BY status`)
+    q(`SELECT status,count(*)::int AS count FROM outbox_events GROUP BY status`),
+    q(`SELECT count(*)::int AS count FROM provider_events WHERE processed_at IS NULL`),
+    q(`SELECT count(*)::int AS count FROM media_assets WHERE status='VERIFYING' AND created_at < now()-interval '30 minutes'`)
   ]);
 
   const queues=[];
@@ -81,8 +83,9 @@ export async function operatorCockpitSnapshot({limit=100}={}){
     queues.push(makeItem('DISPUTE',d,{severity:waiting?'MEDIUM':'HIGH',ownerRole:waiting?'CLIENT':'TRUST_REVIEWER',nextAction:waiting?'AWAIT_EVIDENCE':'REVIEW_AND_RESOLVE',reason:waiting?'Dispute is waiting for participant evidence':'Open dispute requires operator review/resolution',entityType:'DISPUTE',link:`#operator-dispute-${d.id}`,metadata:{category:d.category,objectId:d.object_id,orderId:d.order_id,settlementId:d.settlement_id,summary:d.summary}}));
   }
   for(const p of payouts){
-    const failed=p.status==='FAILED',submitted=p.status==='SUBMITTED',ready=p.status==='READY';
-    queues.push(makeItem('PAYOUT',p,{severity:failed?'HIGH':submitted?'MEDIUM':'LOW',ownerRole:'ADMIN',nextAction:failed?'RETRY_PAYOUT':ready?'SUBMIT_PAYOUT':submitted?'CHECK_PROVIDER_CONFIRMATION':'REVIEW_HOLD_RELEASE',reason:failed?'Payout provider submission failed':ready?'Payout is ready for provider submission':submitted?'Payout is submitted but not confirmed paid':'Payout remains on hold',entityType:'PAYOUT',link:`#operator-payout-${p.id}`,metadata:{sellerId:p.seller_id,amountMinor:Number(p.amount_minor||0),currency:p.currency,provider:p.provider,holdReason:p.hold_reason,sourceType:p.source_type,sourceId:p.source_id}}));
+    const age=ageMinutes(p.updated_at||p.created_at),failed=p.status==='FAILED',ready=p.status==='READY',submittedStale=p.status==='SUBMITTED'&&age>=30,holdStale=p.status==='ON_HOLD'&&age>=7*24*60;
+    if(!(failed||ready||submittedStale||holdStale))continue;
+    queues.push(makeItem('PAYOUT',p,{severity:failed?'HIGH':submittedStale?'MEDIUM':'LOW',ownerRole:'ADMIN',nextAction:failed?'RETRY_PAYOUT':ready?'SUBMIT_PAYOUT':submittedStale?'CHECK_PROVIDER_CONFIRMATION':'REVIEW_HOLD_RELEASE',reason:failed?'Payout provider submission failed':ready?'Payout is ready for provider submission':submittedStale?'Payout has been submitted without provider confirmation for at least 30 minutes':'Payout has remained on hold for at least 7 days',entityType:'PAYOUT',link:`#operator-payout-${p.id}`,metadata:{sellerId:p.seller_id,amountMinor:Number(p.amount_minor||0),currency:p.currency,provider:p.provider,holdReason:p.hold_reason,sourceType:p.source_type,sourceId:p.source_id}}));
   }
   for(const s of settlements){
     if(s.status==='NONPAYMENT')queues.push(makeItem('SETTLEMENT',s,{severity:'HIGH',ownerRole:'ADMIN',nextAction:'REOFFER_OR_VOID',reason:'Auction settlement is in nonpayment',entityType:'SETTLEMENT',link:`#operator-settlement-${s.id}`,metadata:{auctionId:s.auction_id,objectId:s.object_id,buyerAccountId:s.buyer_account_id,sellerId:s.seller_id,amountMinor:Number(s.winning_amount_minor||0),currency:s.currency}}));
@@ -100,11 +103,11 @@ export async function operatorCockpitSnapshot({limit=100}={}){
   for(const m of media)if(m.status==='VERIFYING'&&ageMinutes(m.created_at)>=30)queues.push(makeItem('MEDIA',m,{severity:'MEDIUM',ownerRole:'ADMIN',nextAction:'RECOVER_MEDIA_VERIFICATION',reason:'Media has remained VERIFYING for at least 30 minutes',entityType:'MEDIA',link:`#operator-media-${m.id}`,metadata:{entityType:m.entity_type,entityId:m.entity_id,role:m.role,contentType:m.content_type}}));
 
   sortItems(queues);
-  const visible=queues.slice(0,limit),domainQueues=visible.reduce((a,x)=>(a[x.kind]=(a[x.kind]||0)+1,a),{}),critical=visible.filter(x=>x.severity==='CRITICAL').length,high=visible.filter(x=>x.severity==='HIGH').length,systemIncidents=visible.filter(x=>['OUTBOX','PROVIDER_EVENT','MEDIA'].includes(x.kind)&&['CRITICAL','HIGH'].includes(x.severity)).length;
+  const visible=queues.slice(0,limit),truncated=queues.length>limit||[drafts,verifications,disputes,payouts,settlements,shipments,outbox,providerEvents,media].some(x=>x.length>=limit),domainQueues=visible.reduce((a,x)=>(a[x.kind]=(a[x.kind]||0)+1,a),{}),critical=visible.filter(x=>x.severity==='CRITICAL').length,high=visible.filter(x=>x.severity==='HIGH').length,systemIncidents=visible.filter(x=>['OUTBOX','PROVIDER_EVENT','MEDIA'].includes(x.kind)&&['CRITICAL','HIGH'].includes(x.severity)).length;
   return{
     generatedAt:new Date().toISOString(),capabilities:operatorCockpitCapabilities(),persistence:{kind:db.kind,durable:true},integrations,reconciliation,
-    summary:{actionable:visible.length,critical,high,systemIncidents,domainQueues},queues:visible,
-    system:{preview:PREVIEW,outbox:byStatus(outboxCounts),unprocessedProviderEvents:providerEvents.length,staleMediaVerifications:media.filter(x=>x.status==='VERIFYING'&&ageMinutes(x.created_at)>=30).length},
+    summary:{actionable:visible.length,critical,high,systemIncidents,domainQueues,truncated,limit},queues:visible,
+    system:{preview:PREVIEW,outbox:byStatus(outboxCounts),unprocessedProviderEvents:Number(providerCount[0]?.count||0),staleMediaVerifications:Number(staleMediaCount[0]?.count||0)},
     recentLifecycle:lifecycle.map(x=>({id:x.id,domain:x.domain,aggregateId:x.aggregate_id,action:x.action,from:x.from_state,to:x.to_state,authority:x.authority,outboxTopic:x.outbox_topic,metadata:x.metadata||{},createdAt:iso(x.created_at)}))
   };
 }
