@@ -3,6 +3,7 @@ import {db} from './runtime-v09.mjs';
 import {settleDueAuctions} from './domain-e2e-v14.mjs';
 import {runOperationalSweeps} from './sweeps-v14.mjs';
 import {claimOutboxBatch,failOutboxEvent,outboxStats} from './outbox-v15.mjs';
+import {matchDiscoveryObjectTx,markDiscoveryNotificationDeliveredTx} from './discovery-matching-v16.mjs';
 
 const SCHEDULE_LOCK_KEY=4815162501;
 const notificationId=()=>`notif-${crypto.randomUUID().replaceAll('-','').slice(0,20)}`;
@@ -16,6 +17,7 @@ async function deliverNotification(event,workerId){
     if(!owned)throw Object.assign(new Error('Outbox event is not owned by worker'),{code:'OUTBOX_LEASE_LOST'});
     await c.query(`INSERT INTO notifications(id,account_id,type,payload,source_outbox_id,created_at)
       VALUES($1,$2,$3,$4,$5,now()) ON CONFLICT DO NOTHING`,[notificationId(),accountId,type,payload,event.id]);
+    await markDiscoveryNotificationDeliveredTx(c,event.payload||{});
     const completed=(await c.query(`UPDATE outbox_events SET status='COMPLETED',processed_at=now(),locked_at=NULL,locked_by=NULL,last_error=NULL
       WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING id`,[event.id,String(workerId)])).rows[0];
     if(!completed)throw Object.assign(new Error('Outbox lease was lost before completion'),{code:'OUTBOX_LEASE_LOST'});
@@ -29,13 +31,14 @@ async function deliverLifecycle(event,workerId){
     await c.query('BEGIN');
     const owned=(await c.query("SELECT id FROM outbox_events WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 FOR UPDATE",[event.id,String(workerId)])).rows[0];
     if(!owned)throw Object.assign(new Error('Outbox event is not owned by worker'),{code:'OUTBOX_LEASE_LOST'});
-    const journal=(await c.query('SELECT id,domain,aggregate_id,outbox_topic FROM lifecycle_events WHERE id=$1',[lifecycleEventId])).rows[0];
+    const journal=(await c.query('SELECT id,domain,aggregate_id,outbox_topic,metadata FROM lifecycle_events WHERE id=$1',[lifecycleEventId])).rows[0];
     if(!journal)throw Object.assign(new Error('Lifecycle journal entry is missing'),{code:'LIFECYCLE_JOURNAL_MISSING'});
     if(journal.domain!==event.aggregateType||String(journal.aggregate_id)!==String(event.aggregateId)||journal.outbox_topic!==event.topic)throw Object.assign(new Error('Lifecycle outbox does not match journal entry'),{code:'LIFECYCLE_OUTBOX_MISMATCH'});
+    let discovery=null;if(journal.domain==='PUBLICATION'&&journal.outbox_topic==='PUBLICATION.PUBLISHED'){const objectId=String(journal.metadata?.objectId||'');if(!objectId)throw Object.assign(new Error('Published lifecycle event is missing objectId'),{code:'DISCOVERY_PUBLICATION_OBJECT_MISSING'});discovery=await matchDiscoveryObjectTx(c,objectId)}
     const completed=(await c.query(`UPDATE outbox_events SET status='COMPLETED',processed_at=now(),locked_at=NULL,locked_by=NULL,last_error=NULL
       WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING id`,[event.id,String(workerId)])).rows[0];
     if(!completed)throw Object.assign(new Error('Outbox lease was lost before completion'),{code:'OUTBOX_LEASE_LOST'});
-    await c.query('COMMIT');return{eventId:event.id,topic:event.topic,lifecycleEventId,delivered:true};
+    await c.query('COMMIT');return{eventId:event.id,topic:event.topic,lifecycleEventId,discovery,delivered:true};
   }catch(e){try{await c.query('ROLLBACK')}catch{}throw e}finally{c.release()}
 }
 
