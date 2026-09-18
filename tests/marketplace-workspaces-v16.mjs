@@ -22,7 +22,7 @@ for(const [name,pattern] of [
 
 assert.match(css,/market-card-v16/,'compact marketplace card styles');
 assert.match(css,/\.purpose-bar/,'purpose quick-filter styles');
-assert.match(market,/\/api\/seller\/listings\/\(\[\^\/\]\+\)/,'seller listing management route');
+assert.match(market,/manageListing=url\.pathname\.match/,'seller listing management route');assert.ok(market.includes('/api\\/seller\\/listings\\/'),'seller listing path');
 assert.match(market,/LISTING_LIFECYCLE_LOCKED/,'listing lifecycle guard');
 assert.match(market,/\['ACTIVE','INACTIVE'\]/,'only free listing visibility states are seller-managed');
 assert.match(core,/safe\('\/api\/catalog'\)/,'account operations load catalogue choices');
