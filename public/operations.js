@@ -1,8 +1,8 @@
-import {api,copy,loadOperations,infra,toast} from './v14/core.js';
-import {discoveryPanel,messagesPanel,openThread,injectSaveSearch} from './v14/discovery.js';
-import {collectionPanel,movementSheet,insuranceSheet} from './v14/collection.js';
-import {transactionsPanel,verificationPanel,disputeSheet,disputeDecisionSheet} from './v14/transactions.js';
-import {cockpitPanel} from './v14/cockpit.js';
+import {api,copy,loadOperations,infra,toast} from './modules/core.js';
+import {discoveryPanel,messagesPanel,openThread,injectSaveSearch} from './modules/discovery.js';
+import {collectionPanel,movementSheet,insuranceSheet} from './modules/collection.js';
+import {transactionsPanel,verificationPanel,disputeSheet,disputeDecisionSheet} from './modules/transactions.js';
+import {cockpitPanel} from './modules/cockpit.js';
 
 let mounting=false;
 function markup(d){return`<section id="v14Operations" class="account-block v14-operations"><div class="block-head"><div><div class="eyebrow">END-TO-END OPERATIONS · 0.14</div><h2>${copy('Жизненный цикл коллекции и сделки','Collection & transaction lifecycle')}</h2></div></div>${cockpitPanel(d)}${infra(d)}<div class="v14-tabs" role="tablist"><button class="active" data-v14-tab="discovery">${copy('Поиск','Discovery')}</button><button data-v14-tab="messages">${copy('Сообщения','Messages')}</button><button data-v14-tab="collection">${copy('Коллекция','Collection care')}</button><button data-v14-tab="transactions">${copy('Сделки','Transactions')}</button><button data-v14-tab="verification">KYC/KYB</button></div><div class="v14-panels">${discoveryPanel(d)}${messagesPanel(d)}${collectionPanel(d)}${transactionsPanel(d)}${verificationPanel(d)}</div></section>`}
