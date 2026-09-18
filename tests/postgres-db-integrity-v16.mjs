@@ -89,7 +89,7 @@ try{
  ),'23503');
 
  await expectCode(db.pool.query(
-  "INSERT INTO auction_bids(id,auction_id,account_id,max_amount,visible_amount,idempotency_key) VALUES($1,$2,$3,100,200,$4)",
+  "INSERT INTO auction_bids(id,auction_id,account_id,max_amount,visible_amount,idempotency_key) VALUES($1,$2,$3,0,100,$4)",
   [id('bad-bid'),auction.id,buyer.id,id('bid-idem')]
  ),'23514');
 
