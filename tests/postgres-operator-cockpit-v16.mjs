@@ -7,7 +7,7 @@ const {db}=await import('../runtime-v09.mjs');
 const {operatorCockpitSnapshot}=await import('../operator-cockpit-v16.mjs');
 const token=crypto.randomUUID().replaceAll('-',''),old=new Date(Date.now()-2*3600_000).toISOString(),fresh=new Date().toISOString();
 const ids={
- draft:`cockpit-draft-${token}`,dispute:`cockpit-dispute-${token}`,payout:`cockpit-payout-${token}`,
+ draft:`cockpit-draft-${token}`,dispute:`cockpit-dispute-${token}`,payout:`cockpit-payout-${token}`,freshPayout:`cockpit-payout-fresh-${token}`,
  dead:`cockpit-outbox-dead-${token}`,freshOutbox:`cockpit-outbox-fresh-${token}`,staleOutbox:`cockpit-outbox-stale-${token}`,
  failedProvider:`cockpit-provider-failed-${token}`,freshProvider:`cockpit-provider-fresh-${token}`,media:`cockpit-media-${token}`
 };
@@ -20,6 +20,8 @@ try{
     VALUES($1,'acct-buyer-demo','acct-buyer-demo','seller-preview','OTHER','OPEN','Cockpit proof dispute',$2,$2)`,[ids.dispute,old]);
   await db.pool.query(`INSERT INTO payouts(id,seller_id,amount_minor,currency,status,hold_reason,source_type,source_id,created_at,updated_at)
     VALUES($1,'seller-preview',42000,'EUR','FAILED','TRUST_AND_DELIVERY_HOLD','ORDER',$2,$3,$3)`,[ids.payout,`cockpit-source-${token}`,old]);
+  await db.pool.query(`INSERT INTO payouts(id,seller_id,amount_minor,currency,status,hold_reason,source_type,source_id,provider,provider_reference,created_at,updated_at)
+    VALUES($1,'seller-preview',25000,'EUR','SUBMITTED','TRUST_AND_DELIVERY_HOLD','ORDER',$2,'COCKPIT_PSP',$3,now(),now())`,[ids.freshPayout,`cockpit-fresh-source-${token}`,`transfer-${token}`]);
 
   await db.pool.query(`INSERT INTO outbox_events(id,topic,aggregate_type,aggregate_id,status,attempt_count,max_attempts,last_error,available_at,created_at)
     VALUES($1,'COCKPIT.DEAD','TEST',$2,'DEAD',12,12,'synthetic failure',$3,$3)`,[ids.dead,token,old]);
@@ -52,6 +54,7 @@ try{
   assert.equal(byId.get(ids.staleOutbox)?.severity,'HIGH');
   assert.equal(byId.get(ids.dispute)?.severity,'HIGH');
   assert.equal(byId.get(ids.payout)?.severity,'HIGH');
+  assert.equal(byId.has(ids.freshPayout),false);
   assert.equal(byId.get(ids.media)?.severity,'MEDIUM');
   assert.equal(byId.get(ids.draft)?.kind,'PUBLICATION');
   assert.equal(byId.has(ids.freshOutbox),false);
@@ -69,7 +72,7 @@ try{
   await db.pool.query('DELETE FROM media_assets WHERE id=$1',[ids.media]).catch(()=>{});
   await db.pool.query('DELETE FROM provider_events WHERE id=ANY($1::text[])',[[ids.failedProvider,ids.freshProvider]]).catch(()=>{});
   await db.pool.query('DELETE FROM outbox_events WHERE id=ANY($1::text[])',[[ids.dead,ids.freshOutbox,ids.staleOutbox]]).catch(()=>{});
-  await db.pool.query('DELETE FROM payouts WHERE id=$1',[ids.payout]).catch(()=>{});
+  await db.pool.query('DELETE FROM payouts WHERE id=ANY($1::text[])',[[ids.payout,ids.freshPayout]]).catch(()=>{});
   await db.pool.query('DELETE FROM disputes WHERE id=$1',[ids.dispute]).catch(()=>{});
   await db.pool.query('DELETE FROM seller_drafts WHERE id=$1',[ids.draft]).catch(()=>{});
   await db.pool.end();
