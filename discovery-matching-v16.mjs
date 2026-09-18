@@ -47,7 +47,7 @@ function snapshot(r){
 export async function searchDiscoveryPostgres(criteria={}, {client=null,objectId=null,limit=100}={}){
  if(db.kind!=='POSTGRES')throw Object.assign(new Error('PostgreSQL discovery authority required'),{status:503,code:'DISCOVERY_POSTGRES_REQUIRED'});
  const cx=client||db.pool,c=normalizeDiscoveryCriteria(criteria),args=[],where=["o.publication_status='PUBLIC'"];
- const add=v=>{args.push(v);return `${args.length}`};
+ const add=v=>{args.push(v);return '$'+args.length};
  const qText=`(coalesce(o.object_code,'')||' '||coalesce((o.passport->'title')::text,'')||' '||coalesce((o.passport->'maker')::text,'')||' '||coalesce((o.passport->'department')::text,'')||' '||coalesce((o.passport->'period')::text,'')||' '||coalesce((o.passport->'origin')::text,'')||' '||coalesce((o.passport->'materials')::text,'')||' '||coalesce((o.passport->'technique')::text,''))`;
  if(objectId)where.push(`o.id=${add(String(objectId))}`);
  if(c.objectId){const p=add(c.objectId);where.push(`(o.id=${p} OR o.object_code=${p})`)}
@@ -75,7 +75,7 @@ export async function searchDiscoveryPostgres(criteria={}, {client=null,objectId
    count(*) OVER()::int AS match_count
    FROM objects o
    LEFT JOIN LATERAL (SELECT li.id,li.seller_id,li.payload FROM listings li WHERE li.object_id=o.id AND li.status IN ('ACTIVE','RESERVED') ORDER BY li.updated_at DESC,li.id LIMIT 1) l ON true
-   LEFT JOIN LATERAL (SELECT au.id,au.status,au.current_bid,au.ends_at,au.state FROM auctions au WHERE au.object_id=o.id ORDER BY au.updated_at DESC,au.id LIMIT 1) a ON true
+   LEFT JOIN LATERAL (SELECT au.id,au.status,au.current_bid,au.ends_at,au.state FROM auctions au WHERE au.object_id=o.id ORDER BY (au.ends_at>clock_timestamp()) DESC,au.updated_at DESC,au.id LIMIT 1) a ON true
    WHERE ${where.join(' AND ')}
    ORDER BY o.updated_at DESC,o.id
    LIMIT ${lp}`,args)).rows;
