@@ -207,6 +207,7 @@ CREATE OR REPLACE FUNCTION antiqua_validate_shipment_source()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE src_object text; src_buyer text; src_seller text;
 BEGIN
+  IF num_nonnulls(NEW.order_id,NEW.settlement_id)<>1 THEN RETURN NEW; END IF;
   IF NEW.order_id IS NOT NULL THEN
     SELECT object_id,buyer_account_id,seller_id INTO src_object,src_buyer,src_seller FROM orders WHERE id=NEW.order_id;
   ELSE
