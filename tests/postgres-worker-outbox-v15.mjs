@@ -8,7 +8,7 @@ if(!process.env.DATABASE_URL){console.log('ANTIQUA 0.15 PostgreSQL worker/outbox
 
 const pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:false},max:8});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),token=crypto.randomUUID(),port=12022,base=`http://127.0.0.1:${port}`,appSecret=crypto.randomBytes(32).toString('hex');
-const accountId=`worker-account-${token}`,recordId=`worker-record-${token}`,objectId=`worker-object-${token}`,policyId=`worker-policy-${token}`;
+const accountId=`worker-account-${token}`,recordId=`worker-record-${token}`,objectId=`worker-object-${token}`,objectCode=`AQ-WORKER-${token.slice(0,12)}`,policyId=`worker-policy-${token}`;
 let web=null;
 
 async function startWeb(){
@@ -26,6 +26,8 @@ async function runWorker(id,extra={}){
 try{
   await pool.query(`INSERT INTO accounts(id,email,display_name,password_hash,account_type,status,twofa_status,created_at,updated_at)
     VALUES($1,$2,'Worker Outbox Test','worker-test','BUYER','ACTIVE','DISABLED',now(),now()) ON CONFLICT(id) DO NOTHING`,[accountId,`${accountId}@example.test`]);
+  await pool.query(`INSERT INTO objects(id,object_code,seller_id,passport,catalogue_status,trust_status,publication_status,created_at,updated_at)
+    VALUES($1,$2,NULL,$3,'APPROVED','CLEARED','PRIVATE',now(),now()) ON CONFLICT(id) DO NOTHING`,[objectId,objectCode,{id:objectId,objectId:objectCode,title:{en:'Worker outbox integrity fixture'}}]);
   await pool.query(`INSERT INTO collection_records(id,account_id,object_id,acquisition,appraisal,storage,insurance,private_notes,status,created_at,updated_at)
     VALUES($1,$2,$3,'{}','{}','{}','{}','worker outbox proof','OWNED',now(),now()) ON CONFLICT(id) DO NOTHING`,[recordId,accountId,objectId]);
   await pool.query(`INSERT INTO insurance_policies(id,record_id,provider,policy_number_masked,insured_value_minor,currency,coverage,starts_at,expires_at,status,created_at,updated_at)
@@ -62,5 +64,10 @@ try{
 
   console.log('ANTIQUA 0.15 worker/outbox proof: web isolation + transactional insurance event + retry + 2-worker SKIP LOCKED + stale lease recovery passed');
 }finally{
-  await stopWeb();await pool.end();
+  await stopWeb();
+  await pool.query('DELETE FROM insurance_policies WHERE id=$1',[policyId]).catch(()=>{});
+  await pool.query('DELETE FROM collection_records WHERE id=$1',[recordId]).catch(()=>{});
+  await pool.query('DELETE FROM objects WHERE id=$1',[objectId]).catch(()=>{});
+  await pool.query('DELETE FROM accounts WHERE id=$1',[accountId]).catch(()=>{});
+  await pool.end();
 }
