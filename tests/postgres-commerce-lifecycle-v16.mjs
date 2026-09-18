@@ -14,7 +14,12 @@ try{
   const seller=(await db.pool.query("SELECT id,seller_id FROM accounts WHERE email='seller@demo.antiqua' LIMIT 1")).rows[0];
   assert.ok(buyer?.id);assert.ok(seller?.seller_id);
 
-  const settlementId=`set-life-${token}`,auctionId=`auc-life-${token}`;
+  const settlementId=`set-life-${token}`,auctionId=`auc-life-${token}`,nonpaymentId=`set-nonpay-${token}`,nonpaymentAuctionId=`auc-nonpay-${token}`;
+  const auctionBase={currency:'EUR',baselineBid:5000,currentBid:5500,increment:500,bidCount:1,reservePrice:5000,reserveMet:true,startsAt:new Date(Date.now()-86400000).toISOString(),endsAt:new Date(Date.now()-3600000).toISOString(),state:'CLOSED',leaderClientId:buyer.id,proxyBids:[],history:[]};
+  await db.pool.query(`INSERT INTO auctions(id,object_id,sale_id,status,current_bid,ends_at,state,baseline_bid,reserve_price,increment,bid_count,leader_account_id,starts_at,version)
+    VALUES($1,'lot-101','sale-lifecycle','CLOSED',5500,$3,$4,5000,5000,500,1,$2,$5,1)`,[auctionId,buyer.id,auctionBase.endsAt,{...auctionBase,id:auctionId,lotId:'lot-101'},auctionBase.startsAt]);
+  await db.pool.query(`INSERT INTO auctions(id,object_id,sale_id,status,current_bid,ends_at,state,baseline_bid,reserve_price,increment,bid_count,leader_account_id,starts_at,version)
+    VALUES($1,'lot-102','sale-lifecycle','CLOSED',2100,$3,$4,2000,2000,100,1,$2,$5,1)`,[nonpaymentAuctionId,buyer.id,auctionBase.endsAt,{...auctionBase,id:nonpaymentAuctionId,lotId:'lot-102',baselineBid:2000,currentBid:2100,increment:100},auctionBase.startsAt]);
   await db.pool.query(`INSERT INTO auction_settlements(id,auction_id,object_id,buyer_account_id,seller_id,winning_amount_minor,currency,status,payment_due_at,metadata,created_at,updated_at)
     VALUES($1,$2,'lot-101',$3,$4,550000,'EUR','PAYMENT_DUE',now()+interval '1 day','{}'::jsonb,now(),now())`,[settlementId,auctionId,buyer.id,seller.seller_id]);
 
@@ -36,9 +41,8 @@ try{
   const legacySettlementEvents=(await db.pool.query('SELECT event_type FROM settlement_events WHERE settlement_id=$1 ORDER BY created_at,id',[settlementId])).rows.map(x=>x.event_type);
   assert.deepEqual(legacySettlementEvents,['SETTLEMENT_PAID','SETTLEMENT_FULFILLMENT','SETTLEMENT_COMPLETED']);
 
-  const nonpaymentId=`set-nonpay-${token}`;
   await db.pool.query(`INSERT INTO auction_settlements(id,auction_id,object_id,buyer_account_id,seller_id,winning_amount_minor,currency,status,payment_due_at,metadata,created_at,updated_at)
-    VALUES($1,$2,'lot-102',$3,$4,210000,'EUR','PAYMENT_DUE',now()-interval '1 day','{}'::jsonb,now(),now())`,[nonpaymentId,`auc-nonpay-${token}`,buyer.id,seller.seller_id]);
+    VALUES($1,$2,'lot-102',$3,$4,210000,'EUR','PAYMENT_DUE',now()-interval '1 day','{}'::jsonb,now(),now())`,[nonpaymentId,nonpaymentAuctionId,buyer.id,seller.seller_id]);
   let nonpayment=await transitionSettlement(operator,nonpaymentId,'NONPAYMENT',{sourceKey:`nonpay-${token}`});assert.equal(nonpayment.status,'NONPAYMENT');
   nonpayment=await transitionSettlement(operator,nonpaymentId,'REOFFERED',{sourceKey:`reoffer-${token}`});assert.equal(nonpayment.status,'REOFFERED');
 
@@ -68,4 +72,12 @@ try{
   assert.equal(pending,0);
 
   console.log('ANTIQUA v16 commerce lifecycle: settlement + nonpayment + shipment row locks, journal/outbox, replay/conflict and invalid rollback passed');
-}finally{await db.pool.end()}
+}finally{
+  const ids=[`set-life-${token}`,`set-nonpay-${token}`,`shp-life-${token}`];
+  await db.pool.query("DELETE FROM outbox_events WHERE aggregate_id=ANY($1::text[])",[ids]).catch(()=>{});
+  await db.pool.query("DELETE FROM lifecycle_events WHERE aggregate_id=ANY($1::text[])",[ids]).catch(()=>{});
+  await db.pool.query('DELETE FROM shipments WHERE id=$1',[`shp-life-${token}`]).catch(()=>{});
+  await db.pool.query('DELETE FROM auction_settlements WHERE id=ANY($1::text[])',[[`set-life-${token}`,`set-nonpay-${token}`]]).catch(()=>{});
+  await db.pool.query('DELETE FROM auctions WHERE id=ANY($1::text[])',[[`auc-life-${token}`,`auc-nonpay-${token}`]]).catch(()=>{});
+  await db.pool.end()
+}
