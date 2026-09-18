@@ -1,10 +1,22 @@
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 import {resolve,dirname,relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const ROOT=resolve(fileURLToPath(new URL('..',import.meta.url)),'public');
 const read=async p=>readFile(resolve(ROOT,p),'utf8');
+async function listFiles(dir=ROOT){
+  const out=[];
+  for(const e of await readdir(dir,{withFileTypes:true})){
+    const p=resolve(dir,e.name);
+    if(e.isDirectory())out.push(...await listFiles(p));
+    else out.push(relative(ROOT,p).replaceAll('\\\\','/'));
+  }
+  return out;
+}
+const publicFiles=(await listFiles()).sort();
+for(const p of publicFiles)assert.doesNotMatch(p,/(?:^|\\/)(?:v\\d+)(?:\\/|$)|(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/, 'legacy versioned frontend asset remains: '+p);
+for(const p of ['index.html','styles.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
 const scripts=[...index.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)].map(x=>x[1]);
