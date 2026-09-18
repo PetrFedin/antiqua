@@ -155,3 +155,66 @@ body{overflow-x:hidden}
 .passport-revision{display:grid;gap:5px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.62)}
 .passport-revision>div{display:flex;gap:10px;align-items:baseline}.passport-revision strong{font-family:var(--display);font-size:16px;font-weight:500}.passport-revision span{font-size:10px;line-height:1.45}
 .passport-revision small{font-size:8px;color:var(--muted);letter-spacing:.025em}
+
+
+/* ---- ANTIQUA v0.16 marketplace workspaces ---- */
+.purpose-bar{display:flex;gap:8px;align-items:center;overflow-x:auto;padding:2px 0 8px;margin:18px 0 8px;scrollbar-width:none}
+.purpose-bar::-webkit-scrollbar{display:none}
+.purpose-bar button{flex:0 0 auto;display:inline-flex;align-items:center;gap:9px;min-height:42px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,253,249,.76);color:var(--ink);font:600 11px/1 var(--ui);cursor:pointer;transition:background var(--fast),color var(--fast),border-color var(--fast),transform var(--fast)}
+.purpose-bar button b{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--surface-soft);font-size:9px;font-weight:700}
+.purpose-bar button.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.purpose-bar button.active b{background:rgba(255,255,255,.16);color:#fff}
+.market-card-v16{contain-intrinsic-size:340px 500px}
+.market-card-v16 .object-image{aspect-ratio:5/6}
+.market-card-v16 .v12-card-copy{padding:13px 14px 14px}
+.market-card-v16 .v12-card-copy h3{margin:6px 0 5px;min-height:2.15em;max-height:2.15em;font-size:20px}
+.market-card-v16 .v12-card-copy>.muted{min-height:1.45em;max-height:1.45em;-webkit-line-clamp:1;white-space:nowrap;text-overflow:ellipsis}
+.market-card-v16 .card-commercial{min-height:66px;margin-top:auto;padding-top:10px;display:flex;flex-direction:column;justify-content:flex-end}
+.market-card-v16 .object-price{margin:0;padding:0;min-height:0;font-size:23px}
+.market-card-v16 .commercial-hint{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+.market-card-v16 .seller-mini{min-height:18px;height:18px;margin-top:5px;font-size:9px}
+.market-card-v16 .v12-card-actions{margin-top:8px!important}
+.market-card-v16 .v12-card-actions>*{height:42px!important;min-height:42px!important}
+.market-card-v16:focus-visible{outline:2px solid var(--ink)!important;outline-offset:3px}
+.auction-card-price{display:grid;gap:3px}
+.auction-card-price>div{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.auction-card-price span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.auction-card-price strong{font-family:var(--display);font-size:23px;font-weight:400}
+.auction-card-price small,.purpose-copy small{font-size:9px;line-height:1.35;color:var(--muted)}
+.auction-card-price small b{color:var(--ink);font-weight:700}
+.auction-countdown{font-variant-numeric:tabular-nums;color:var(--ink)!important}
+.purpose-copy{display:grid;gap:4px;padding:4px 0}
+.purpose-copy strong{font-family:var(--display);font-size:20px;font-weight:400}
+.auction-dock-v16 .dock-summary{gap:4px}
+.auction-dock-v16 .auction-countdown{margin-top:2px}
+.seller-listing-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.seller-listing-actions>*{flex:1}
+.seller-workspace-form{display:grid;gap:14px;padding:18px;border:1px solid var(--line);border-radius:17px;background:rgba(249,247,242,.72);margin-bottom:18px}
+.seller-workspace-form summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.seller-workspace-form summary::-webkit-details-marker{display:none}
+.seller-workspace-form summary:after{content:'+';font-size:20px;font-weight:400}
+.seller-workspace-form[open] summary:after{content:'−'}
+.seller-draft-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.seller-draft-form label{display:grid;gap:6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.seller-draft-form input,.seller-draft-form select,.seller-draft-form textarea{width:100%;min-height:44px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px 11px;color:var(--ink);font:12px/1.35 var(--ui);text-transform:none;letter-spacing:0}
+.seller-draft-form textarea{min-height:82px;resize:vertical}
+.seller-draft-form .span-2{grid-column:1/-1}
+.draft-readiness{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0}
+.draft-media-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;color:var(--muted);font-size:10px}
+.listing-state-inactive{opacity:.68}
+@media(max-width:800px){
+ .purpose-bar{margin-left:-16px;margin-right:-16px;padding:2px 16px 9px}
+ .market-card-v16 .object-image{aspect-ratio:1/1.12}
+ .seller-draft-form{grid-template-columns:1fr}
+ .seller-draft-form .span-2{grid-column:auto}
+}
+@media(max-width:560px){
+ .market-card-v16 .v12-card-copy{padding:10px}
+ .market-card-v16 .v12-card-copy h3{font-size:16px}
+ .market-card-v16 .card-commercial{min-height:61px;padding-top:7px}
+ .market-card-v16 .auction-card-price strong,.market-card-v16 .object-price{font-size:17px}
+ .market-card-v16 .auction-card-price small{font-size:8px}
+ .market-card-v16 .seller-mini{display:none}
+ .market-card-v16 .v12-card-actions{grid-template-columns:1fr}
+ .market-card-v16 .v12-card-actions .quiet-button{display:none}
+}
