@@ -25,7 +25,7 @@ export function canonicalPassportHash(passport){
   return sha(p);
 }
 function withHash(passport){const p=clone(passport)||{};p.passportHash=canonicalPassportHash(p);return p}
-function actorAuthority(actor){if(actor?.roles?.includes('TRUST_REVIEWER')&&!actor?.roles?.includes('CATALOGUER')&&!actor?.roles?.includes('ADMIN'))return'TRUST_REVIEWER';if(actor?.roles?.includes('CATALOGUER')||actor?.roles?.includes('ADMIN'))return'CATALOGUER';return'SYSTEM'}
+function actorAuthority(actor){if(actor?.roles?.includes('TRUST_REVIEWER')&&!actor?.roles?.includes('CATALOGUER')&&!actor?.roles?.includes('ADMIN'))return'TRUST_REVIEWER';if(actor?.roles?.includes('CATALOGUER')||actor?.roles?.includes('ADMIN'))return'CATALOGUER';throw err('Passport revision authority required',{status:403,code:'FORBIDDEN'})}
 function normalizeEvidence(refs=[]){
   if(!Array.isArray(refs))throw err('Passport evidence must be an array',{status:400,code:'PASSPORT_EVIDENCE_INVALID'});
   const seen=new Set(),out=[];
