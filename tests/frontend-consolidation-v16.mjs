@@ -15,7 +15,7 @@ async function listFiles(dir=ROOT){
   return out;
 }
 const publicFiles=(await listFiles()).sort();
-for(const p of publicFiles)assert.doesNotMatch(p,/(?:^|\\/)(?:v\\d+)(?:\\/|$)|(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/, 'legacy versioned frontend asset remains: '+p);
+for(const p of publicFiles){const parts=p.split('/');const versioned=parts.some(part=>/^v\\d+$/.test(part))||/(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/.test(p);assert.equal(versioned,false,'legacy versioned frontend asset remains: '+p)}
 for(const p of ['index.html','styles.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
