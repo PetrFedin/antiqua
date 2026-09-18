@@ -18,7 +18,7 @@ const plain=v=>Boolean(v&&typeof v==='object'&&!Array.isArray(v));
 const EVIDENCE_TYPES=new Set(['MEDIA','PROVENANCE','CATALOGUE_REVIEW']);
 const CHANGE_KINDS=new Set(['CATALOGUE_CORRECTION','ATTRIBUTION_UPDATE','PROVENANCE_UPDATE','CONDITION_UPDATE','EVIDENCE_UPDATE','ADMINISTRATIVE_CORRECTION']);
 const ALLOWED_FIELDS=new Set(['department','maker','title','period','origin','currency','estimateLow','estimateHigh','image','materials','dimensions','attributionStatus','marks','cataloguing','provenance','provenanceTimeline','condition','conditionGrade','restoration','literature','exhibitions','documents','media','location','exportStatus','culturalPropertyStatus']);
-const SENSITIVE_FIELDS=new Set(['maker','period','origin','attributionStatus','provenance','provenanceTimeline','condition','conditionGrade','restoration','exportStatus','culturalPropertyStatus']);
+const SENSITIVE_FIELDS=new Set(['maker','period','origin','attributionStatus','provenance','provenanceTimeline','condition','conditionGrade','restoration','media','exportStatus','culturalPropertyStatus']);
 
 export function canonicalPassportHash(passport){
   const p=clone(passport)||{};delete p.passportHash;delete p.passportRevision;
