@@ -47,9 +47,10 @@ async function deliverPassportRevision(event,workerId){
     await c.query('BEGIN');
     const owned=(await c.query("SELECT id FROM outbox_events WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 FOR UPDATE",[event.id,String(workerId)])).rows[0];
     if(!owned)throw Object.assign(new Error('Outbox event is not owned by worker'),{code:'OUTBOX_LEASE_LOST'});
-    const revision=(await c.query('SELECT id,object_id,revision_no,passport_hash FROM object_passport_revisions WHERE id=$1',[revisionId])).rows[0];
+    const revision=(await c.query('SELECT id,object_id,revision_no,passport_hash,previous_hash,change_kind FROM object_passport_revisions WHERE id=$1',[revisionId])).rows[0];
     if(!revision)throw Object.assign(new Error('Passport revision journal entry is missing'),{code:'PASSPORT_REVISION_JOURNAL_MISSING'});
-    const matches=String(event.aggregateType)==='OBJECT'&&String(event.aggregateId)===String(revision.object_id)&&objectId===String(revision.object_id)&&Number(revision.revision_no)===revisionNo&&revision.passport_hash===passportHash;
+    const payloadPrevious=event.payload?.previousHash==null?null:String(event.payload.previousHash),topicMatches=event.topic==='OBJECT.PASSPORT_CREATED'?Number(revision.revision_no)===1&&revision.change_kind==='INITIAL':event.topic==='OBJECT.PASSPORT_REVISED'?Number(revision.revision_no)>1:true;
+    const matches=String(event.aggregateType)==='OBJECT'&&String(event.aggregateId)===String(revision.object_id)&&objectId===String(revision.object_id)&&Number(revision.revision_no)===revisionNo&&revision.passport_hash===passportHash&&String(revision.previous_hash??'')===String(payloadPrevious??'')&&topicMatches;
     if(!matches)throw Object.assign(new Error('Passport revision outbox does not match immutable revision journal'),{code:'PASSPORT_REVISION_OUTBOX_MISMATCH'});
     const completed=(await c.query(`UPDATE outbox_events SET status='COMPLETED',processed_at=now(),locked_at=NULL,locked_by=NULL,last_error=NULL
       WHERE id=$1 AND status='PROCESSING' AND locked_by=$2 RETURNING id`,[event.id,String(workerId)])).rows[0];
