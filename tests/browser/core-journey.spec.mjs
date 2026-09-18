@@ -36,7 +36,7 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
   const titleEn=String(lot.title?.en||lot.title||'').trim(),titleRu=String(lot.title?.ru||'').trim();expect(titleEn||titleRu).toBeTruthy();
   const titlePattern=new RegExp([titleEn,titleRu].filter(Boolean).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'i');
   const cardTitle=page.getByText(titlePattern,{exact:false}).first();await expect(cardTitle).toBeVisible();
-  const dossierAction=page.locator(`[data-passport="${lot.id}"]:visible`).first();await expect(dossierAction).toBeVisible();await dossierAction.click();
+  const dossierCard=page.locator(`[data-open-passport="${lot.id}"]:visible`).first();await expect(dossierCard).toBeVisible();await dossierCard.locator('h3').click();
   await expect(page.locator('#dialog[open]')).toBeVisible();await expect(page.locator('#dialog[open]')).toContainText(/Provenance|Провенанс|Passport history|История паспорта/i);
   const revision=page.locator('#dialog[open] .passport-revision-list .passport-revision').first();await expect(revision).toBeVisible();await expect(revision).toContainText(/v1/i);
   const closeDossier=page.locator('#dialog[open] [data-close-dialog]').first();await expect(closeDossier).toBeVisible();await closeDossier.click();await expect(page.locator('#dialog[open]')).toHaveCount(0);
@@ -107,7 +107,7 @@ test('collection records and curated Collections are separate workflows',async({
 
   await clickNav(page,'shop');
   const catalog=await page.evaluate(async()=>{const r=await fetch('/api/catalog');return r.json()}),lot=catalog.lots?.find(x=>x.id==='lot-108')||catalog.lots?.[0];expect(lot?.id).toBeTruthy();
-  const dossierAction=page.locator(`[data-passport="${lot.id}"]:visible`).first();await expect(dossierAction).toBeVisible();await dossierAction.click();await expect(page.locator('#dialog[open]')).toBeVisible();
+  const dossierCard=page.locator(`[data-open-passport="${lot.id}"]:visible`).first();await expect(dossierCard).toBeVisible();await dossierCard.locator('h3').click();await expect(page.locator('#dialog[open]')).toBeVisible();
 
   const legacyCollectRequests=[];page.on('request',r=>{if(new URL(r.url()).pathname===`/api/lots/${lot.id}/collect`)legacyCollectRequests.push(r.url())});
   const add=page.locator(`#dialog[open] [data-collect="${lot.id}"]`);await expect(add).toBeVisible();await add.click();
