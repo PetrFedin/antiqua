@@ -85,7 +85,7 @@ DO $$ BEGIN
     ALTER TABLE exhibition_items ADD CONSTRAINT exhibition_items_exactly_one_target_ck CHECK(num_nonnulls(object_id,ensemble_id)=1) NOT VALID;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='auction_bids_amount_ck') THEN
-    ALTER TABLE auction_bids ADD CONSTRAINT auction_bids_amount_ck CHECK(max_amount>0 AND visible_amount>0 AND visible_amount<=max_amount) NOT VALID;
+    ALTER TABLE auction_bids ADD CONSTRAINT auction_bids_amount_ck CHECK(max_amount>0 AND visible_amount>0) NOT VALID;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='auctions_amounts_ck') THEN
     ALTER TABLE auctions ADD CONSTRAINT auctions_amounts_ck CHECK(
