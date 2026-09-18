@@ -6,7 +6,7 @@ const canRead=a=>Boolean(a?.roles?.some(r=>['ADMIN','CATALOGUER','TRUST_REVIEWER
 export async function routePassportPublicV16(req,res,url){
   const m=url.pathname.match(/^\/api\/lots\/([^/]+)\/passport\/revisions$/);
   if(!m||req.method!=='GET')return false;
-  const raw=lot(m[1]);if(!raw||raw.publicationStatus==='PRIVATE')return send(res,404,{error:'Object not found'});
+  const raw=lot(m[1]);if(!raw)return send(res,404,{error:'Object not found'});if(db.kind==='POSTGRES'){const visibility=(await db.pool.query('SELECT publication_status FROM objects WHERE id=$1',[m[1]])).rows[0];if(!visibility||visibility.publication_status!=='PUBLIC')return send(res,404,{error:'Object not found'})}else if(raw.publicationStatus==='PRIVATE')return send(res,404,{error:'Object not found'});
   const history=await passportRevisionHistory(m[1],{includePrivate:false,limit:Number(url.searchParams.get('limit')||50)});
   if(!history)return send(res,404,{error:'Object not found'});
   return send(res,200,{history,capabilities:{hashChain:'SHA256',appendOnly:true,publicEvidenceSanitized:true}});
