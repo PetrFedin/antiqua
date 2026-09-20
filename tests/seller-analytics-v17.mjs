@@ -17,7 +17,8 @@ try{
  const a=await sellerAnalyticsFor(seller);
  assert.equal(a.sellerId,seller.sellerId);
  assert.equal(a.measurement.mode,'EVENTS_ONLY');
- assert.equal(a.measurement.viewsTracked,false);
+ assert.equal(a.measurement.viewsTracked,true);
+ assert.equal(a.measurement.viewDefinition,'DEDUPED_30_MINUTE_PASSPORT_SESSIONS');
  assert.equal(a.measurement.visitorIdentityExposed,false);
  assert.ok(a.summary.activeListings>=2);
  assert.ok(a.summary.drafts>=2);
@@ -29,7 +30,7 @@ try{
  assert.ok(row.acceptedOffers>=1,'accepted offer must be counted');
  assert.ok(row.orders>=1,'real order event must be counted');
  assert.equal(JSON.stringify(a).includes(buyer.id),false,'buyer identity must not leak into seller analytics');
- console.log('ANTIQUA v17 seller analytics: event-only demand + currency-safe settlements + buyer privacy passed');
+ console.log('ANTIQUA v17 seller analytics: measured engagement + currency-safe settlements + buyer privacy passed');
 }finally{
  offers.delete(offerId);orders.delete(orderId);
 }
