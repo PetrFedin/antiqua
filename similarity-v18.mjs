@@ -1,4 +1,4 @@
-import {lots,listings,auctions,lot,publicAuction,bi} from './runtime-v09.mjs';
+import {db,lots,listings,auctions,lot,publicAuction,bi} from './runtime-v09.mjs';
 
 const norm=v=>String(v?.en??v??'').trim().toLowerCase().replace(/[‐‑‒–—]/g,'-');
 const words=v=>new Set(norm(v).split(/[^a-z0-9]+/).filter(x=>x.length>2&&!['the','and','with','style','century'].includes(x)));
@@ -32,12 +32,12 @@ function compareCandidate(source,candidate){
  if(closePrice)reasons.push(reason('PRICE_PROXIMITY','Близкий ценовой диапазон','Similar price range',null));
  const conceptual=Number(sameMaker)+Number(sameDepartment)+materials.length+Number(samePeriod)+Number(sameOrigin);
  if(!conceptual)return null;
- const strength=sameMaker||(sameDepartment&&(materials.length||samePeriod||sameOrigin))?'HIGH':sameDepartment||(materials.length&&(samePeriod||sameOrigin))?'MEDIUM':'LOW';
+ const strength=(sameDepartment&&(sameMaker||materials.length||samePeriod||sameOrigin))||(sameMaker&&(materials.length||samePeriod||sameOrigin))?'HIGH':sameDepartment||sameMaker||(materials.length&&(samePeriod||sameOrigin))?'MEDIUM':'LOW';
  return{candidate,reasons,strength,rank:{sameMaker:Number(sameMaker),sameDepartment:Number(sameDepartment),materials:materials.length,samePeriod:Number(samePeriod),sameOrigin:Number(sameOrigin),priceDistance}};
 }
 function cmp(a,b){
- return b.rank.sameMaker-a.rank.sameMaker||
-  b.rank.sameDepartment-a.rank.sameDepartment||
+ return b.rank.sameDepartment-a.rank.sameDepartment||
+  b.rank.sameMaker-a.rank.sameMaker||
   b.rank.materials-a.rank.materials||
   b.rank.samePeriod-a.rank.samePeriod||
   b.rank.sameOrigin-a.rank.sameOrigin||
@@ -49,9 +49,15 @@ function publicItem(x){
  return{id:o.id,objectId:o.objectId,title:o.title,image:o.image,department:o.department,maker:o.maker,period:o.period,origin:o.origin,materials:o.materials,conditionGrade:o.conditionGrade,commerce:commerceFor(o),strength:x.strength,reasons:x.reasons};
 }
 export function similarityCapabilities(){return{method:'CATALOGUE_RULES_V1',ranking:'LEXICOGRAPHIC_EXPLAINABLE',personalized:false,behavioralInputs:false,opaqueScore:false,reasonCodes:['SAME_MAKER','SAME_DEPARTMENT','MATERIAL_OVERLAP','PERIOD_OVERLAP','SAME_ORIGIN','PRICE_PROXIMITY']}}
-export function similarObjectsFor(objectId,{limit=4}={}){
+async function publicObjectIds(){
+ if(db.kind!=='POSTGRES')return new Set(lots.map(x=>x.id));
+ const rows=(await db.pool.query("SELECT id FROM objects WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'")).rows;
+ return new Set(rows.map(x=>String(x.id)));
+}
+export async function similarObjectsFor(objectId,{limit=4}={}){
  const source=lot(String(objectId||''));if(!source)return null;
+ const visible=await publicObjectIds();if(!visible.has(source.id))return null;
  limit=Math.max(1,Math.min(12,Number(limit)||4));
- const rows=lots.filter(x=>x.id!==source.id).map(x=>compareCandidate(source,x)).filter(Boolean).sort(cmp).slice(0,limit).map(publicItem);
+ const rows=lots.filter(x=>x.id!==source.id&&visible.has(x.id)).map(x=>compareCandidate(source,x)).filter(Boolean).sort(cmp).slice(0,limit).map(publicItem);
  return{source:{id:source.id,objectId:source.objectId,title:source.title},items:rows,capabilities:similarityCapabilities()};
 }
