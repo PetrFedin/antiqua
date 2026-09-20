@@ -11,11 +11,11 @@ const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
 const seller=await db.findAccountByEmail('seller@demo.antiqua');
 assert.ok(buyer?.id&&seller?.sellerId);
 
-const t=Date.now(),req={headers:{'x-forwarded-for':'203.0.113.91','user-agent':'Postgres engagement proof'},socket:{remoteAddress:'127.0.0.1'}};
-await recordObjectView(db,req,buyer,'lot-109',{at:t,ownerSellerId:seller.sellerId});
+const t=Math.floor(Date.now()/(30*60*1000))*(30*60*1000)+60_000,req={headers:{'x-forwarded-for':'203.0.113.91','user-agent':'Postgres engagement proof'},socket:{remoteAddress:'127.0.0.1'}};
+const first=await recordObjectView(db,req,buyer,'lot-109',{at:t,ownerSellerId:seller.sellerId});
 await recordObjectView(db,req,buyer,'lot-109',{at:t+60_000,ownerSellerId:seller.sellerId});
 
-const direct=(await db.pool.query("SELECT object_id,account_id,viewer_key_hash,window_started_at,first_viewed_at,last_viewed_at FROM object_view_events WHERE object_id='lot-109' AND account_id=$1",[buyer.id])).rows;
+const direct=(await db.pool.query("SELECT object_id,account_id,viewer_key_hash,window_started_at,first_viewed_at,last_viewed_at FROM object_view_events WHERE object_id='lot-109' AND account_id=$1 AND window_started_at=$2",[buyer.id,first.view.windowStartedAt])).rows;
 assert.equal(direct.length,1,'PostgreSQL unique window authority must deduplicate repeated view');
 assert.match(direct[0].viewer_key_hash,/^[0-9a-f]{64}$/);
 assert.ok(direct[0].last_viewed_at>=direct[0].first_viewed_at);
