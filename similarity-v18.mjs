@@ -3,6 +3,7 @@ import {db,lots,listings,auctions,lot,publicAuction,bi} from './runtime-v09.mjs'
 const norm=v=>String(v?.en??v??'').trim().toLowerCase().replace(/[‐‑‒–—]/g,'-');
 const words=v=>new Set(norm(v).split(/[^a-z0-9]+/).filter(x=>x.length>2&&!['the','and','with','style','century'].includes(x)));
 const equal=(a,b)=>Boolean(norm(a)&&norm(a)===norm(b));
+const genericAttribution=v=>/\b(school|style)\b/.test(norm(v))||['french','italian','english','chinese','european','continental european','northern italian'].includes(norm(v));
 const overlap=(a,b)=>[...words(a)].filter(x=>words(b).has(x));
 const midpoint=o=>(Number(o.estimateLow||0)+Number(o.estimateHigh||0))/2;
 
@@ -22,11 +23,11 @@ function commerceFor(o){
 }
 function reason(code,ru,en,value=null){return{code,label:bi(en,ru),value}}
 function compareCandidate(source,candidate){
- const reasons=[],materials=overlap(source.materials,candidate.materials),sameMaker=equal(source.maker,candidate.maker),sameDepartment=equal(source.department,candidate.department),sameOrigin=equal(source.origin,candidate.origin),samePeriod=centuryOverlap(source.period,candidate.period);
+ const reasons=[],materials=overlap(source.materials,candidate.materials),sameMaker=equal(source.maker,candidate.maker)&&!genericAttribution(source.maker),sameDepartment=equal(source.department,candidate.department),sameOrigin=equal(source.origin,candidate.origin),samePeriod=centuryOverlap(source.period,candidate.period);
  const sourceCommerce=commerceFor(source),candidateCommerce=commerceFor(candidate),den=Math.max(sourceCommerce.price||0,candidateCommerce.price||0,1),priceDistance=Math.abs((sourceCommerce.price||0)-(candidateCommerce.price||0))/den,closePrice=priceDistance<=.25;
  if(sameMaker)reasons.push(reason('SAME_MAKER','Тот же мастер / атрибуция','Same maker / attribution',candidate.maker));
  if(sameDepartment)reasons.push(reason('SAME_DEPARTMENT','Та же категория','Same category',candidate.department));
- if(materials.length)reasons.push(reason('MATERIAL_OVERLAP','Общий материал','Shared material',bi(materials.slice(0,3).join(', '),materials.slice(0,3).join(', '))));
+ if(materials.length)reasons.push(reason('MATERIAL_OVERLAP','Общий материал','Shared material',candidate.materials));
  if(samePeriod)reasons.push(reason('PERIOD_OVERLAP','Близкий исторический период','Related historical period',candidate.period));
  if(sameOrigin)reasons.push(reason('SAME_ORIGIN','То же происхождение','Same origin',candidate.origin));
  if(closePrice)reasons.push(reason('PRICE_PROXIMITY','Близкий ценовой диапазон','Similar price range',null));
