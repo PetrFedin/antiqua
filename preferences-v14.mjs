@@ -20,3 +20,13 @@ export async function aggregateObjectFlags(db,objectIds,flagTypes=['SAVED','WATC
  for(const x of memory.values())if(wantedIds.has(String(x.objectId))&&wantedTypes.has(String(x.flagType)))out[String(x.objectId)][String(x.flagType)]++;
  return out
 }
+
+
+export async function listObjectFlagAccounts(db,objectId,flag='WATCH'){
+ objectId=String(objectId||'');flag=String(flag||'').toUpperCase();
+ if(!objectId||!VALID.has(flag))return[];
+ if(db.kind==='POSTGRES'){
+  return (await db.pool.query('SELECT account_id FROM account_object_flags WHERE object_id=$1 AND flag_type=$2 ORDER BY account_id',[objectId,flag])).rows.map(r=>String(r.account_id));
+ }
+ return [...new Set([...memory.values()].filter(x=>String(x.objectId)===objectId&&String(x.flagType)===flag).map(x=>String(x.accountId)))].sort();
+}
