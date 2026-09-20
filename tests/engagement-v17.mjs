@@ -7,7 +7,7 @@ const seller=await db.findAccountByEmail('seller@demo.antiqua');
 const operator=await db.findAccountByEmail('operator@demo.antiqua');
 assert.ok(buyer?.id&&seller?.sellerId&&operator?.id);
 
-const t=Date.now(),req={headers:{'x-forwarded-for':'203.0.113.44','user-agent':'ANTIQUA engagement proof'},socket:{remoteAddress:'127.0.0.1'}};
+const t=Math.floor(Date.now()/(30*60*1000))*(30*60*1000)+60_000,req={headers:{'x-forwarded-for':'203.0.113.44','user-agent':'ANTIQUA engagement proof'},socket:{remoteAddress:'127.0.0.1'}};
 let x=await recordObjectView(db,req,buyer,'lot-109',{at:t,ownerSellerId:seller.sellerId});
 assert.equal(x.recorded,true);
 x=await recordObjectView(db,req,buyer,'lot-109',{at:t+5*60*1000,ownerSellerId:seller.sellerId});
