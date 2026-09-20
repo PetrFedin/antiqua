@@ -15,6 +15,18 @@ const DEFINITIONS=Object.freeze({
       rule('CANCEL','AWAITING_PAYMENT_CONNECTOR','CANCELLED',['BUYER','OPERATOR'],{auditAction:'ORDER_CANCELLED',outboxTopic:'ORDER.CANCELLED'})
     ])
   }),
+  OFFER:Object.freeze({
+    initial:'PENDING',terminal:Object.freeze(['ACCEPTED','DECLINED','WITHDRAWN']),transitions:Object.freeze([
+      rule('CREATE',['NONE','NEW'],'PENDING',['BUYER'],{auditAction:'OFFER_CREATED',outboxTopic:'OFFER.PENDING'}),
+      rule('SELLER_COUNTER',['PENDING','COUNTERED_BY_BUYER'],'COUNTERED_BY_SELLER',['SELLER'],{auditAction:'OFFER_COUNTERED',outboxTopic:'OFFER.COUNTERED'}),
+      rule('BUYER_COUNTER','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER',['BUYER'],{auditAction:'OFFER_COUNTERED',outboxTopic:'OFFER.COUNTERED'}),
+      rule('SELLER_ACCEPT',['PENDING','COUNTERED_BY_BUYER'],'ACCEPTED',['SELLER'],{auditAction:'OFFER_ACCEPTED',outboxTopic:'OFFER.ACCEPTED'}),
+      rule('BUYER_ACCEPT','COUNTERED_BY_SELLER','ACCEPTED',['BUYER'],{auditAction:'OFFER_ACCEPTED',outboxTopic:'OFFER.ACCEPTED'}),
+      rule('SELLER_DECLINE',['PENDING','COUNTERED_BY_BUYER'],'DECLINED',['SELLER'],{auditAction:'OFFER_DECLINED',outboxTopic:'OFFER.DECLINED'}),
+      rule('BUYER_DECLINE','COUNTERED_BY_SELLER','DECLINED',['BUYER'],{auditAction:'OFFER_DECLINED',outboxTopic:'OFFER.DECLINED'}),
+      rule('WITHDRAW',['PENDING','COUNTERED_BY_BUYER'],'WITHDRAWN',['BUYER'],{auditAction:'OFFER_WITHDRAWN',outboxTopic:'OFFER.WITHDRAWN'})
+    ])
+  }),
   SETTLEMENT:Object.freeze({
     initial:'PAYMENT_DUE',terminal:Object.freeze(['COMPLETED','REOFFERED','VOID']),transitions:Object.freeze([
       rule('START_PAYMENT','PAYMENT_DUE','PAYMENT_PROCESSING',['BUYER','SYSTEM']),
