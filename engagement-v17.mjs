@@ -11,6 +11,7 @@ const dayKey=at=>new Date(Number(at)).toISOString().slice(0,10);
 const clientIp=req=>String(req?.headers?.['x-forwarded-for']||req?.socket?.remoteAddress||'unknown').split(',')[0].trim();
 const userAgent=req=>String(req?.headers?.['user-agent']||'').slice(0,300);
 const isPrefetch=req=>/prefetch/i.test(String(req?.headers?.['sec-purpose']||req?.headers?.purpose||''));
+const isBot=req=>/(bot|crawler|spider|slurp)/i.test(userAgent(req));
 
 async function sellerForObject(db,objectId,provided){
  if(provided)return provided;
@@ -31,6 +32,7 @@ export async function recordObjectView(db,req,account,objectId,{at=Date.now(),ow
  objectId=String(objectId||'');
  if(!objectId)return{recorded:false,reason:'OBJECT_REQUIRED'};
  if(isPrefetch(req))return{recorded:false,reason:'PREFETCH'};
+ if(isBot(req))return{recorded:false,reason:'BOT'};
  if(account?.roles?.some(r=>STAFF_ROLES.has(String(r).toUpperCase())))return{recorded:false,reason:'STAFF'};
  const sellerId=await sellerForObject(db,objectId,ownerSellerId);
  if(account?.sellerId&&sellerId&&String(account.sellerId)===String(sellerId))return{recorded:false,reason:'SELF_SELLER'};
@@ -72,4 +74,11 @@ export async function listRecentlyViewed(db,accountId,{limit=12}={}){
  const grouped=new Map();
  for(const row of memory.values())if(row.accountId===accountId){const prev=grouped.get(row.objectId);if(!prev)grouped.set(row.objectId,{objectId:row.objectId,lastViewedAt:row.lastViewedAt,sessions:1});else{prev.sessions++;if(row.lastViewedAt>prev.lastViewedAt)prev.lastViewedAt=row.lastViewedAt}}
  return[...grouped.values()].sort((a,b)=>b.lastViewedAt.localeCompare(a.lastViewedAt)).slice(0,limit);
+}
+
+
+export async function clearRecentlyViewed(db,accountId){
+ accountId=String(accountId||'');if(!accountId)return 0;
+ if(db.kind==='POSTGRES')return (await db.pool.query('DELETE FROM object_view_events WHERE account_id=$1',[accountId])).rowCount;
+ let count=0;for(const [key,row] of memory)if(row.accountId===accountId){memory.delete(key);count++}return count;
 }
