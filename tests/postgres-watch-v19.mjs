@@ -13,13 +13,15 @@ assert.equal(db.kind,'POSTGRES');
 const buyer=await db.findAccountByEmail('buyer@demo.antiqua'),seller=await db.findAccountByEmail('seller@demo.antiqua');
 assert.ok(buyer?.id&&seller?.id&&seller?.sellerId);
 const current=listing('lst-109');assert.ok(current);
-const before=structuredClone(current),after={...structuredClone(current),price:Number(current.price)+137};
+const before=structuredClone(current),after={...structuredClone(current),price:Number(current.price)+137},authoritativeNegotiable=!Boolean(before.negotiable);
 const token=crypto.randomUUID().replaceAll('-','');
 
 try{
  await setObjectFlag(db,buyer.id,'lot-109','WATCH',true);
- const persisted=await persistSellerListingWithWatch(before,after,{actorAccountId:seller.id,eventKey:'listing-proof-'+token});
+ const concurrentPayload={...before,negotiable:authoritativeNegotiable};await db.pool.query('UPDATE listings SET payload=$2,updated_at=now() WHERE id=$1',[before.id,concurrentPayload]);
+ const persisted=await persistSellerListingWithWatch(before,after,{actorAccountId:seller.id,eventKey:'listing-proof-'+token,changes:{price:after.price}});
  assert.equal(persisted.watch.persistent,true);assert.equal(persisted.watch.subscribers,1);assert.equal(persisted.watch.queued,1);
+ const merged=(await db.pool.query('SELECT payload FROM listings WHERE id=$1',[before.id])).rows[0].payload;assert.equal(merged.negotiable,authoritativeNegotiable,'untouched field must preserve row-locked DB authority');assert.equal(after.negotiable,authoritativeNegotiable,'local cache must resync from row-locked authority');
 
  const data=listingWatchData(before,after),cx=await db.pool.connect();let replay;
  try{await cx.query('BEGIN');replay=await enqueueWatchNotificationsTx(cx,{objectId:'lot-109',type:'WATCH_LISTING_CHANGED',data,excludeAccountIds:[seller.id],eventKey:persisted.eventKey});await cx.query('COMMIT')}catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}
