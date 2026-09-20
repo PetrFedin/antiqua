@@ -1,5 +1,6 @@
 import {safe,copy,esc,local,lang} from './core.js';
 
+let requestSeq=0;
 const money=(value,currency='EUR')=>new Intl.NumberFormat(lang()==='ru'?'ru-RU':'en-GB',{style:'currency',currency,maximumFractionDigits:0}).format(Number(value)||0);
 const reason=x=>`<span class="similarity-reason">${esc(local(x.label))}${x.value?`: ${esc(local(x.value))}`:''}</span>`;
 function card(x){
@@ -23,11 +24,11 @@ function markup(d){
  </section>`;
 }
 window.addEventListener('antiqua:passport',async e=>{
- const id=String(e.detail?.id||'');if(!id)return;
+ const id=String(e.detail?.id||'');if(!id)return;const seq=++requestSeq;
  const dlg=document.querySelector('#dialog[open]')||document.querySelector('#dialog'),body=dlg?.querySelector('.dossier-body');if(!body)return;
  body.querySelector('#dossierSimilarV18')?.remove();
  const d=await safe(`/api/lots/${encodeURIComponent(id)}/similar?limit=4`);
- if(!d?.items?.length||String(e.detail?.id)!==id)return;
+ if(seq!==requestSeq||!d?.items?.length)return;
  const box=document.createElement('div');box.innerHTML=markup(d);
  const disclaimer=body.querySelector('.dossier-disclaimer');
  if(disclaimer)disclaimer.before(box.firstElementChild);else body.append(box.firstElementChild);
