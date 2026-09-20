@@ -5,11 +5,10 @@ const metric=(value,label)=>`<div class="kpi"><strong>${esc(value)}</strong><spa
 const settledText=summary=>Object.entries(summary.settledByCurrency||{}).map(([currency,amount])=>moneyMinor(amount,currency)).join(' · ')||'—';
 
 function rowCard(x){
- const demand=x.saved+x.watching+x.conversations+x.offers+x.bids+x.orders;
  return `<article class="account-card seller-analytics-object">
   <div class="account-card-head"><span class="status-pill">${esc(x.listingStatus||copy('без листинга','no listing'))}</span><strong>${esc(x.objectCode)}</strong></div>
   <h3>${esc(local(x.title))}</h3>
-  <small>${copy('Спрос','Demand')}: ${demand} · ${copy('Просмотры','Views')}: ${x.views||0} · ${copy('Сохранения','Saves')}: ${x.saved} · ${copy('Наблюдение','Watch')}: ${x.watching}</small>
+  <small>${copy('Просмотры','Views')}: ${x.views||0} · ${copy('Сохранения','Saves')}: ${x.saved} · ${copy('Наблюдение','Watch')}: ${x.watching}</small>
   <div class="draft-media-line">${copy('Диалоги','Threads')} ${x.conversations} · ${copy('Предложения','Offers')} ${x.offers} · ${copy('Ставки','Bids')} ${x.bids} · ${copy('Заказы','Orders')} ${x.orders}</div>
   ${x.settlements?`<div class="draft-media-line">${copy('Расчёты','Settlements')}: ${x.settlements} · ${moneyMinor(x.settledValueMinor,x.settlementCurrency||x.currency||'EUR')}</div>`:''}
   ${x.openDisputes?`<div class="draft-media-line">${copy('Открытые споры','Open disputes')}: ${x.openDisputes}</div>`:''}
@@ -31,7 +30,7 @@ function markup(a){
    ${metric(settledText(s),copy('Закрытые расчёты','Settled value'))}
    ${metric(s.openDisputes||0,copy('Открытые споры','Open disputes'))}
   </div>
-  <div class="block-head compact-head"><div><div class="eyebrow">OBJECT SIGNALS</div><h3>${copy('Предметы по силе измеримого спроса','Objects by measured demand')}</h3></div></div>
+  <div class="block-head compact-head"><div><div class="eyebrow">OBJECT SIGNALS</div><h3>${copy('Предметы по фактическим сигналам спроса','Objects by measured demand signals')}</h3></div></div>
   <div class="account-card-grid compact">${objects.length?objects.map(rowCard).join(''):`<div class="empty-state">${copy('Измеримых действий пока нет','No measured actions yet')}</div>`}</div>
  </section>`;
 }
