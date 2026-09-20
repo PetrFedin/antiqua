@@ -16,7 +16,7 @@ const DEFINITIONS=Object.freeze({
     ])
   }),
   OFFER:Object.freeze({
-    initial:'PENDING',terminal:Object.freeze(['ACCEPTED','DECLINED','WITHDRAWN']),transitions:Object.freeze([
+    initial:'PENDING',terminal:Object.freeze(['ACCEPTED','DECLINED','WITHDRAWN','SUPERSEDED']),transitions:Object.freeze([
       rule('CREATE',['NONE','NEW'],'PENDING',['BUYER'],{auditAction:'OFFER_CREATED',outboxTopic:'OFFER.PENDING'}),
       rule('SELLER_COUNTER',['PENDING','COUNTERED_BY_BUYER'],'COUNTERED_BY_SELLER',['SELLER'],{auditAction:'OFFER_COUNTERED',outboxTopic:'OFFER.COUNTERED'}),
       rule('BUYER_COUNTER','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER',['BUYER'],{auditAction:'OFFER_COUNTERED',outboxTopic:'OFFER.COUNTERED'}),
@@ -24,7 +24,8 @@ const DEFINITIONS=Object.freeze({
       rule('BUYER_ACCEPT','COUNTERED_BY_SELLER','ACCEPTED',['BUYER'],{auditAction:'OFFER_ACCEPTED',outboxTopic:'OFFER.ACCEPTED'}),
       rule('SELLER_DECLINE',['PENDING','COUNTERED_BY_BUYER'],'DECLINED',['SELLER'],{auditAction:'OFFER_DECLINED',outboxTopic:'OFFER.DECLINED'}),
       rule('BUYER_DECLINE','COUNTERED_BY_SELLER','DECLINED',['BUYER'],{auditAction:'OFFER_DECLINED',outboxTopic:'OFFER.DECLINED'}),
-      rule('WITHDRAW',['PENDING','COUNTERED_BY_BUYER'],'WITHDRAWN',['BUYER'],{auditAction:'OFFER_WITHDRAWN',outboxTopic:'OFFER.WITHDRAWN'})
+      rule('WITHDRAW',['PENDING','COUNTERED_BY_BUYER'],'WITHDRAWN',['BUYER'],{auditAction:'OFFER_WITHDRAWN',outboxTopic:'OFFER.WITHDRAWN'}),
+      rule('SUPERSEDE',['PENDING','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER'],'SUPERSEDED',['SYSTEM'],{auditAction:'OFFER_SUPERSEDED',outboxTopic:'OFFER.SUPERSEDED'})
     ])
   }),
   SETTLEMENT:Object.freeze({
