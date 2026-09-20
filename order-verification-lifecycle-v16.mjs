@@ -1,6 +1,7 @@
 import {db,orders,listings,uid,now} from './runtime-v09.mjs';
 import {inferLifecycleAuthority,planLifecycleTransition} from './lifecycle-authority-v16.mjs';
 import {findLifecycleEventBySourceTx,recordLifecycleTransitionTx} from './lifecycle-events-v16.mjs';
+import {emitListingStatusMemory,enqueueListingStatusTx} from './watch-events-v19.mjs';
 
 const conflict=message=>Object.assign(new Error(message),{status:409,code:'LIFECYCLE_EVENT_CONFLICT'});
 const unavailable=()=>Object.assign(new Error('Item unavailable'),{status:409,code:'ITEM_UNAVAILABLE'});
@@ -22,12 +23,17 @@ export async function loadOrderAuthority(id){
   const row=(await db.pool.query('SELECT * FROM orders WHERE id=$1',[id])).rows[0];o=orderFromRow(row);if(o)orders.set(o.id,o);return o?structuredClone(o):null
 }
 
-export async function createOrderAuthority(actor,order,{sourceKey=null,lifecycleAuthority=null}={}){
+export async function createOrderAuthority(actor,order,{sourceKey=null,lifecycleAuthority=null,watchExcludeAccountIds=[]}={}){
   const authority=String(lifecycleAuthority||inferLifecycleAuthority({account:actor,resource:order})).toUpperCase(),plan=planLifecycleTransition({domain:'ORDER',from:'NONE',to:'AWAITING_PAYMENT_CONNECTOR',action:'CREATE',authority}),o={...order,status:plan.to};
-  if(db.kind!=='POSTGRES'){await reserveListingMemory(o.listingId);orders.set(o.id,structuredClone(o));await db.putOrder(o);return{...structuredClone(o),idempotentTransition:false,lifecycle:plan}}
+  if(db.kind!=='POSTGRES'){
+    const listingBefore=o.listingId?structuredClone(listings.get(o.listingId)||null):null;await reserveListingMemory(o.listingId);const listingAfter=o.listingId?structuredClone(listings.get(o.listingId)||null):null;
+    orders.set(o.id,structuredClone(o));await db.putOrder(o);
+    if(listingBefore&&listingAfter)await emitListingStatusMemory(listingBefore,listingAfter,{excludeAccountIds:[actor?.id,...watchExcludeAccountIds]});
+    return{...structuredClone(o),idempotentTransition:false,lifecycle:plan}
+  }
   const cx=await db.pool.connect();let reserved=false;try{
     await cx.query('BEGIN');const existing=(await cx.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE',[o.id])).rows[0];if(existing){if(sourceKey){const prior=await findLifecycleEventBySourceTx(cx,{domain:'ORDER',aggregateId:o.id,sourceKey});if(prior?.to===plan.to){await cx.query('COMMIT');const current=orderFromRow(existing);orders.set(current.id,current);return{...current,idempotentTransition:true,lifecycle:prior}}}throw Object.assign(new Error('Order already exists'),{status:409,code:'ORDER_EXISTS'})}
-    if(o.listingId){await reserveListingTx(cx,o.listingId);reserved=true}
+    let listingBefore=null,listingAfter=null;if(o.listingId){const row=await reserveListingTx(cx,o.listingId);reserved=true;listingBefore={...(row.payload||{}),id:row.id,lotId:row.object_id,sellerId:row.seller_id,status:row.status};listingAfter={...listingBefore,status:'RESERVED'};await enqueueListingStatusTx(cx,listingBefore,listingAfter,{excludeAccountIds:[actor?.id,...watchExcludeAccountIds],eventKey:`order-reserve:${o.id}`})}
     await cx.query('INSERT INTO orders(id,listing_id,object_id,buyer_account_id,seller_id,status,payload,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8)',[o.id,o.listingId||null,o.lotId,o.buyerClientId,o.sellerId,o.status,o,o.createdAt||now()]);await recordLifecycleTransitionTx(cx,{plan,aggregateId:o.id,sourceKey,metadata:{listingId:o.listingId||null,objectId:o.lotId,buyerAccountId:o.buyerClientId,sellerId:o.sellerId,listingReserved:reserved}});await cx.query('COMMIT');if(reserved)syncListing(o.listingId,'RESERVED');orders.set(o.id,structuredClone(o));return{...structuredClone(o),idempotentTransition:false,lifecycle:plan}
   }catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}
 }
@@ -35,12 +41,12 @@ export async function createOrderAuthority(actor,order,{sourceKey=null,lifecycle
 export async function transitionOrder(actor,id,next,{lifecycleAuthority=null,lifecycleFacts={},sourceKey=null,patch={}}={}){
   next=String(next||'').toUpperCase();sourceKey=sourceKey==null?null:String(sourceKey);
   if(db.kind!=='POSTGRES'){
-    const current=orders.get(id);if(!current||!orderAccess(actor,current))throw Object.assign(new Error('Order not found'),{status:404});const authority=String(lifecycleAuthority||inferLifecycleAuthority({account:actor,resource:current})).toUpperCase(),plan=planLifecycleTransition({domain:'ORDER',from:current.status,to:next,authority,facts:lifecycleFacts}),updated={...current,...patch,status:plan.to};if(plan.action==='CANCEL')await reactivateListingMemory(current.listingId);orders.set(id,updated);await db.putOrder(updated);return{...structuredClone(updated),idempotentTransition:false,lifecycle:plan}
+    const current=orders.get(id);if(!current||!orderAccess(actor,current))throw Object.assign(new Error('Order not found'),{status:404});const authority=String(lifecycleAuthority||inferLifecycleAuthority({account:actor,resource:current})).toUpperCase(),plan=planLifecycleTransition({domain:'ORDER',from:current.status,to:next,authority,facts:lifecycleFacts}),updated={...current,...patch,status:plan.to};let listingBefore=null,listingAfter=null;if(plan.action==='CANCEL'&&current.listingId){listingBefore=structuredClone(listings.get(current.listingId)||null);await reactivateListingMemory(current.listingId);listingAfter=structuredClone(listings.get(current.listingId)||null)}orders.set(id,updated);await db.putOrder(updated);if(listingBefore&&listingAfter)await emitListingStatusMemory(listingBefore,listingAfter,{excludeAccountIds:[actor?.id]});return{...structuredClone(updated),idempotentTransition:false,lifecycle:plan}
   }
   const cx=await db.pool.connect();let listingReactivated=false;try{
     await cx.query('BEGIN');const row=(await cx.query('SELECT * FROM orders WHERE id=$1 FOR UPDATE',[id])).rows[0];if(!row)throw Object.assign(new Error('Order not found'),{status:404});const current=orderFromRow(row);if(!orderAccess(actor,current)&&!privileged(lifecycleAuthority))throw Object.assign(new Error('Order not found'),{status:404});
     if(sourceKey){const prior=await findLifecycleEventBySourceTx(cx,{domain:'ORDER',aggregateId:id,sourceKey});if(prior){if(prior.to!==next)throw conflict('Lifecycle source key already belongs to a different order transition');await cx.query('COMMIT');orders.set(current.id,current);return{...current,idempotentTransition:true,lifecycle:prior}}}
-    const authority=String(lifecycleAuthority||inferLifecycleAuthority({account:actor,resource:current})).toUpperCase(),plan=planLifecycleTransition({domain:'ORDER',from:current.status,to:next,authority,facts:lifecycleFacts}),updated={...current,...patch,status:plan.to};if(plan.action==='CANCEL'&&current.listingId){await reactivateListingTx(cx,current.listingId);listingReactivated=true}await cx.query('UPDATE orders SET status=$2,payload=$3,updated_at=now() WHERE id=$1',[id,plan.to,updated]);await recordLifecycleTransitionTx(cx,{plan,aggregateId:id,sourceKey,metadata:{buyerAccountId:current.buyerClientId,sellerId:current.sellerId,patchKeys:Object.keys(patch||{}),listingReactivated}});await cx.query('COMMIT');if(listingReactivated)syncListing(current.listingId,'ACTIVE');orders.set(id,structuredClone(updated));return{...structuredClone(updated),idempotentTransition:false,lifecycle:plan}
+    const authority=String(lifecycleAuthority||inferLifecycleAuthority({account:actor,resource:current})).toUpperCase(),plan=planLifecycleTransition({domain:'ORDER',from:current.status,to:next,authority,facts:lifecycleFacts}),updated={...current,...patch,status:plan.to};if(plan.action==='CANCEL'&&current.listingId){const li=await reactivateListingTx(cx,current.listingId);listingReactivated=Boolean(li?.status==='RESERVED');if(listingReactivated){const before={...(li.payload||{}),id:li.id,lotId:li.object_id,sellerId:li.seller_id,status:li.status},after={...before,status:'ACTIVE'};await enqueueListingStatusTx(cx,before,after,{excludeAccountIds:[actor?.id],eventKey:`order-reactivate:${id}`})}}await cx.query('UPDATE orders SET status=$2,payload=$3,updated_at=now() WHERE id=$1',[id,plan.to,updated]);await recordLifecycleTransitionTx(cx,{plan,aggregateId:id,sourceKey,metadata:{buyerAccountId:current.buyerClientId,sellerId:current.sellerId,patchKeys:Object.keys(patch||{}),listingReactivated}});await cx.query('COMMIT');if(listingReactivated)syncListing(current.listingId,'ACTIVE');orders.set(id,structuredClone(updated));return{...structuredClone(updated),idempotentTransition:false,lifecycle:plan}
   }catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}
 }
 
