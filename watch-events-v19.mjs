@@ -43,25 +43,27 @@ export function listingWatchData(before,after){
  return{listingId:String(after.id),previousPrice:Number(before.price),price:Number(after.price),currency:String(after.currency||before.currency||'EUR'),previousStatus:String(before.status),status:String(after.status),priceChanged,statusChanged};
 }
 
-export async function persistSellerListingWithWatch(before,after,{actorAccountId=null,eventKey=null}={}){
+export async function persistSellerListingWithWatch(before,after,{actorAccountId=null,eventKey=null,changes=null}={}){
  const data=listingWatchData(before,after),key=eventKey||eventId('listing');
  if(db.kind!=='POSTGRES'){
   await db.putListing(after);
   const watch=data?await emitWatchNotificationsMemory({objectId:after.lotId,type:'WATCH_LISTING_CHANGED',data,excludeAccountIds:[actorAccountId]}):{subscribers:0,delivered:0,persistent:false};
   return{watch,eventKey:key};
  }
- const cx=await db.pool.connect();try{
+ const cx=await db.pool.connect();let authorityBefore=null;try{
   await cx.query('BEGIN');
   const locked=(await cx.query('SELECT * FROM listings WHERE id=$1 FOR UPDATE',[after.id])).rows[0];
   if(!locked)throw Object.assign(new Error('Listing not found'),{status:404,code:'LISTING_NOT_FOUND'});
-  if(!['ACTIVE','INACTIVE'].includes(String(locked.status)))throw Object.assign(new Error('Listing is locked by its commercial lifecycle'),{status:409,code:'LISTING_LIFECYCLE_LOCKED',listingStatus:locked.status});
-  const authorityBefore={...(locked.payload||{}),id:locked.id,lotId:locked.object_id,sellerId:locked.seller_id,status:locked.status};
+  authorityBefore={...(locked.payload||{}),id:locked.id,lotId:locked.object_id,sellerId:locked.seller_id,status:locked.status};
+  if(!['ACTIVE','INACTIVE'].includes(String(authorityBefore.status)))throw Object.assign(new Error('Listing is locked by its commercial lifecycle'),{status:409,code:'LISTING_LIFECYCLE_LOCKED',listingStatus:authorityBefore.status});
   if(String(authorityBefore.sellerId)!==String(after.sellerId))throw Object.assign(new Error('Listing ownership changed'),{status:409,code:'LISTING_OWNER_CONFLICT'});
-  const authorityData=listingWatchData(authorityBefore,after);
-  await cx.query('UPDATE listings SET status=$2,payload=$3,updated_at=now() WHERE id=$1',[after.id,after.status,after]);
-  const watch=authorityData?await enqueueWatchNotificationsTx(cx,{objectId:after.lotId,type:'WATCH_LISTING_CHANGED',data:authorityData,excludeAccountIds:[actorAccountId],eventKey:key}):{subscribers:0,queued:0,idempotent:0,persistent:true};
-  await cx.query('COMMIT');return{watch,eventKey:key};
- }catch(e){try{await cx.query('ROLLBACK')}catch{}Object.assign(after,structuredClone(before));throw e}finally{cx.release()}
+  const allowedChanges=changes&&typeof changes==='object'?Object.fromEntries(Object.entries(changes).filter(([k])=>['price','negotiable','status'].includes(k))):{price:after.price,negotiable:after.negotiable,status:after.status};
+  const authorityAfter={...authorityBefore,...allowedChanges,id:authorityBefore.id,lotId:authorityBefore.lotId,sellerId:authorityBefore.sellerId};
+  const authorityData=listingWatchData(authorityBefore,authorityAfter);
+  await cx.query('UPDATE listings SET status=$2,payload=$3,updated_at=now() WHERE id=$1',[authorityAfter.id,authorityAfter.status,authorityAfter]);
+  const watch=authorityData?await enqueueWatchNotificationsTx(cx,{objectId:authorityAfter.lotId,type:'WATCH_LISTING_CHANGED',data:authorityData,excludeAccountIds:[actorAccountId],eventKey:key}):{subscribers:0,queued:0,idempotent:0,persistent:true};
+  await cx.query('COMMIT');Object.assign(after,structuredClone(authorityAfter));return{watch,eventKey:key};
+ }catch(e){try{await cx.query('ROLLBACK')}catch{}Object.assign(after,structuredClone(authorityBefore||before));throw e}finally{cx.release()}
 }
 
 export async function emitListingStatusMemory(before,after,{excludeAccountIds=[]}={}){
