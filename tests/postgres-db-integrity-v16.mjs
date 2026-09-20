@@ -18,10 +18,11 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 
 try{
  assert.equal(db.kind,'POSTGRES');
- assert.equal(migrationManifest.at(-1).version,'015_v16_db_integrity');
+ assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
+ assert.equal(migrationManifest.at(-1).version,'016_v17_object_engagement');
 
- const versions=(await db.pool.query("SELECT version FROM schema_migrations WHERE version IN ('014_v16_discovery_postgres_matching','015_v16_db_integrity') ORDER BY version")).rows.map(x=>x.version);
- assert.deepEqual(versions,['014_v16_discovery_postgres_matching','015_v16_db_integrity'],'CLI/server migration authority must include 014 and 015');
+ const versions=(await db.pool.query("SELECT version FROM schema_migrations WHERE version IN ('014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement') ORDER BY version")).rows.map(x=>x.version);
+ assert.deepEqual(versions,['014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement'],'CLI/server migration authority must include 014 through 016');
 
  const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
  assert.ok(buyer);
@@ -141,7 +142,7 @@ try{
  const found=(await db.pool.query('SELECT conname FROM pg_constraint WHERE conname=ANY($1::text[])',[fkNames])).rows.map(x=>x.conname);
  assert.equal(new Set(found).size,fkNames.length);
 
- console.log('ANTIQUA v16 PostgreSQL DB integrity: manifest 001..015 + FK/orphan prevention + exact shipment source + cross-aggregate consistency + Money/media guards passed');
+ console.log('ANTIQUA v16 PostgreSQL DB integrity: manifest 001..016 + FK/orphan prevention + exact shipment source + cross-aggregate consistency + Money/media guards passed');
 }finally{
  for(const m of cleanup.media)await db.pool.query('DELETE FROM media_assets WHERE id=$1',[m]).catch(()=>{});
  for(const o of cleanup.orders)await db.pool.query('DELETE FROM orders WHERE id=$1',[o]).catch(()=>{});

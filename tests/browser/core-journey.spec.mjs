@@ -216,13 +216,13 @@ test('seller analytics reflects measured buyer demand without exposing buyer ide
 
   const seller=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'SELLER'})});return{status:r.status,body:await r.json()}});expect(seller.status).toBe(200);
   const analytics=await page.evaluate(async()=>{const r=await fetch('/api/seller/analytics');return{status:r.status,body:await r.json()}});
-  expect(analytics.status).toBe(200);expect(analytics.body.analytics?.measurement?.viewsTracked).toBe(false);
+  expect(analytics.status).toBe(200);expect(analytics.body.analytics?.measurement?.viewsTracked).toBe(true);expect(analytics.body.analytics?.measurement?.viewDefinition).toBe('DEDUPED_30_MINUTE_PASSPORT_SESSIONS');
   const row=analytics.body.analytics?.objects?.find(x=>x.objectId==='lot-109');expect(row).toBeTruthy();expect(row.saved).toBeGreaterThanOrEqual(1);expect(row.conversations).toBeGreaterThanOrEqual(1);expect(row.offers).toBeGreaterThanOrEqual(1);
   expect(JSON.stringify(analytics.body)).not.toContain(buyer.body.account.id);
 
   await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
   const panel=page.locator('#sellerAnalyticsV17');await expect(panel).toBeVisible();
   await expect(panel).toContainText(/Спрос и коммерческая воронка|Demand & commercial funnel/i);
-  await expect(panel).toContainText(/Просмотры пока не считаются|Views are not tracked yet/i);
+  await expect(panel).toContainText(/30-минутном окне|30-minute window/i);
   await expect(panel.locator('.seller-analytics-object')).toHaveCount(2);
 });
