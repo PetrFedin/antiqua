@@ -19,6 +19,8 @@ const again=await similarObjectsFor('lot-109',{limit:4});
 assert.deepEqual(again.items.map(x=>x.id),a.items.map(x=>x.id),'ranking must be deterministic');
 assert.deepEqual(again.items.map(x=>x.reasons.map(r=>r.code)),a.items.map(x=>x.reasons.map(r=>r.code)),'reasons must be deterministic');
 
+const sculpture=await similarObjectsFor('lot-103',{limit:12});const broad=sculpture.items.find(x=>x.id==='lot-104');if(broad)assert.equal(broad.reasons.some(r=>r.code==='SAME_MAKER'),false,'generic European School attribution must not be treated as same maker');
+
 const one=await similarObjectsFor('lot-109',{limit:1});assert.equal(one.items.length,1);
 assert.equal(await similarObjectsFor('missing-object'),null);
 console.log('ANTIQUA v18 similarity: deterministic catalogue rules + explicit reasons + no personalization/opaque score passed');
