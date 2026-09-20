@@ -9,7 +9,7 @@ function rowCard(x){
  return `<article class="account-card seller-analytics-object">
   <div class="account-card-head"><span class="status-pill">${esc(x.listingStatus||copy('без листинга','no listing'))}</span><strong>${esc(x.objectCode)}</strong></div>
   <h3>${esc(local(x.title))}</h3>
-  <small>${copy('Спрос','Demand')}: ${demand} · ${copy('Сохранения','Saves')}: ${x.saved} · ${copy('Наблюдение','Watch')}: ${x.watching}</small>
+  <small>${copy('Спрос','Demand')}: ${demand} · ${copy('Просмотры','Views')}: ${x.views||0} · ${copy('Сохранения','Saves')}: ${x.saved} · ${copy('Наблюдение','Watch')}: ${x.watching}</small>
   <div class="draft-media-line">${copy('Диалоги','Threads')} ${x.conversations} · ${copy('Предложения','Offers')} ${x.offers} · ${copy('Ставки','Bids')} ${x.bids} · ${copy('Заказы','Orders')} ${x.orders}</div>
   ${x.settlements?`<div class="draft-media-line">${copy('Расчёты','Settlements')}: ${x.settlements} · ${moneyMinor(x.settledValueMinor,x.settlementCurrency||x.currency||'EUR')}</div>`:''}
   ${x.openDisputes?`<div class="draft-media-line">${copy('Открытые споры','Open disputes')}: ${x.openDisputes}</div>`:''}
@@ -19,9 +19,10 @@ function rowCard(x){
 function markup(a){
  const s=a.summary||{},objects=a.objects||[];
  return `<section id="sellerAnalyticsV17" class="account-block seller-analytics-v17">
-  <div class="block-head"><div><div class="eyebrow">DEALER ANALYTICS</div><h2>${copy('Спрос и коммерческая воронка','Demand & commercial funnel')}</h2><p>${copy('Только фактические действия внутри ANTIQUA. Просмотры пока не считаются и не подменяются демонстрационными числами.','Only measured ANTIQUA actions are shown. Views are not tracked yet and are never replaced with demo numbers.')}</p></div></div>
+  <div class="block-head"><div><div class="eyebrow">DEALER ANALYTICS</div><h2>${copy('Спрос и коммерческая воронка','Demand & commercial funnel')}</h2><p>${copy('Только фактические действия внутри ANTIQUA. Просмотр — дедуплицированное открытие паспорта предмета в 30-минутном окне; личности посетителей продавцу не раскрываются.','Only measured ANTIQUA actions are shown. A view is a deduplicated object-passport session in a 30-minute window; visitor identities are not exposed to the seller.')}</p></div></div>
   <div class="v12-kpis">
    ${metric(s.objects||0,copy('Предметы','Objects'))}
+   ${metric(s.views||0,copy('Просмотры','Views'))}
    ${metric(s.saved||0,copy('Сохранения','Saves'))}
    ${metric(s.conversations||0,copy('Диалоги','Threads'))}
    ${metric(s.offers||0,copy('Предложения','Offers'))}
