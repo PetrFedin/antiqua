@@ -92,4 +92,4 @@ export async function runWorkerCycle({workerId='worker',limit=25,leaseMs=120000}
   return{scheduled,outbox:{...totals,cycles},stats:await outboxStats(db)};
 }
 
-export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',lifecycleDelivery:'JOURNAL_VERIFIED_INTERNAL',passportRevisionDelivery:'REVISION_JOURNAL_VERIFIED_INTERNAL'}}
+export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',watchNotificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',lifecycleDelivery:'JOURNAL_VERIFIED_INTERNAL',passportRevisionDelivery:'REVISION_JOURNAL_VERIFIED_INTERNAL'}}
