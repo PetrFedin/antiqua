@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {db} from '../runtime-v09.mjs';
-import {recordObjectView,aggregateObjectViews,listRecentlyViewed} from '../engagement-v17.mjs';
+import {recordObjectView,aggregateObjectViews,listRecentlyViewed,clearRecentlyViewed} from '../engagement-v17.mjs';
 
 if(!process.env.DATABASE_URL){
  console.log('ANTIQUA v17 PostgreSQL engagement: skipped (DATABASE_URL not set)');
@@ -27,6 +27,8 @@ const recent=await listRecentlyViewed(db,buyer.id);
 assert.equal(recent[0].objectId,'lot-109');assert.equal(recent[0].sessions,1);
 const views=await aggregateObjectViews(db,['lot-109'],{excludeAccountId:seller.id});
 assert.ok(views['lot-109'].views>=1);
+
+const cleared=await clearRecentlyViewed(db,buyer.id);assert.ok(cleared>=1);assert.equal((await listRecentlyViewed(db,buyer.id)).length,0);
 
 await assert.rejects(()=>db.pool.query("INSERT INTO object_view_events(id,object_id,viewer_key_hash,window_started_at,first_viewed_at,last_viewed_at) VALUES('view-orphan-proof','missing-object','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',now(),now(),now())"),e=>e.code==='23503');
 console.log('ANTIQUA v17 PostgreSQL engagement: durable dedupe + object FK + recent projection + no raw network identifiers passed');
