@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {db} from '../runtime-v09.mjs';
-import {recordObjectView,aggregateObjectViews,listRecentlyViewed,engagementCapabilities} from '../engagement-v17.mjs';
+import {recordObjectView,aggregateObjectViews,listRecentlyViewed,clearRecentlyViewed,engagementCapabilities} from '../engagement-v17.mjs';
 
 const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
 const seller=await db.findAccountByEmail('seller@demo.antiqua');
@@ -30,6 +30,7 @@ assert.equal(views['lot-109'].views,2,'buyer session plus one anonymous session 
 const recent=await listRecentlyViewed(db,buyer.id,{limit:12});
 assert.equal(recent[0].objectId,'lot-109');assert.equal(recent[0].sessions,1);
 assert.equal((await listRecentlyViewed(db,seller.id)).some(r=>r.objectId==='lot-109'),false,'self seller view must not enter recent history');
+const cleared=await clearRecentlyViewed(db,buyer.id);assert.equal(cleared,1);assert.equal((await listRecentlyViewed(db,buyer.id)).length,0,'clearing recent history must erase account-linked view rows');
 
 const cap=engagementCapabilities();
 assert.equal(cap.windowMinutes,30);assert.equal(cap.anonymousRawIdentifiersStored,false);assert.equal(cap.sellerViewerIdentityExposed,false);
