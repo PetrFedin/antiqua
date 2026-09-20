@@ -15,7 +15,8 @@ const files=[
   '012_v16_lifecycle_events.sql',
   '013_v16_passport_revisions.sql',
   '014_v16_discovery_postgres_matching.sql',
-  '015_v16_db_integrity.sql'
+  '015_v16_db_integrity.sql',
+  '016_v17_object_engagement.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
