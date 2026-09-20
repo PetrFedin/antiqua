@@ -204,6 +204,7 @@ test('seller analytics reflects measured buyer demand without exposing buyer ide
   await page.goto('/',{waitUntil:'domcontentloaded'});
   const buyer=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(buyer.status).toBe(200);
   const csrf=buyer.body.csrf;expect(csrf).toBeTruthy();
+  const denied=await page.evaluate(async()=>{const r=await fetch('/api/seller/analytics');return r.status});expect(denied).toBe(403);
   const signals=await page.evaluate(async csrf=>{
     const post=async(path,body)=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}};
     const saved=await post('/api/lots/lot-109/save',{enabled:true});
