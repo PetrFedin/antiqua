@@ -198,3 +198,31 @@ test('seller workspace creates complete object drafts and safely toggles storefr
   patched=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/seller/listings/${listingId}`&&r.request().method()==='PATCH');
   await listingForm.locator('button[type="submit"]').click();expect((await patched).status()).toBe(200);
 });
+
+
+test('seller analytics reflects measured buyer demand without exposing buyer identity',async({page})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  const buyer=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(buyer.status).toBe(200);
+  const csrf=buyer.body.csrf;expect(csrf).toBeTruthy();
+  const denied=await page.evaluate(async()=>{const r=await fetch('/api/seller/analytics');return r.status});expect(denied).toBe(403);
+  const signals=await page.evaluate(async csrf=>{
+    const post=async(path,body)=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}};
+    const saved=await post('/api/lots/lot-109/save',{enabled:true});
+    const conversation=await post('/api/conversations',{listingId:'lst-109',subject:'Analytics proof'});
+    const offer=await post('/api/listings/lst-109/offers',{amount:7000});
+    return{saved,conversation,offer};
+  },csrf);
+  expect(signals.saved.status).toBe(200);expect(signals.conversation.status).toBe(201);expect(signals.offer.status).toBe(201);
+
+  const seller=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'SELLER'})});return{status:r.status,body:await r.json()}});expect(seller.status).toBe(200);
+  const analytics=await page.evaluate(async()=>{const r=await fetch('/api/seller/analytics');return{status:r.status,body:await r.json()}});
+  expect(analytics.status).toBe(200);expect(analytics.body.analytics?.measurement?.viewsTracked).toBe(false);
+  const row=analytics.body.analytics?.objects?.find(x=>x.objectId==='lot-109');expect(row).toBeTruthy();expect(row.saved).toBeGreaterThanOrEqual(1);expect(row.conversations).toBeGreaterThanOrEqual(1);expect(row.offers).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(analytics.body)).not.toContain(buyer.body.account.id);
+
+  await page.reload({waitUntil:'domcontentloaded'});await clickNav(page,'account');
+  const panel=page.locator('#sellerAnalyticsV17');await expect(panel).toBeVisible();
+  await expect(panel).toContainText(/Спрос и коммерческая воронка|Demand & commercial funnel/i);
+  await expect(panel).toContainText(/Просмотры пока не считаются|Views are not tracked yet/i);
+  await expect(panel.locator('.seller-analytics-object')).toHaveCount(2);
+});

@@ -5,3 +5,18 @@ export async function setObjectFlag(db,accountId,objectId,flag,enabled=true){fla
 export async function listObjectFlags(db,accountId){if(db.kind==='POSTGRES')return(await db.pool.query('SELECT object_id,flag_type,created_at,updated_at FROM account_object_flags WHERE account_id=$1 ORDER BY updated_at DESC',[accountId])).rows.map(r=>({objectId:r.object_id,flagType:r.flag_type,createdAt:r.created_at.toISOString(),updatedAt:r.updated_at.toISOString()}));return[...memory.values()].filter(x=>x.accountId===accountId)}
 export async function listRegisteredSales(db,accountId){if(db.kind!=='POSTGRES')return[];return(await db.pool.query("SELECT sale_id FROM auction_registrations WHERE account_id=$1 AND status='APPROVED' ORDER BY updated_at DESC",[accountId])).rows.map(r=>r.sale_id)}
 export async function augmentClientState(db,account,state){const flags=await listObjectFlags(db,account.id),saved=flags.filter(x=>x.flagType==='SAVED').map(x=>x.objectId),watch=flags.filter(x=>x.flagType==='WATCH').map(x=>x.objectId),collected=flags.filter(x=>x.flagType==='COLLECTED').map(x=>x.objectId),registered=await listRegisteredSales(db,account.id);return{...state,savedLots:[...new Set([...(state.savedLots||[]),...saved])],watchAlerts:[...new Set([...(state.watchAlerts||[]),...watch])],collection:[...new Set([...(state.collection||[]),...collected])],registeredSales:[...new Set([...(state.registeredSales||[]),...registered])]}}
+
+
+export async function aggregateObjectFlags(db,objectIds,flagTypes=['SAVED','WATCH']){
+ const ids=[...new Set((objectIds||[]).map(String).filter(Boolean))],types=[...new Set((flagTypes||[]).map(x=>String(x).toUpperCase()).filter(x=>VALID.has(x)))],out={};
+ for(const id of ids)out[id]=Object.fromEntries(types.map(t=>[t,0]));
+ if(!ids.length||!types.length)return out;
+ if(db.kind==='POSTGRES'){
+  const rows=(await db.pool.query('SELECT object_id,flag_type,count(*)::int AS count FROM account_object_flags WHERE object_id=ANY($1::text[]) AND flag_type=ANY($2::text[]) GROUP BY object_id,flag_type',[ids,types])).rows;
+  for(const r of rows)if(out[r.object_id]&&r.flag_type in out[r.object_id])out[r.object_id][r.flag_type]=Number(r.count||0);
+  return out
+ }
+ const wantedIds=new Set(ids),wantedTypes=new Set(types);
+ for(const x of memory.values())if(wantedIds.has(String(x.objectId))&&wantedTypes.has(String(x.flagType)))out[String(x.objectId)][String(x.flagType)]++;
+ return out
+}
