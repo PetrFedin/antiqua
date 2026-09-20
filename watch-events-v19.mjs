@@ -76,10 +76,10 @@ export async function enqueueListingStatusTx(client,before,after,{excludeAccount
  return enqueueWatchNotificationsTx(client,{objectId:after.lotId||after.objectId,type:'WATCH_LISTING_CHANGED',data,excludeAccountIds,eventKey});
 }
 
-export async function emitAuctionWatchMemory(auction,{actorAccountId=null}={}){
- return emitWatchNotificationsMemory({objectId:auction.lotId,type:'WATCH_AUCTION_ACTIVITY',excludeAccountIds:[actorAccountId],data:{auctionId:auction.id,currentBid:Number(auction.currentBid),currency:String(auction.currency||'EUR'),bidCount:Number(auction.bidCount||0),endsAt:auction.endsAt,reserveMet:Boolean(auction.reserveMet)}});
+export async function emitAuctionWatchMemory(auction,{actorAccountId=null,excludeAccountIds=[]}={}){
+ return emitWatchNotificationsMemory({objectId:auction.lotId,type:'WATCH_AUCTION_ACTIVITY',excludeAccountIds:[actorAccountId,...excludeAccountIds],data:{auctionId:auction.id,currentBid:Number(auction.currentBid),currency:String(auction.currency||'EUR'),bidCount:Number(auction.bidCount||0),endsAt:auction.endsAt,reserveMet:Boolean(auction.reserveMet)}});
 }
 
-export async function enqueueAuctionWatchTx(client,auction,{actorAccountId=null,eventKey}={}){
- return enqueueWatchNotificationsTx(client,{objectId:auction.lotId,type:'WATCH_AUCTION_ACTIVITY',excludeAccountIds:[actorAccountId],eventKey,data:{auctionId:auction.id,currentBid:Number(auction.currentBid),currency:String(auction.currency||'EUR'),bidCount:Number(auction.bidCount||0),endsAt:auction.endsAt,reserveMet:Boolean(auction.reserveMet)}});
+export async function enqueueAuctionWatchTx(client,auction,{actorAccountId=null,excludeAccountIds=[],eventKey}={}){
+ return enqueueWatchNotificationsTx(client,{objectId:auction.lotId,type:'WATCH_AUCTION_ACTIVITY',excludeAccountIds:[actorAccountId,...excludeAccountIds],eventKey,data:{auctionId:auction.id,currentBid:Number(auction.currentBid),currency:String(auction.currency||'EUR'),bidCount:Number(auction.bidCount||0),endsAt:auction.endsAt,reserveMet:Boolean(auction.reserveMet)}});
 }
