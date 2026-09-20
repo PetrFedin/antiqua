@@ -19,7 +19,7 @@ try{
  const buyer2=new Client(),password='Aa1!'+crypto.randomBytes(12).toString('hex');
  let x=await buyer2.call('/api/auth/register',{method:'POST',body:JSON.stringify({email:`watch-${crypto.randomUUID()}@example.test`,displayName:'Watch proof buyer',password,accountType:'BUYER'})});assert.equal(x.r.status,201);
 
- let cat=await(await fetch(base+'/api/catalog')).json(),listing109=cat.listings.find(x=>x.id==='lst-109'),listing110=cat.listings.find(x=>x.id==='lst-110');assert.ok(listing109&&listing110);
+ let cat=await(await fetch(base+'/api/catalog')).json(),listing109=cat.listings.find(x=>x.id==='lst-109'),assert.ok(listing109);
  const original109=listing109.price,next109=original109-100;
 
  x=await buyer.call('/api/lots/lot-109/alert',{method:'POST',body:JSON.stringify({enabled:true})});assert.equal(x.r.status,200);assert.equal(x.body.flag,'WATCH');assert.equal(x.body.enabled,true);
@@ -32,11 +32,11 @@ try{
  x=await buyer.call('/api/lots/lot-109/alert',{method:'POST',body:JSON.stringify({enabled:false})});assert.equal(x.body.enabled,false);
  x=await seller.call('/api/seller/listings/lst-109',{method:'PATCH',body:JSON.stringify({price:original109})});assert.equal(x.r.status,200);ns=await watchNotifications(buyer);assert.equal(ns.filter(n=>n.type==='WATCH_LISTING_CHANGED'&&n.payload.objectId==='lot-109').length,1,'unwatched object must stop notifications');
 
- x=await buyer2.call('/api/lots/lot-110/alert',{method:'POST',body:JSON.stringify({enabled:true})});assert.equal(x.r.status,200);
- x=await buyer.call('/api/listings/lst-110/buy',{method:'POST',body:'{}'});assert.equal(x.r.status,201);const orderId=x.body.order.id;
- let n2=await watchNotifications(buyer2),availability=n2.filter(n=>n.type==='WATCH_LISTING_CHANGED'&&n.payload.objectId==='lot-110');assert.equal(availability.length,1);assert.equal(availability[0].payload.previousStatus,'ACTIVE');assert.equal(availability[0].payload.status,'RESERVED');
+ x=await buyer2.call('/api/lots/lot-109/alert',{method:'POST',body:JSON.stringify({enabled:true})});assert.equal(x.r.status,200);
+ x=await buyer.call('/api/listings/lst-109/buy',{method:'POST',body:'{}'});assert.equal(x.r.status,201);const orderId=x.body.order.id;
+ let n2=await watchNotifications(buyer2),availability=n2.filter(n=>n.type==='WATCH_LISTING_CHANGED'&&n.payload.objectId==='lot-109');assert.equal(availability.length,1);assert.equal(availability[0].payload.previousStatus,'ACTIVE');assert.equal(availability[0].payload.status,'RESERVED');
  x=await buyer.call(`/api/orders/${orderId}/cancel`,{method:'POST',body:'{}'});assert.equal(x.r.status,200);
- n2=await watchNotifications(buyer2);availability=n2.filter(n=>n.type==='WATCH_LISTING_CHANGED'&&n.payload.objectId==='lot-110');assert.equal(availability.length,2);assert.ok(availability.some(n=>n.payload.previousStatus==='RESERVED'&&n.payload.status==='ACTIVE'));
+ n2=await watchNotifications(buyer2);availability=n2.filter(n=>n.type==='WATCH_LISTING_CHANGED'&&n.payload.objectId==='lot-109');assert.equal(availability.length,2);assert.ok(availability.some(n=>n.payload.previousStatus==='RESERVED'&&n.payload.status==='ACTIVE'));
 
  x=await buyer2.call('/api/lots/lot-101/alert',{method:'POST',body:JSON.stringify({enabled:true})});assert.equal(x.r.status,200);
  cat=await(await fetch(base+'/api/catalog')).json();const auction=cat.auctions.find(a=>a.lotId==='lot-101');assert.ok(auction);
