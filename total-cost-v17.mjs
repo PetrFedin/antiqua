@@ -82,3 +82,14 @@ export function orderTotalCost(order){
  return finalize({context:'ORDER',basisType:'ORDER_PRICE',principal:order.price,currency:order.currency,resource:order,metadata:{orderId:order.id,objectId:order.lotId,shippingStatus:order.shippingStatus||null,taxStatus:order.taxStatus||null}});
 }
 export function totalCostCapabilities(){return{statusModel:['KNOWN','ESTIMATE','UNKNOWN','NOT_APPLICABLE'],neverInventRates:true,allInRequiresComplete:true,crossCurrencySummation:false};}
+
+
+export function requireTotalCostAcknowledgement(body,{preview=false}={}){
+ if(preview)return true;
+ if(body?.costDisclosureAcknowledged===true&&body?.costAuthority==='TOTAL_COST_V17')return true;
+ throw Object.assign(new Error('Total-cost disclosure acknowledgement required'),{
+  status:428,
+  code:'TOTAL_COST_DISCLOSURE_REQUIRED',
+  authority:'TOTAL_COST_V17'
+ });
+}
