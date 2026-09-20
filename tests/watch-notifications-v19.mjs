@@ -19,7 +19,7 @@ try{
  const buyer2=new Client(),password='Aa1!'+crypto.randomBytes(12).toString('hex');
  let x=await buyer2.call('/api/auth/register',{method:'POST',body:JSON.stringify({email:`watch-${crypto.randomUUID()}@example.test`,displayName:'Watch proof buyer',password,accountType:'BUYER'})});assert.equal(x.r.status,201);
 
- let cat=await(await fetch(base+'/api/catalog')).json(),listing109=cat.listings.find(x=>x.id==='lst-109'),assert.ok(listing109);
+ let cat=await(await fetch(base+'/api/catalog')).json(),listing109=cat.listings.find(x=>x.id==='lst-109');assert.ok(listing109);
  const original109=listing109.price,next109=original109-100;
 
  x=await buyer.call('/api/lots/lot-109/alert',{method:'POST',body:JSON.stringify({enabled:true})});assert.equal(x.r.status,200);assert.equal(x.body.flag,'WATCH');assert.equal(x.body.enabled,true);
