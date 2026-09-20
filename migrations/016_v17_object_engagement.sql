@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS object_view_events (
   id text PRIMARY KEY,
   object_id text NOT NULL REFERENCES objects(id) ON DELETE RESTRICT,
-  account_id text REFERENCES accounts(id) ON DELETE SET NULL,
+  account_id text REFERENCES accounts(id) ON DELETE CASCADE,
   viewer_key_hash text NOT NULL,
   window_started_at timestamptz NOT NULL,
   first_viewed_at timestamptz NOT NULL DEFAULT now(),
