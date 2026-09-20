@@ -27,10 +27,10 @@ test('authenticated passport views become recent history and privacy-safe seller
  row=analytics.body.analytics.objects.find(x=>x.objectId==='lot-109');expect(row.views).toBe(before);
  expect(JSON.stringify(analytics.body)).not.toContain(buyer.body.account.id);
 
- await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ await page.reload({waitUntil:'domcontentloaded'});
  const sellerPanel=page.locator('#sellerAnalyticsV17');await expect(sellerPanel).toBeVisible();await expect(sellerPanel).toContainText(/30-минутном окне|30-minute window/i);
 
  await page.evaluate(async()=>fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})}));
- await page.goto('/#account',{waitUntil:'domcontentloaded'});const clearPanel=page.locator('#recentlyViewedV17');await expect(clearPanel).toBeVisible();await clearPanel.locator('[data-clear-recent]').click();await expect(page.locator('#recentlyViewedV17')).toHaveCount(0);
+ await page.reload({waitUntil:'domcontentloaded'});const clearPanel=page.locator('#recentlyViewedV17');await expect(clearPanel).toBeVisible();await clearPanel.locator('[data-clear-recent]').click();await expect(page.locator('#recentlyViewedV17')).toHaveCount(0);
  const cleared=await page.evaluate(async()=>{const r=await fetch('/api/engagement/recent');return r.json()});expect(cleared.items).toHaveLength(0);
 });
