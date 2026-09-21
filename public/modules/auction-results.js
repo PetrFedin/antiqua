@@ -44,18 +44,22 @@ function dossierMarkup(r){
  </aside>`;
 }
 async function hydrateCard(node){
- if(node.dataset.auctionResultLoaded==='1')return;
- node.dataset.auctionResultLoaded='1';
- const id=node.dataset.auctionId;if(!id)return;
- const d=await safe(`/api/auctions/${encodeURIComponent(id)}/result`);const r=d?.result;
- if(!isClosed(r))return;
- const host=node.querySelector('.card-commercial');if(!host)return;
- host.innerHTML=cardMarkup(r);
- const tag=node.querySelector('.commerce-tag');if(tag)tag.textContent=label(r.status);
+ const id=node.dataset.auctionId;if(!id||node.dataset.auctionResultPending==='1')return;
+ node.dataset.auctionResultPending='1';
+ try{
+  const d=await safe(`/api/auctions/${encodeURIComponent(id)}/result`),r=d?.result;
+  if(!isClosed(r)){delete node.dataset.auctionResultKey;return}
+  const key=[r.status,r.hammerAmountMinor??'',r.realizedAmountMinor??'',r.final?'1':'0'].join(':');
+  if(node.dataset.auctionResultKey===key)return;
+  const host=node.querySelector('.card-commercial');if(!host)return;
+  node.dataset.auctionResultKey=key;
+  host.innerHTML=cardMarkup(r);
+  const tag=node.querySelector('.commerce-tag');if(tag)tag.textContent=label(r.status);
+ }finally{delete node.dataset.auctionResultPending}
 }
 async function hydrateCards(){
  const nodes=[...document.querySelectorAll('[data-auction-id]')];
- await Promise.all(nodes.map(n=>hydrateCard(n).catch(()=>{n.dataset.auctionResultLoaded=''})));
+ await Promise.all(nodes.map(n=>hydrateCard(n).catch(()=>{delete n.dataset.auctionResultPending})));
 }
 window.addEventListener('antiqua:passport',async e=>{
  const auctionId=String(e.detail?.auctionId||'');const seq=++passportSeq;
