@@ -9,7 +9,7 @@ test.beforeEach(async({page})=>{
 test('direct passport link opens exact object and closes cleanly',async({page})=>{
  await page.goto('/?object=lot-109#shop',{waitUntil:'domcontentloaded'});
  const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();await expect(dialog).toContainText(/Ореховый комод|A walnut commode/i);
- expect(new URL(page.url()).searchParams.get('object')).toBe('lot-109');
+ await expect.poll(()=>new URL(page.url()).searchParams.get('object')).toBe('lot-109');
  await dialog.locator('[data-close-dialog]').click();await expect(page.locator('#dialog[open]')).toHaveCount(0);
  await expect.poll(()=>new URL(page.url()).searchParams.has('object')).toBe(false);
 });
@@ -18,7 +18,7 @@ test('catalogue passport uses one history entry and Back closes it after related
  await page.goto('/#shop',{waitUntil:'domcontentloaded'});
  const card=page.locator('[data-open-passport="lot-109"]:visible').first();await expect(card).toBeVisible();await card.locator('h3').click();
  const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();
- expect(new URL(page.url()).searchParams.get('object')).toBe('lot-109');
+ await expect.poll(()=>new URL(page.url()).searchParams.get('object')).toBe('lot-109');
 
  const similar=dialog.locator('#dossierSimilarV18 [data-similar-object="lot-106"]');await expect(similar).toBeVisible();
  await similar.locator('[data-passport]').first().click();
