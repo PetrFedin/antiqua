@@ -241,3 +241,21 @@ body{overflow-x:hidden}
 .similarity-commerce span{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.08em}
 @media(max-width:800px){.similarity-grid{grid-template-columns:1fr}.similarity-card{grid-template-columns:112px minmax(0,1fr)}.similarity-image{min-height:164px}}
 @media(max-width:520px){.similarity-card{grid-template-columns:96px minmax(0,1fr)}.similarity-copy{padding:10px 10px 10px 0}.similarity-copy h4{font-size:16px}.similarity-reason{font-size:7px}}
+
+
+/* v20-public-auction-results */
+.auction-result-card-v20{display:grid;gap:4px;padding:3px 0}
+.auction-result-card-v20>div{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:6px 10px}
+.auction-result-card-v20 span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.auction-result-card-v20 strong{font-family:var(--display);font-size:23px;font-weight:400}
+.auction-result-card-v20 small{grid-column:2;font-size:8px;color:var(--muted);text-align:right}
+.dossier-auction-result-v20{display:grid;gap:10px;margin:14px 0 22px;padding:17px 18px;border:1px solid var(--line);border-radius:15px;background:rgba(249,247,242,.86)}
+.auction-result-head{display:flex;justify-content:space-between;align-items:end;gap:18px}
+.auction-result-head>div{display:grid;gap:3px}
+.auction-result-head span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.auction-result-head h3{margin:0;font-family:var(--display);font-size:30px;font-weight:400}
+.auction-result-head>small{font-size:9px;color:var(--muted)}
+.dossier-auction-result-v20>p{max-width:720px;margin:0;font-size:10px;line-height:1.55;color:var(--muted)}
+.auction-result-meta{display:flex;gap:10px;flex-wrap:wrap;padding-top:4px}
+.auction-result-meta span{padding:5px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px}
+@media(max-width:560px){.auction-result-card-v20 strong{font-size:17px}.dossier-auction-result-v20{padding:13px}.auction-result-head{align-items:start;flex-direction:column;gap:5px}.auction-result-head h3{font-size:25px}}
