@@ -14,7 +14,7 @@ const token=crypto.randomUUID().replaceAll('-','').slice(0,14),buyerId='acct-inq
 await db.pool.query("INSERT INTO accounts(id,email,display_name,password_hash,account_type,status,twofa_status,created_at) VALUES($1,$2,'Inquiry proof','test-hash','BUYER','ACTIVE','DISABLED',now())",[buyerId,email]);
 await db.pool.query("INSERT INTO account_roles(account_id,role) VALUES($1,'BUYER')",[buyerId]);
 const buyer={id:buyerId,email,displayName:'Inquiry proof',accountType:'BUYER',status:'ACTIVE',sellerId:null,twofaStatus:'DISABLED',roles:['BUYER']};
-let conversationId=null;
+let conversationId=null,raceConversationId=null;
 try{
  const clientMessageId='pg-inquiry-'+token;
  const first=await createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'PROVENANCE',message:'Please share the provenance documents available for this object.',clientMessageId});
@@ -33,9 +33,19 @@ try{
 
  const notifications=(await db.pool.query("SELECT type,payload FROM notifications WHERE account_id=$1 AND payload->>'conversationId'=$2",[seller.id,conversationId])).rows;
  assert.equal(notifications.filter(n=>n.type==='NEW_CONVERSATION').length,0);assert.equal(notifications.filter(n=>n.type==='NEW_MESSAGE').length,1);
- console.log('ANTIQUA v21 PostgreSQL inquiry: durable one-thread/one-message replay + seller unread/context passed');
+
+ const raceId='pg-inquiry-race-'+token;
+ const concurrent=await Promise.all(Array.from({length:8},()=>createObjectInquiry(buyer,{listingId:'lst-109',inquiryType:'AVAILABILITY',message:'Concurrent retry proof for this listing availability.',clientMessageId:raceId})));
+ raceConversationId=concurrent[0].conversation.id;
+ assert.ok(concurrent.every(x=>x.conversation.id===raceConversationId),'concurrent first-open requests must converge on one thread');
+ assert.equal(concurrent.filter(x=>x.idempotent===false).length,1,'exactly one concurrent message write must win');
+ const raceCounts=(await db.pool.query("SELECT (SELECT count(*)::int FROM conversations WHERE buyer_account_id=$1 AND listing_id='lst-109' AND status='OPEN') conversations,(SELECT count(*)::int FROM conversation_messages WHERE conversation_id=$2 AND sender_account_id=$1 AND client_message_id=$3) messages",[buyerId,raceConversationId,raceId])).rows[0];
+ assert.equal(Number(raceCounts.conversations),1);assert.equal(Number(raceCounts.messages),1);
+ const raceNotifications=(await db.pool.query("SELECT type FROM notifications WHERE account_id=$1 AND payload->>'conversationId'=$2",[seller.id,raceConversationId])).rows;
+ assert.equal(raceNotifications.filter(n=>n.type==='NEW_CONVERSATION').length,0);assert.equal(raceNotifications.filter(n=>n.type==='NEW_MESSAGE').length,1);
+ console.log('ANTIQUA v21 PostgreSQL inquiry: durable replay + concurrent first-open convergence + seller unread/context passed');
 }finally{
- if(conversationId)await db.pool.query("DELETE FROM notifications WHERE account_id=$1 AND payload->>'conversationId'=$2",[seller.id,conversationId]).catch(()=>{});
+ const cleanupIds=[conversationId,raceConversationId].filter(Boolean);if(cleanupIds.length)await db.pool.query("DELETE FROM notifications WHERE account_id=$1 AND payload->>'conversationId'=ANY($2::text[])",[seller.id,cleanupIds]).catch(()=>{});
  await db.pool.query('DELETE FROM accounts WHERE id=$1',[buyerId]).catch(()=>{});
  await db.pool.end();
 }
