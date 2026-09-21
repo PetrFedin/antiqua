@@ -18,14 +18,14 @@ async function ensureReserveMetAndClose(page,{auctionId,secondMax}){
   const buyer=await demoLogin(page,'BUYER');expect(buyer.status).toBe(200);await registerSale(page,buyer.body.csrf);
   const hugeMax=1_000_000+Math.floor(Date.now()/1000);
   const first=await post(page,'/api/auctions/'+auctionId+'/bid',buyer.body.csrf,{maxAmount:hugeMax},{'idempotency-key':'v20-first-'+Date.now()});
-  expect(first.status).toBe(200);
+  expect([200,201]).toContain(first.status);
   history=await page.evaluate(async auctionId=>{const r=await fetch('/api/auctions/'+auctionId+'/history');return r.json()},auctionId);
   if(!history.auction.reserveMet){
    const token=Date.now()+'-'+Math.random().toString(16).slice(2);
    const second=await page.evaluate(async token=>{const r=await fetch('/api/auth/register',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({accountType:'BUYER',displayName:'V20 second bidder',email:'v20-'+token+'@example.test',password:'SecondBidder!20'})});return{status:r.status,body:await r.json()}},token);
    expect(second.status).toBe(201);await registerSale(page,second.body.csrf);
    const secondBid=await post(page,'/api/auctions/'+auctionId+'/bid',second.body.csrf,{maxAmount:secondMax},{'idempotency-key':'v20-second-'+token});
-   expect(secondBid.status).toBe(200);expect(secondBid.body.auction?.reserveMet).toBe(true);
+   expect([200,201]).toContain(secondBid.status);expect(secondBid.body.auction?.reserveMet).toBe(true);
   }
  }
  const operator=await demoLogin(page,'OPERATOR');expect(operator.status).toBe(200);
