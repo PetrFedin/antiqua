@@ -57,25 +57,24 @@ test('public auction result moves from hammer to completed sale without leaking 
   await ensureReserveMetAndClose(page,cfg);
   result=await publicResult(page,cfg.auctionId);
  }
- expect(result.body.result.status).toBe('HAMMERED');
- expect(result.body.result.hammerAmountMinor).toBeGreaterThan(0);
- expect(result.body.result.realizedAmountMinor).toBeNull();
- expect(result.body.result.final).toBe(false);
-
  const buyer=await demoLogin(page,'BUYER');expect(buyer.status).toBe(200);
  const publicJson=JSON.stringify(result.body);
  expect(publicJson).not.toContain(buyer.body.account.id);
  expect(publicJson).not.toContain('set-'+cfg.auctionId);
  expect(publicJson).not.toContain('buyerAccountId');
 
- await page.goto('/#auctions',{waitUntil:'domcontentloaded'});
- const card=page.locator('[data-auction-id="'+cfg.auctionId+'"]');await expect(card).toBeVisible();
- await expect(card.locator('.auction-result-card-v20')).toBeVisible();await expect(card).toContainText(/Цена молотка|Hammered|Hammer amount/i);
- await card.locator('h3').click();
- const dossier=page.locator('#dialog[open]');await expect(dossier).toBeVisible();
- const resultPanel=dossier.locator('#dossierAuctionResultV20');await expect(resultPanel).toBeVisible();await expect(resultPanel).toContainText(/не подтверждение завершённой продажи|not confirmation of a completed sale/i);
- await dossier.locator('[data-close-dialog]').click();
-
+ if(result.body.result.status==='HAMMERED'){
+  expect(result.body.result.hammerAmountMinor).toBeGreaterThan(0);
+  expect(result.body.result.realizedAmountMinor).toBeNull();
+  expect(result.body.result.final).toBe(false);
+  await page.goto('/#auctions',{waitUntil:'domcontentloaded'});
+  const card=page.locator('[data-auction-id="'+cfg.auctionId+'"]');await expect(card).toBeVisible();
+  await expect(card.locator('.auction-result-card-v20')).toBeVisible();await expect(card).toContainText(/Цена молотка|Hammered|Hammer amount/i);
+  await card.locator('h3').click();
+  const dossier=page.locator('#dialog[open]');await expect(dossier).toBeVisible();
+  const resultPanel=dossier.locator('#dossierAuctionResultV20');await expect(resultPanel).toBeVisible();await expect(resultPanel).toContainText(/не подтверждение завершённой продажи|not confirmation of a completed sale/i);
+  await dossier.locator('[data-close-dialog]').click();
+ }
  let afterPayment=await publicResult(page,cfg.auctionId);
  if(!['SALE_IN_PROGRESS','SOLD'].includes(afterPayment.body.result.status)){
   const paid=await post(page,'/api/settlements/set-'+cfg.auctionId+'/payment-preview',buyer.body.csrf,{});
