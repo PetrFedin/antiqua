@@ -101,6 +101,9 @@ test('public auction result moves from hammer to completed sale without leaking 
  expect(sold.body.result.realizedAmountMinor).toBe(sold.body.result.hammerAmountMinor);
  expect(JSON.stringify(sold.body)).not.toContain(buyer.body.account.id);
 
- await page.goto('/?object='+cfg.lotId+'#shop',{waitUntil:'domcontentloaded'});
+ await page.goto('/#auctions',{waitUntil:'domcontentloaded'});
+ const soldCard=page.locator('[data-auction-id="'+cfg.auctionId+'"]');await expect(soldCard).toBeVisible();
+ await expect(soldCard.locator('.auction-result-card-v20')).toBeVisible();await expect(soldCard).toContainText(/Продано|Sold/i);await expect(soldCard).toContainText(/Реализованная цена|Realized price/i);
+ await soldCard.locator('h3').click();
  const soldPanel=page.locator('#dossierAuctionResultV20');await expect(soldPanel).toBeVisible();await expect(soldPanel).toContainText(/Продано|Sold/i);await expect(soldPanel).toContainText(/Реализованная цена|Realized price/i);
 });
