@@ -84,7 +84,7 @@ export async function postMessage(a,id,b){
  if(prior)return{message:mapM(prior),idempotent:true};
  let m={id:uid('msg'),conversationId:id,senderAccountId:a.id,senderRole:a.id===c.buyerAccountId?'BUYER':'SELLER',body:text,attachments:Array.isArray(b.attachments)?b.attachments.slice(0,10):[],clientMessageId,readAt:null,createdAt:now()};
  if(db.kind==='POSTGRES'){
-  const inserted=(await db.pool.query('INSERT INTO conversation_messages(id,conversation_id,sender_account_id,sender_role,body,attachments,client_message_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(conversation_id,sender_account_id,client_message_id) DO NOTHING RETURNING *',[m.id,id,m.senderAccountId,m.senderRole,m.body,m.attachments,m.clientMessageId,m.createdAt])).rows[0];
+  const inserted=(await db.pool.query('INSERT INTO conversation_messages(id,conversation_id,sender_account_id,sender_role,body,attachments,client_message_id,created_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8) ON CONFLICT(conversation_id,sender_account_id,client_message_id) DO NOTHING RETURNING *',[m.id,id,m.senderAccountId,m.senderRole,m.body,JSON.stringify(m.attachments),m.clientMessageId,m.createdAt])).rows[0];
   if(!inserted){const replay=(await db.pool.query('SELECT * FROM conversation_messages WHERE conversation_id=$1 AND sender_account_id=$2 AND client_message_id=$3',[id,a.id,clientMessageId])).rows[0];if(replay)return{message:mapM(replay),idempotent:true};throw Object.assign(new Error('Message replay could not be resolved'),{status:409,code:'MESSAGE_REPLAY_UNRESOLVED'})}
   m=mapM(inserted);await db.pool.query('UPDATE conversations SET updated_at=now() WHERE id=$1',[id]);
  }else{const xs=mem.messages.get(id)||[];xs.push(m);mem.messages.set(id,xs);mem.conversations.get(id).updatedAt=now()}
