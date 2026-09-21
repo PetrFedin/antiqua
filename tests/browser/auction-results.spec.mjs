@@ -57,6 +57,12 @@ test('public auction result moves from hammer to completed sale without leaking 
   await ensureReserveMetAndClose(page,cfg);
   result=await publicResult(page,cfg.auctionId);
  }
+ if(result.body.result.status==='PENDING'){
+  const operator=await demoLogin(page,'OPERATOR');expect(operator.status).toBe(200);
+  const closed=await post(page,'/api/operator/auctions/'+cfg.auctionId+'/close-preview',operator.body.csrf,{});
+  expect([200,201,409]).toContain(closed.status);
+  result=await publicResult(page,cfg.auctionId);
+ }
  const buyer=await demoLogin(page,'BUYER');expect(buyer.status).toBe(200);
  const publicJson=JSON.stringify(result.body);
  expect(publicJson).not.toContain(buyer.body.account.id);
