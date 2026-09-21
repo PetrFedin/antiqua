@@ -39,6 +39,10 @@ async function settlementForAuction(auctionId){
 
 export async function getPublicAuctionResult(auctionId){
  const auction=await getAuthoritativePublicAuction(String(auctionId||''));if(!auction)return null;
+ if(db.kind==='POSTGRES'){
+  const visible=(await db.pool.query("SELECT 1 FROM objects WHERE id=$1 AND publication_status='PUBLIC' AND catalogue_status='APPROVED'",[auction.lotId])).rowCount===1;
+  if(!visible)return null;
+ }
  const settlement=auction.state==='CLOSED'?await settlementForAuction(auction.id):null;
  return projectPublicAuctionResult(auction,settlement);
 }
