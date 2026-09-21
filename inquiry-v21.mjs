@@ -35,6 +35,6 @@ export async function createObjectInquiry(account,body={}){
  if(clientMessageId.length<8||clientMessageId.length>160)fail(400,'CLIENT_MESSAGE_ID_INVALID','clientMessageId is required');
  const subject=TYPES[inquiryType];
  const conversation=await createConversation(account,{listingId,subjectEn:subject.en,subjectRu:subject.ru},{notifyOnCreate:false});
- const sent=await postMessage(account,conversation.id,{body:message,clientMessageId});
+ const sent=await postMessage(account,conversation.id,{body:message,clientMessageId,attachments:[{kind:'INQUIRY_CONTEXT',inquiryType,label:subject}]});
  return{conversation,message:sent.message,inquiryType,idempotent:sent.idempotent};
 }
