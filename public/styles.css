@@ -270,3 +270,16 @@ body{overflow-x:hidden}
 .inquiry-context-v21{display:inline-flex;align-items:center;width:max-content;margin:4px 0 2px;padding:4px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .v14-message .inquiry-context-v21+p{margin-top:6px}
 @media(max-width:560px){.dossier-commerce-dock .dock-actions .inquiry-button-v21{width:100%}.inquiry-sheet-v21 textarea{min-height:108px}}
+
+
+/* v22-buyer-intent-next-action */
+.buyer-intent-v22{border-color:rgba(20,20,20,.18);background:linear-gradient(180deg,rgba(249,247,242,.68),rgba(255,255,255,.86))}
+.buyer-intent-v22 .block-head{align-items:flex-start}
+.attention-count-v22{display:inline-flex;align-items:center;padding:6px 9px;border:1px solid currentColor;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.buyer-intent-card-v22{position:relative;display:grid;gap:10px}
+.buyer-intent-card-v22.needs-attention{box-shadow:inset 3px 0 0 currentColor}
+.buyer-intent-card-v22>small{color:var(--muted);line-height:1.5}
+.buyer-intent-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.buyer-intent-facts span{display:grid;gap:2px;padding:8px 9px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.68);font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.buyer-intent-facts b{font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink)}
+@media(max-width:560px){.buyer-intent-v22 .block-head{gap:10px}.attention-count-v22{align-self:flex-start}.buyer-intent-facts{grid-template-columns:1fr}.buyer-intent-card-v22 .v14-actions{display:grid}.buyer-intent-card-v22 .v14-actions button{width:100%}}
