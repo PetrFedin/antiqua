@@ -35,9 +35,9 @@ try{
  intents=await getBuyerIntents(buyer);const leading=intents.bids.find(x=>x.auctionId===auctionId);assert.equal(leading.leading,true);assert.equal(leading.nextAction.type,'WAIT');
 
  offer.status='ACCEPTED';offer.updatedAt=new Date().toISOString();await db.putOffer(offer);
- await db.putOrder({id:orderId,listingId,lotId:objectId,sellerId:'seller-preview',buyerClientId:buyerId,price:5200,currency:'EUR',status:'AWAITING_PAYMENT_CONNECTOR',paymentStatus:'NOT_CONFIGURED',invoiceStatus:'DRAFT_NOT_ISSUED',shippingStatus:'QUOTE_REQUIRED',taxStatus:'NOT_CALCULATED',timeline:[{status:'OFFER_ACCEPTED',at:new Date().toISOString()}],createdAt:new Date().toISOString()});
+ await db.putOrder({id:orderId,listingId,sourceOfferId:offerId,lotId:objectId,sellerId:'seller-preview',buyerClientId:buyerId,price:5200,currency:'EUR',status:'AWAITING_PAYMENT_CONNECTOR',paymentStatus:'NOT_CONFIGURED',invoiceStatus:'DRAFT_NOT_ISSUED',shippingStatus:'QUOTE_REQUIRED',taxStatus:'NOT_CALCULATED',timeline:[{status:'OFFER_ACCEPTED',at:new Date().toISOString()}],createdAt:new Date().toISOString()});
  intents=await getBuyerIntents(buyer);
- assert.equal(intents.summary.activeOffers,0);assert.equal(intents.offers.find(x=>x.offerId===offerId).nextAction.type,'OPEN_ORDER');assert.equal(intents.offers.find(x=>x.offerId===offerId).nextAction.orderId,orderId);
+ assert.equal(intents.summary.activeOffers,0);const storedOrder=(await db.pool.query('SELECT payload FROM orders WHERE id=$1',[orderId])).rows[0].payload;assert.equal(storedOrder.sourceOfferId,offerId);assert.equal(intents.offers.find(x=>x.offerId===offerId).nextAction.type,'OPEN_ORDER');assert.equal(intents.offers.find(x=>x.offerId===offerId).nextAction.orderId,orderId);
  assert.equal(intents.summary.needsAttention,0);
 
  console.log('ANTIQUA v22 PostgreSQL buyer intent: DB-backed bid positions + private max isolation + offer next action + order transition passed');
