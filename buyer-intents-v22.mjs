@@ -52,7 +52,7 @@ export async function getBuyerIntents(account){
  const buyerOrders=db.kind==='POSTGRES'?await pgOrders(account.id):[...orders.values()].filter(x=>x.buyerClientId===account.id);
  const orderForOffer=o=>buyerOrders.find(x=>x.listingId===o.listingId&&x.buyerClientId===account.id&&x.status!=='CANCELLED')||null;
  const bids=bidPositions.map(x=>projectBidIntent(x,account.id)),offerIntents=buyerOffers.map(o=>projectOfferIntent(o,orderForOffer(o)));
- const activeBids=bids.filter(x=>['LIVE','SCHEDULED'].includes(x.state)),activeOffers=offerIntents.filter(x=>!['DECLINED','EXPIRED','WITHDRAWN'].includes(x.status));
+ const activeBids=bids.filter(x=>['LIVE','SCHEDULED'].includes(x.state)),activeOffers=offerIntents.filter(x=>['PENDING','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER'].includes(x.status)||(x.status==='ACCEPTED'&&x.nextAction?.type==='WAIT'));
  const attention=[...activeBids.filter(x=>x.needsAttention),...activeOffers.filter(x=>x.needsAttention)].sort((a,b)=>Date.parse(b.updatedAt||0)-Date.parse(a.updatedAt||0));
  return{summary:{activeBids:activeBids.length,leadingBids:activeBids.filter(x=>x.leading).length,outbid:activeBids.filter(x=>x.state==='LIVE'&&!x.leading).length,activeOffers:activeOffers.length,needsAttention:attention.length},attention,bids,offers:offerIntents};
 }
