@@ -45,3 +45,14 @@ test('invalid shared object cleans URL instead of leaving broken dossier state',
  await expect.poll(()=>new URL(page.url()).searchParams.has('object')).toBe(false);
  await expect(page.locator('#dialog[open]')).toHaveCount(0);
 });
+
+
+test('navigating away from shop closes passport and removes object deep link',async({page})=>{
+ await page.goto('/?object=lot-110#shop',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('#dialog[open]')).toBeVisible();
+ await expect.poll(()=>new URL(page.url()).searchParams.get('object')).toBe('lot-110');
+ await page.evaluate(()=>{location.hash='account'});
+ await expect(page.locator('#dialog[open]')).toHaveCount(0);
+ await expect.poll(()=>new URL(page.url()).searchParams.has('object')).toBe(false);
+ await expect.poll(()=>new URL(page.url()).hash).toBe('#account');
+});
