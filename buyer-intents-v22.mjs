@@ -22,7 +22,7 @@ export function projectBidIntent(position,accountId){
 export function projectOfferIntent(offer,order=null){
  const status=String(offer.status||'').toUpperCase(),buyerAmount=Number(offer.buyerAmount||0),sellerAmount=offer.sellerAmount==null?null:Number(offer.sellerAmount),asking=Number(offer.askingPrice||listing(offer.listingId)?.price||0);
  let nextAction;
- if(status==='COUNTERED_BY_SELLER')nextAction={type:'REVIEW_COUNTER',offerId:offer.id,primary:'ACCEPT',allowed:['ACCEPT','COUNTER'],counterMin:buyerAmount+1,counterMax:Math.max(buyerAmount+1,(sellerAmount||asking)-1)};
+ if(status==='COUNTERED_BY_SELLER'){const counterMin=buyerAmount+1,counterMax=(sellerAmount||asking)-1,canCounter=counterMax>=counterMin;nextAction={type:'REVIEW_COUNTER',offerId:offer.id,primary:'ACCEPT',allowed:canCounter?['ACCEPT','COUNTER']:['ACCEPT'],counterMin:canCounter?counterMin:null,counterMax:canCounter?counterMax:null}};
  else if(status==='PENDING'||status==='COUNTERED_BY_BUYER')nextAction={type:'WAIT',reason:'SELLER_RESPONSE'};
  else if(status==='ACCEPTED'&&order)nextAction={type:'OPEN_ORDER',orderId:order.id};
  else if(status==='ACCEPTED')nextAction={type:'WAIT',reason:'ORDER_MATERIALIZING'};
