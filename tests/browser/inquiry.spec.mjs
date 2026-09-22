@@ -8,12 +8,21 @@ async function openObject(page,id){
  const card=page.locator('[data-open-passport="'+id+'"]:visible').first();await expect(card).toBeVisible();await card.locator('h3').click();
  const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();return dialog;
 }
+async function logoutCurrentPreviewSession(page){
+ const me=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return r.json()});
+ if(!me?.account)return;
+ const out=await page.evaluate(async csrf=>{const r=await fetch('/api/auth/logout',{method:'POST',headers:{'x-csrf-token':csrf}});return{status:r.status,body:await r.json()}},me.csrf);
+ expect(out.status).toBe(200);
+ const after=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return r.json()});
+ expect(after.account).toBeNull();
+}
 
 test('Object Passport inquiry reaches seller thread with durable topic context',async({page},testInfo)=>{
  const isMobile=testInfo.project.name.includes('mobile'),listingId='lst-110',objectId='lot-110',topic=isMobile?'SHIPPING':'CONDITION';
  await page.goto('/',{waitUntil:'domcontentloaded'});
 
  let dialog=await openObject(page,objectId);
+ await logoutCurrentPreviewSession(page);
  const anonButton=dialog.locator('[data-object-inquiry="'+listingId+'"]');await expect(anonButton).toBeVisible();await anonButton.click();
  let sheet=page.locator('#actionSheet[open]');await expect(sheet).toBeVisible();await expect(sheet).toContainText(/Войдите, чтобы написать дилеру|Sign in to contact the dealer/i);
  await sheet.locator('[data-close-sheet]').first().click();
