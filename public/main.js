@@ -5,3 +5,4 @@ import './modules/seller-analytics.js';
 import './modules/engagement.js';
 import './modules/similarity.js';
 import './modules/auction-results.js';
+import './modules/inquiry.js';

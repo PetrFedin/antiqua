@@ -259,3 +259,14 @@ body{overflow-x:hidden}
 .auction-result-meta{display:flex;gap:10px;flex-wrap:wrap;padding-top:4px}
 .auction-result-meta span{padding:5px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px}
 @media(max-width:560px){.auction-result-card-v20 strong{font-size:17px}.dossier-auction-result-v20{padding:13px}.auction-result-head{align-items:start;flex-direction:column;gap:5px}.auction-result-head h3{font-size:25px}}
+
+
+/* v21-object-inquiry */
+.inquiry-button-v21{white-space:nowrap}
+.inquiry-sheet-v21 form{display:grid;gap:12px}
+.inquiry-sheet-v21 textarea{width:100%;min-height:124px;resize:vertical}
+.v21-messages-intro{max-width:760px;margin:0 0 14px;color:var(--muted);font-size:10px;line-height:1.55}
+.inquiry-note-v21{padding:10px 11px;border:1px solid var(--line);border-radius:11px;background:rgba(249,247,242,.72);font-size:9px;line-height:1.5;color:var(--muted)}
+.inquiry-context-v21{display:inline-flex;align-items:center;width:max-content;margin:4px 0 2px;padding:4px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.v14-message .inquiry-context-v21+p{margin-top:6px}
+@media(max-width:560px){.dossier-commerce-dock .dock-actions .inquiry-button-v21{width:100%}.inquiry-sheet-v21 textarea{min-height:108px}}
