@@ -42,7 +42,7 @@ function memoryBidPositions(account){
  for(const b of c.bids||[]){const prior=by.get(b.auctionId);if(!prior||Date.parse(b.createdAt||0)>=Date.parse(prior.createdAt||0))by.set(b.auctionId,b)}
  return [...by.values()].map(b=>{const a=auctions.find(x=>x.id===b.auctionId)||{};return{auctionId:b.auctionId,objectId:a.lotId||b.lotId,status:a.state,currentBid:Number(a.currentBid||b.visibleAmount||0),increment:Number(a.increment||step(Number(a.currentBid||b.visibleAmount||0))),bidCount:Number(a.bidCount||0),leaderAccountId:a.leaderClientId||null,startsAt:a.startsAt,endsAt:a.endsAt,currency:a.currency||'EUR',maxAmount:Number((a.proxyBids||[]).find(x=>(x.clientId||x.accountId)===account.id)?.maxAmount||b.maxAmount||0),acceptedAt:b.createdAt,updatedAt:b.createdAt}});
 }
-async function pgOffers(accountId){return(await db.pool.query(`SELECT o.payload,l.payload AS listing_payload FROM offers o LEFT JOIN listings l ON l.id=o.listing_id WHERE o.buyer_account_id=$1 ORDER BY o.updated_at DESC,o.created_at DESC`,[accountId])).rows.map(x=>({...x.payload,askingPrice:Number(x.listing_payload?.price??x.payload?.askingPrice??0)}))}
+async function pgOffers(accountId){return(await db.pool.query(`SELECT o.payload,o.updated_at,l.payload AS listing_payload FROM offers o LEFT JOIN listings l ON l.id=o.listing_id WHERE o.buyer_account_id=$1 ORDER BY o.updated_at DESC,o.created_at DESC`,[accountId])).rows.map(x=>({...x.payload,askingPrice:Number(x.listing_payload?.price??x.payload?.askingPrice??0),updatedAt:iso(x.updated_at)}))}
 async function pgOrders(accountId){return(await db.pool.query('SELECT payload FROM orders WHERE buyer_account_id=$1 ORDER BY updated_at DESC,created_at DESC',[accountId])).rows.map(x=>x.payload)}
 
 export async function getBuyerIntents(account){
@@ -50,7 +50,7 @@ export async function getBuyerIntents(account){
  const bidPositions=db.kind==='POSTGRES'?await pgBidPositions(account.id):memoryBidPositions(account);
  const buyerOffers=db.kind==='POSTGRES'?await pgOffers(account.id):[...offers.values()].filter(x=>x.buyerClientId===account.id);
  const buyerOrders=db.kind==='POSTGRES'?await pgOrders(account.id):[...orders.values()].filter(x=>x.buyerClientId===account.id);
- const orderForOffer=o=>buyerOrders.find(x=>x.listingId===o.listingId&&x.buyerClientId===account.id&&x.status!=='CANCELLED')||null;
+ const orderForOffer=o=>buyerOrders.find(x=>x.sourceOfferId===o.id&&x.status!=='CANCELLED')||buyerOrders.find(x=>!x.sourceOfferId&&x.listingId===o.listingId&&x.buyerClientId===account.id&&x.status!=='CANCELLED')||null;
  const bids=bidPositions.map(x=>projectBidIntent(x,account.id)),offerIntents=buyerOffers.map(o=>projectOfferIntent(o,orderForOffer(o)));
  const activeBids=bids.filter(x=>['LIVE','SCHEDULED'].includes(x.state)),activeOffers=offerIntents.filter(x=>['PENDING','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER'].includes(x.status)||(x.status==='ACCEPTED'&&x.nextAction?.type==='WAIT'));
  const attention=[...activeBids.filter(x=>x.needsAttention),...activeOffers.filter(x=>x.needsAttention)].sort((a,b)=>Date.parse(b.updatedAt||0)-Date.parse(a.updatedAt||0));
