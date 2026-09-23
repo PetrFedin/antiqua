@@ -19,10 +19,10 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 try{
  assert.equal(db.kind,'POSTGRES');
  assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
- assert.equal(migrationManifest.at(-1).version,'016_v17_object_engagement');
+ assert.equal(migrationManifest.at(-1).version,'017_v22_offer_negotiation');
 
- const versions=(await db.pool.query("SELECT version FROM schema_migrations WHERE version IN ('014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement') ORDER BY version")).rows.map(x=>x.version);
- assert.deepEqual(versions,['014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement'],'CLI/server migration authority must include 014 through 016');
+ const versions=(await db.pool.query("SELECT version FROM schema_migrations WHERE version IN ('014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement','017_v22_offer_negotiation') ORDER BY version")).rows.map(x=>x.version);
+ assert.deepEqual(versions,['014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement','017_v22_offer_negotiation'],'CLI/server migration authority must include 014 through 017');
 
  const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
  assert.ok(buyer);
@@ -43,7 +43,7 @@ try{
  ),'23503');
 
  await expectCode(db.pool.query(
-  "INSERT INTO offers(id,listing_id,buyer_account_id,seller_id,status,payload,created_at) VALUES($1,$2,$3,$4,'PENDING','{}'::jsonb,now())",
+  "INSERT INTO offers(id,listing_id,buyer_account_id,seller_id,status,payload,version,expires_at,current_amount_minor,currency,current_proposer_role,awaiting_role,created_at) VALUES($1,$2,$3,$4,'OPEN','{}'::jsonb,1,now()+interval '1 day',10000,'EUR','BUYER','SELLER',now())",
   [id('bad-offer'),listing.id,buyer.id,'wrong-seller-'+token]
  ),'23514');
 

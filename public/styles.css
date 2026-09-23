@@ -270,3 +270,21 @@ body{overflow-x:hidden}
 .inquiry-context-v21{display:inline-flex;align-items:center;width:max-content;margin:4px 0 2px;padding:4px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .v14-message .inquiry-context-v21+p{margin-top:6px}
 @media(max-width:560px){.dossier-commerce-dock .dock-actions .inquiry-button-v21{width:100%}.inquiry-sheet-v21 textarea{min-height:108px}}
+
+
+/* v22-offer-negotiation */
+.v22-create-offer textarea,.v22-create-offer select{width:100%}
+.v22-offer-authority-note{margin:10px 0 0;color:var(--muted,#777);font-size:.84rem;line-height:1.45}
+.v22-offer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.v22-offer-card{display:flex;flex-direction:column;gap:10px}
+.v22-offer-meta{display:flex;flex-wrap:wrap;gap:8px 12px;font-size:.78rem;color:var(--muted,#777)}
+.v22-your-turn{font-weight:700;color:inherit}
+.v22-offer-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.v22-history-head{display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px;font-size:.75rem;letter-spacing:.08em}
+.v22-offer-timeline{display:grid;gap:8px}
+.v22-offer-event{border:1px solid rgba(127,127,127,.22);border-radius:12px;padding:11px}
+.v22-offer-event>div{display:flex;justify-content:space-between;gap:14px}
+.v22-offer-event small{display:block;margin-top:4px;color:var(--muted,#777)}
+.v22-offer-event p{margin:7px 0 0;line-height:1.45}
+.v22-negotiation-closed{padding:12px;border-radius:12px;background:rgba(127,127,127,.08);font-size:.9rem}
+@media(max-width:640px){.v22-offer-event>div{display:grid;gap:4px}.v22-offer-actions>*{flex:1 1 100%}}
