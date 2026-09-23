@@ -71,7 +71,7 @@ try{
  assert.equal(immutableComment,'Primary buyer');
 
  const failOffer=await createOffer(buyer,ids.listings[1],{amount:'5000',currency:'EUR',expiresAt:future(24),clientActionId:key('fail-create')});ids.offers.push(failOffer.offer.id);
- await db.pool.query("UPDATE listings SET status='INACTIVE',payload=jsonb_set(payload,'{status}','"INACTIVE"'::jsonb,true),updated_at=now() WHERE id=$1",[ids.listings[1]]);
+ await db.pool.query("UPDATE listings SET status='INACTIVE',payload=jsonb_set(payload,'{status}',to_jsonb('INACTIVE'::text),true),updated_at=now() WHERE id=$1",[ids.listings[1]]);
  await assert.rejects(
   ()=>actOnOffer(seller,failOffer.offer.id,{action:'ACCEPT',expectedVersion:1,clientActionId:key('fail-accept')}),
   e=>e.code==='LISTING_NOT_AVAILABLE'
