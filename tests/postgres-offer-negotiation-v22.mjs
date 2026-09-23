@@ -23,7 +23,7 @@ const future=hours=>new Date(Date.now()+hours*3600000).toISOString();
 async function insertFixture(objectId,listingId,price=10000){
  await db.pool.query("INSERT INTO objects(id,object_code,seller_id,passport,catalogue_status,trust_status,publication_status,created_at,updated_at) VALUES($1,$2,$3,$4,'APPROVED','ALLOWED','PUBLIC',now(),now())",[objectId,'AQ-V22-'+objectId,seller.sellerId,{id:objectId,objectId:'AQ-V22-'+objectId,title:{en:'V22 proof object',ru:'Предмет V22'},sellerId:seller.sellerId,catalogueStatus:'APPROVED',trustStatus:'ALLOWED',publicationStatus:'PUBLIC'}]);
  const payload={id:listingId,lotId:objectId,sellerId:seller.sellerId,saleType:'MAKE_OFFER',price,currency:'EUR',negotiable:true,status:'ACTIVE',shippingFrom:'Amsterdam'};
- await db.pool.query("INSERT INTO listings(id,object_id,seller_id,status,payload,created_at,updated_at) VALUES($1,$2,$3,'ACTIVE',$4,now(),now())",[listingId,objectId,seller.sellerId,payload])
+ await db.pool.query("INSERT INTO listings(id,object_id,seller_id,status,payload,updated_at) VALUES($1,$2,$3,'ACTIVE',$4,now())",[listingId,objectId,seller.sellerId,payload])
 }
 
 try{
