@@ -209,7 +209,7 @@ test('seller analytics reflects measured buyer demand without exposing buyer ide
     const post=async(path,body)=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}};
     const saved=await post('/api/lots/lot-109/save',{enabled:true});
     const conversation=await post('/api/conversations',{listingId:'lst-109',subject:'Analytics proof'});
-    const offer=await post('/api/listings/lst-109/offers',{amount:7000});
+    const offer=await post('/api/listings/lst-109/offers',{amount:7000,currency:'EUR',expiresAt:new Date(Date.now()+72*3600000).toISOString(),clientActionId:'analytics-'+Date.now()+'-'+Math.random()});
     return{saved,conversation,offer};
   },csrf);
   expect(signals.saved.status).toBe(200);expect(signals.conversation.status).toBe(201);expect(signals.offer.status).toBe(201);
