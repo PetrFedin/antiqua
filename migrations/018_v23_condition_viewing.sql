@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS viewing_requests (
   object_id text NOT NULL REFERENCES objects(id) ON DELETE RESTRICT,
   buyer_account_id text NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
   seller_id text NOT NULL,
-  status text NOT NULL DEFAULT 'REQUESTED' CHECK(status IN('REQUESTED','SLOTS_PROPOSED','CONFIRMED','CANCELLED')),
+  status text NOT NULL DEFAULT 'REQUESTED' CHECK(status IN('REQUESTED','SLOTS_PROPOSED','CONFIRMED','RESCHEDULE_REQUESTED','CANCELLED')),
   version integer NOT NULL DEFAULT 1 CHECK(version>0),
   proposal_version integer NOT NULL DEFAULT 0 CHECK(proposal_version>=0),
   selected_slot_id text,
@@ -178,6 +178,11 @@ FOR EACH ROW EXECUTE FUNCTION antiqua_v23_immutable();
 DROP TRIGGER IF EXISTS condition_report_events_immutable_trg ON condition_report_events;
 CREATE TRIGGER condition_report_events_immutable_trg
 BEFORE UPDATE OR DELETE ON condition_report_events
+FOR EACH ROW EXECUTE FUNCTION antiqua_v23_immutable();
+
+DROP TRIGGER IF EXISTS viewing_slots_immutable_trg ON viewing_slots;
+CREATE TRIGGER viewing_slots_immutable_trg
+BEFORE UPDATE OR DELETE ON viewing_slots
 FOR EACH ROW EXECUTE FUNCTION antiqua_v23_immutable();
 
 DROP TRIGGER IF EXISTS viewing_events_immutable_trg ON viewing_request_events;
