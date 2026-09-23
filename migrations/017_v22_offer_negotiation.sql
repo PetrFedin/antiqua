@@ -10,6 +10,45 @@ ALTER TABLE offers ADD COLUMN IF NOT EXISTS awaiting_role text;
 ALTER TABLE offers ADD COLUMN IF NOT EXISTS create_idempotency_key text;
 ALTER TABLE offers ADD COLUMN IF NOT EXISTS accepted_order_id text;
 
+-- Preserve the original legacy status while reconstructing the authoritative current proposal.
+UPDATE offers
+SET version=COALESCE(version,1),
+    expires_at=COALESCE(expires_at,updated_at + interval '7 days'),
+    currency=COALESCE(currency,NULLIF(payload->>'currency',''),'EUR'),
+    current_amount_minor=COALESCE(
+      current_amount_minor,
+      GREATEST(
+        1,
+        round(
+          CASE
+            WHEN status='COUNTERED_BY_SELLER' THEN COALESCE(NULLIF(payload->>'sellerAmount',''),NULLIF(payload->>'buyerAmount',''),'0')::numeric
+            WHEN status='COUNTERED_BY_BUYER' THEN COALESCE(NULLIF(payload->>'buyerAmount',''),NULLIF(payload->>'sellerAmount',''),'0')::numeric
+            ELSE COALESCE(NULLIF(payload->>'buyerAmount',''),NULLIF(payload->>'sellerAmount',''),'0')::numeric
+          END * 100
+        )::bigint
+      )
+    ),
+    current_proposer_role=COALESCE(
+      current_proposer_role,
+      CASE
+        WHEN status='COUNTERED_BY_SELLER' THEN 'SELLER'
+        ELSE 'BUYER'
+      END
+    ),
+    awaiting_role=COALESCE(
+      awaiting_role,
+      CASE
+        WHEN status IN ('ACCEPTED','DECLINED','REJECTED','WITHDRAWN','EXPIRED') THEN NULL
+        WHEN status='COUNTERED_BY_SELLER' THEN 'BUYER'
+        ELSE 'SELLER'
+      END
+    )
+WHERE version IS NULL
+   OR expires_at IS NULL
+   OR currency IS NULL
+   OR current_amount_minor IS NULL
+   OR current_proposer_role IS NULL;
+
 UPDATE offers
 SET status=CASE status
   WHEN 'PENDING' THEN 'OPEN'
@@ -19,35 +58,6 @@ SET status=CASE status
   ELSE status
 END
 WHERE status IN ('PENDING','COUNTERED_BY_SELLER','COUNTERED_BY_BUYER','DECLINED');
-
-UPDATE offers
-SET version=COALESCE(version,1),
-    expires_at=COALESCE(expires_at,updated_at + interval '7 days'),
-    currency=COALESCE(currency,NULLIF(payload->>'currency',''),'EUR'),
-    current_amount_minor=COALESCE(
-      current_amount_minor,
-      CASE
-        WHEN COALESCE(NULLIF(payload->>'sellerAmount',''),NULLIF(payload->>'buyerAmount','')) IS NULL THEN 1
-        ELSE GREATEST(1,round(COALESCE(NULLIF(payload->>'sellerAmount',''),NULLIF(payload->>'buyerAmount',''))::numeric*100)::bigint)
-      END
-    ),
-    current_proposer_role=COALESCE(
-      current_proposer_role,
-      CASE WHEN payload->>'sellerAmount' IS NOT NULL AND payload->>'sellerAmount'<>'' THEN 'SELLER' ELSE 'BUYER' END
-    ),
-    awaiting_role=COALESCE(
-      awaiting_role,
-      CASE
-        WHEN status IN ('ACCEPTED','REJECTED','WITHDRAWN','EXPIRED') THEN NULL
-        WHEN payload->>'sellerAmount' IS NOT NULL AND payload->>'sellerAmount'<>'' THEN 'BUYER'
-        ELSE 'SELLER'
-      END
-    )
-WHERE version IS NULL
-   OR expires_at IS NULL
-   OR currency IS NULL
-   OR current_amount_minor IS NULL
-   OR current_proposer_role IS NULL;
 
 ALTER TABLE offers ALTER COLUMN version SET DEFAULT 1;
 ALTER TABLE offers ALTER COLUMN version SET NOT NULL;
