@@ -288,3 +288,18 @@ body{overflow-x:hidden}
 .v22-offer-event p{margin:7px 0 0;line-height:1.45}
 .v22-negotiation-closed{padding:12px;border-radius:12px;background:rgba(127,127,127,.08);font-size:.9rem}
 @media(max-width:640px){.v22-offer-event>div{display:grid;gap:4px}.v22-offer-actions>*{flex:1 1 100%}}
+
+
+/* v23-condition-viewing */
+.v23-service-cta{white-space:nowrap}
+.v23-service-section{display:grid;gap:10px;margin:18px 0}
+.v23-service-section>h4{margin:0;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}
+.v23-service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
+.v23-service-card{display:flex;flex-direction:column;gap:9px}
+.v23-service-card p{margin:0;line-height:1.45}
+.v23-latest,.v23-calendar-summary{display:grid;gap:3px;padding:10px;border-radius:12px;background:rgba(127,127,127,.08)}
+.v23-slot-list{display:flex;flex-wrap:wrap;gap:6px}
+.v23-slot-list span{padding:6px 8px;border:1px solid rgba(127,127,127,.22);border-radius:999px;font-size:.76rem}
+.v23-confirm-slots{display:grid;gap:8px}
+.v23-service-card .v14-actions{display:flex;flex-wrap:wrap;gap:7px}
+@media(max-width:640px){.v23-service-grid{grid-template-columns:1fr}.v23-service-card .v14-actions>*{flex:1 1 100%}}
