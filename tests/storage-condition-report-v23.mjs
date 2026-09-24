@@ -23,9 +23,15 @@ class Client{
 }
 async function start(){
  child=spawn(process.execPath,['server-v14.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,PORT:String(port),PREVIEW_MODE:'true',APP_SECRET:appSecret,NODE_ENV:'test',PGSSL:'disable'},stdio:['ignore','pipe','pipe']});
- let stderr='';child.stderr?.on('data',b=>stderr+=String(b));
- for(let i=0;i<180;i++){if(child.exitCode!=null)throw new Error('Server exited before readiness: '+stderr);try{const r=await fetch(base+'/api/health');if(r.ok){const h=await r.json();assert.equal(h.persistence.kind,'POSTGRES');assert.equal(h.objectStorage.configured,true);assert.equal(h.commercialServices.conditionReports.contractVersion,'v23');return}}catch{}await sleep(100)}
- throw new Error('Server not ready: '+stderr)
+ let stderr='',stdout='',spawnError=null,lastFetchError=null;child.stderr?.on('data',b=>stderr+=String(b));child.stdout?.on('data',b=>stdout+=String(b));child.on('error',e=>spawnError=e);
+ for(let i=0;i<300;i++){
+  if(spawnError)throw spawnError;
+  if(child.exitCode!=null)throw new Error('Server exited before readiness. stdout='+stdout+' stderr='+stderr);
+  let r;try{r=await fetch(base+'/api/health')}catch(e){lastFetchError=e;await sleep(100);continue}
+  if(r.ok){const h=await r.json();assert.equal(h.persistence.kind,'POSTGRES');assert.equal(h.objectStorage.configured,true);assert.equal(h.commercialServices?.conditionReports?.contractVersion,'v23');return}
+  lastFetchError=new Error('Health returned '+r.status+' '+await r.text());await sleep(100)
+ }
+ throw new Error('Server not ready. last='+String(lastFetchError?.message||'none')+' stdout='+stdout+' stderr='+stderr)
 }
 async function stop(){if(!child)return;const p=child;child=null;if(p.exitCode==null)p.kill('SIGTERM');await Promise.race([new Promise(r=>p.once('exit',r)),sleep(5000)]);if(p.exitCode==null)p.kill('SIGKILL')}
 
