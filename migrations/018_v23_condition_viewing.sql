@@ -87,9 +87,13 @@ CREATE TABLE IF NOT EXISTS viewing_slots (
   CHECK(ends_at>starts_at)
 );
 CREATE INDEX IF NOT EXISTS viewing_slots_request_idx ON viewing_slots(request_id,proposal_version,starts_at);
-ALTER TABLE viewing_requests
-  ADD CONSTRAINT viewing_selected_slot_fk
-  FOREIGN KEY(selected_slot_id) REFERENCES viewing_slots(id) ON DELETE RESTRICT;
+DO $ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='viewing_selected_slot_fk') THEN
+    ALTER TABLE viewing_requests
+      ADD CONSTRAINT viewing_selected_slot_fk
+      FOREIGN KEY(selected_slot_id) REFERENCES viewing_slots(id) ON DELETE RESTRICT;
+  END IF;
+END $;
 
 CREATE TABLE IF NOT EXISTS viewing_calendar_events (
   id text PRIMARY KEY,
