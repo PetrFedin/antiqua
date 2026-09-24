@@ -28,7 +28,10 @@ async function start(){
   if(spawnError)throw spawnError;
   if(child.exitCode!=null)throw new Error('Server exited before readiness. stdout='+stdout+' stderr='+stderr);
   let r;try{r=await fetch(base+'/api/health')}catch(e){lastFetchError=e;await sleep(100);continue}
-  if(r.ok){const h=await r.json();assert.equal(h.persistence.kind,'POSTGRES');assert.equal(h.objectStorage.configured,true);assert.equal(h.commercialServices?.conditionReports?.contractVersion,'v23');return}
+  if(r.ok){
+   const h=await r.json();assert.equal(h.persistence.kind,'POSTGRES');assert.equal(h.objectStorage.configured,true);
+   const cap=await fetch(base+'/api/commercial-services/capabilities');assert.equal(cap.status,200);const contract=await cap.json();assert.equal(contract.conditionReports?.contractVersion,'v23');assert.equal(contract.viewings?.contractVersion,'v23');return
+  }
   lastFetchError=new Error('Health returned '+r.status+' '+await r.text());await sleep(100)
  }
  throw new Error('Server not ready. last='+String(lastFetchError?.message||'none')+' stdout='+stdout+' stderr='+stderr)
