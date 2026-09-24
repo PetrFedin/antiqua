@@ -86,7 +86,7 @@ jobs:
           docker run -d --name antiqua-minio -p 9000:9000
           -e MINIO_ROOT_USER="${OBJECT_STORAGE_ACCESS_ID}"
           -e MINIO_ROOT_PASSWORD="${OBJECT_STORAGE_ACCESS_SECRET}"
-          quay.io/minio/minio:latest server /data --address ":9000"
+          docker.io/minio/minio:latest server /data --address ":9000"
       - name: Wait for MinIO
         run: |
           for i in $(seq 1 40); do
