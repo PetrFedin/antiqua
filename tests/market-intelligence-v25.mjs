@@ -10,7 +10,7 @@ const auction=id=>({id:'auc-'+id,lotId:id,saleId:'sale-'+id,state:'CLOSED'});
 const records=[
  {object:object('sold-1'),auction:auction('sold-1'),result:result('sold-1','SOLD',800000,800000)},
  {object:object('sold-2',{maker:bi('Maker B','Мастер B')}),auction:auction('sold-2'),result:result('sold-2','SOLD',1200000,1200000)},
- {object:object('hammer'),auction:auction('hammer'),result:result('hammer','HAMMERED',2000000,null)},
+ {object:object('hammer',{maker:bi('Maker C','Мастер C')}),auction:auction('hammer'),result:result('hammer','HAMMERED',2000000,null)},
  {object:object('usd'),auction:auction('usd'),result:result('usd','SOLD',500000,500000,'USD')},
  {object:object('weak',{department:bi('Sculpture','Скульптура'),maker:bi('Other','Другой'),period:bi('20th century','XX век'),origin:bi('Italy','Италия'),materials:bi('Marble','Мрамор')}),auction:auction('weak'),result:result('weak','SOLD',9900000,9900000)}
 ];
