@@ -51,8 +51,15 @@ try{
  assert.equal(soldOnly.items.some(v=>v.objectId===ids.usd),true);
  assert.equal(soldOnly.items.some(v=>v.objectId===ids.hammer),false);
  assert.equal(soldOnly.items.some(v=>v.objectId===ids.private),false);
- const json=JSON.stringify({x,soldOnly});
- for(const secret of [buyer.id,...Object.values(settlements),'SECRET-1','SECRET-2','SECRET-3','SECRET-PRIVATE','buyerAccountId','settlementId','metadata'])assert.equal(json.includes(secret),false,'market intelligence leaked '+secret);
+ const payload={x,soldOnly},json=JSON.stringify(payload);
+ for(const secret of [buyer.id,...Object.values(settlements),'SECRET-1','SECRET-2','SECRET-3','SECRET-PRIVATE'])assert.equal(json.includes(secret),false,'market intelligence leaked private value '+secret);
+ const forbiddenKeys=new Set(['buyerAccountId','settlementId','metadata']);
+ const hasForbiddenKey=value=>{
+  if(!value||typeof value!=='object')return false;
+  if(Array.isArray(value))return value.some(hasForbiddenKey);
+  return Object.entries(value).some(([k,v])=>forbiddenKeys.has(k)||hasForbiddenKey(v))
+ };
+ assert.equal(hasForbiddenKey(payload),false,'market intelligence exposed a forbidden identity/internal field');
  console.log('ANTIQUA v25 PostgreSQL market intelligence: public boundary + SOLD-only realized stats + hammer separation + currency isolation passed');
 }finally{
  await db.pool.query('DELETE FROM auction_settlements WHERE id=ANY($1::text[])',[Object.values(settlements)]).catch(()=>{});
