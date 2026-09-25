@@ -19,7 +19,7 @@ function listingFor(catalog,id){return (catalog.listings||[]).find(x=>x.lotId===
 function auctionFor(catalog,id){return (catalog.auctions||[]).find(x=>x.lotId===id&&x.state!=='CLOSED')||null}
 function displayPrice(catalog,lot){const a=auctionFor(catalog,lot.id),l=listingFor(catalog,lot.id);if(a)return copy('Текущая ставка ','Current bid ')+money(a.currentBid,a.currency);if(l)return money(l.price,l.currency);return copy('Смотреть паспорт','View passport')}
 
-function objectCard(catalog,lot,saved,reason=''){
+function objectCard(catalog,lot,saved,reason='',{dismissible=false}={}){
  const card=make('article','culture-object-card');
  const media=make('div','culture-object-media'),open=make('button','culture-object-open');open.type='button';open.dataset.passport=lot.id;open.setAttribute('aria-label',local(lot.title));
  const img=make('img');img.loading='lazy';img.decoding='async';img.src=lot.image||'';img.alt=local(lot.title);open.append(img);media.append(open);
@@ -32,6 +32,7 @@ function objectCard(catalog,lot,saved,reason=''){
  body.append(make('p','culture-object-meta',[local(lot.period),local(lot.origin)].filter(Boolean).join(' · ')));
  body.append(make('strong','culture-object-price',displayPrice(catalog,lot)));
  const trust=make('div','culture-object-trust');trust.append(make('span','',copy('Паспорт предмета','Object Passport')));if(lot.conditionGrade)trust.append(make('span','',copy('Состояние ','Condition ')+lot.conditionGrade));body.append(trust);
+ if(dismissible){const dismiss=make('button','text-button culture-object-dismiss',copy('Не моё','Not for me'));dismiss.type='button';dismiss.dataset.tasteDismiss=lot.id;body.append(dismiss)}
  card.append(body);return card
 }
 
@@ -69,11 +70,24 @@ function hero(data){
  const media=make('div','culture-hero-media');if(f.cover){const open=make('button');open.type='button';open.dataset.passport=f.cover.id;const img=make('img');img.src=f.cover.image||'';img.alt=local(f.cover.title);open.append(img);media.append(open);const caption=make('div','culture-hero-caption');caption.append(make('span','',local(f.cover.maker)));caption.append(make('strong','',local(f.cover.title)));caption.append(make('small','',[local(f.cover.period),local(f.cover.origin)].filter(Boolean).join(' · ')));media.append(caption)}section.append(media);return section
 }
 
+function tasteDimensionLabel(d){return({maker:copy('Мастер','Maker'),department:copy('Категория','Category'),period:copy('Эпоха','Period'),origin:copy('Происхождение','Origin')})[d]||d}
+function authorityTaste(data){
+ const t=data.taste;if(!t?.profile||!Array.isArray(t.recommendations))return null;const savedIds=new Set(data.client?.savedLots||[]);
+ const items=t.recommendations.map(r=>{const lot=(data.catalog.lots||[]).find(x=>x.id===r.object?.id)||r.object;if(!lot)return null;const reasons=(r.reasons||[]).filter(x=>x.points>0).slice(0,2).map(x=>tasteDimensionLabel(x.dimension)+': '+local(x.value));return{lot,reasons,affinityPoints:r.affinityPoints||0}}).filter(Boolean);
+ const tags=['maker','department','period'].flatMap(d=>(t.profile.dimensions?.[d]||[]).filter(x=>x.points>0).slice(0,2).map(x=>({label:local(x.value),points:x.points}))).filter((x,i,a)=>a.findIndex(y=>y.label===x.label)===i).slice(0,5);
+ return{profile:t.profile,items,tags,savedIds}
+}
 function taste(data){
- const model=tasteItems(data.catalog,data.client),section=make('section','page culture-taste');section.dataset.cultureFeed='';
- const head=make('div','culture-section-head'),intro=make('div'),has=model.profile.saved.length>0;intro.append(make('div','eyebrow',has?copy('ВАШ ВКУС','YOUR TASTE'):copy('НАЧНИТЕ ОТСЮДА','START HERE')));intro.append(make('h2','',has?copy('Подобрано по вашим сохранениям','Based on what you saved'):copy('Предметы, с которых легко начать','Objects worth discovering first')));intro.append(make('p','',has?copy('Подбор объяснимый: мастер, категория, эпоха и происхождение. Никакого скрытого рейтинга.','Explainable matching by maker, category, period and origin. No hidden score.'):copy('Сохраняйте то, что нравится. Antiqua постепенно соберёт карту вашего вкуса и будет объяснять каждую рекомендацию.','Save what you like. Antiqua will gradually build your taste map and explain every recommendation.')));head.append(intro);if(has)head.append(make('span','culture-saved-count',String(model.profile.saved.length)+' '+copy('сохранено','saved')));section.append(head);
- const tags=[...model.profile.maker,...model.profile.department,...model.profile.period].filter((x,i,a)=>a.findIndex(y=>y.key===x.key)===i).slice(0,5);if(tags.length){const rail=make('div','culture-taste-tags');for(const x of tags)rail.append(make('span','',x.label+(x.count>1?' · '+x.count:'')));section.append(rail)}
- const grid=make('div','culture-feed-grid');for(const item of model.items){const wrap=make('div','culture-feed-item');wrap.append(objectCard(data.catalog,item.lot,model.profile.ids.has(item.lot.id),item.reasons.slice(0,2).join(' · ')));grid.append(wrap)}section.append(grid);return section
+ const authority=authorityTaste(data),fallback=authority?null:tasteItems(data.catalog,data.client),section=make('section','page culture-taste');section.dataset.cultureFeed='';
+ const head=make('div','culture-section-head'),intro=make('div'),has=authority?authority.profile.signalCount>0:fallback.profile.saved.length>0;
+ intro.append(make('div','eyebrow',has?copy('ВАШ ВКУС','YOUR TASTE'):copy('НАЧНИТЕ ОТСЮДА','START HERE')));
+ intro.append(make('h2','',has?copy('Подобрано по вашим действиям','Based on your actions'):copy('Предметы, с которых легко начать','Objects worth discovering first')));
+ intro.append(make('p','',authority?(has?copy('Сохранения, глубина просмотра, подписки, переговоры, просмотры и покупки складываются в объяснимую карту вкуса. Цена не участвует в подборе.','Saves, engaged views, follows, negotiations, viewings and purchases form an explainable taste map. Price is not used for matching.'):copy('Исследуйте и сохраняйте предметы. Antiqua начнёт строить карту вкуса только после ваших явных действий.','Explore and save objects. Antiqua starts building a taste map only from your explicit actions.')):(has?copy('Подбор объяснимый: мастер, категория, эпоха и происхождение. Никакого скрытого рейтинга.','Explainable matching by maker, category, period and origin. No hidden score.'):copy('Сохраняйте то, что нравится. Antiqua постепенно соберёт карту вашего вкуса и будет объяснять каждую рекомендацию.','Save what you like. Antiqua will gradually build your taste map and explain every recommendation.'))));
+ if(authority){const explain=make('button','text-link culture-taste-explain',copy('Почему это здесь','Why this is here'));explain.type='button';explain.dataset.tasteExplain='';intro.append(explain)}head.append(intro);
+ if(has){const count=authority?authority.profile.signalCount:fallback.profile.saved.length;head.append(make('span','culture-saved-count',String(count)+' '+copy('сигналов','signals')))}section.append(head);
+ const tags=authority?authority.tags:[...fallback.profile.maker,...fallback.profile.department,...fallback.profile.period].filter((x,i,a)=>a.findIndex(y=>y.key===x.key)===i).slice(0,5).map(x=>({label:x.label,points:null}));
+ if(tags.length){const rail=make('div','culture-taste-tags');for(const x of tags)rail.append(make('span','',x.label+(x.points!=null?' · '+(x.points>0?'+':'')+x.points:'')));section.append(rail)}
+ const items=authority?authority.items:fallback.items,grid=make('div','culture-feed-grid');for(const item of items){const wrap=make('div','culture-feed-item'),saved=authority?authority.savedIds.has(item.lot.id):fallback.profile.ids.has(item.lot.id);wrap.append(objectCard(data.catalog,item.lot,saved,item.reasons.slice(0,2).join(' · '),{dismissible:Boolean(authority)}));grid.append(wrap)}section.append(grid);return section
 }
 
 function drop(data){
@@ -93,13 +107,13 @@ function refineCatalogue(catalogue){
 
 async function decorate(){
  updateBrandShell();if(route()!=='shop'||q('[data-culture-root]'))return;const catalogue=q('#app > .page.section');if(!catalogue)return;const ticket=++sequence;
- const [catalog,collectionsData,exhibitionsData,client]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state')]);if(ticket!==sequence||route()!=='shop'||!catalog)return;
- const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{}};refineCatalogue(catalogue);
+ const [catalog,collectionsData,exhibitionsData,client,tasteData]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=4')]);if(ticket!==sequence||route()!=='shop'||!catalog)return;
+ const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{},taste:tasteData||null};refineCatalogue(catalogue);
  const root=make('div','culture-discovery-root');root.dataset.cultureRoot='';root.append(hero(data));root.append(taste(data));const d=drop(data);if(d)root.append(d);const c=collections(data);if(c)root.append(c);catalogue.before(root)
 }
 
 const observer=new MutationObserver(()=>{queueMicrotask(()=>decorate().catch(console.error))});
 const app=q('#app');if(app)observer.observe(app,{childList:true});
 window.addEventListener('hashchange',()=>setTimeout(()=>decorate().catch(console.error),0));
-window.addEventListener('antiqua:culture-refresh',()=>decorate().catch(console.error));
+window.addEventListener('antiqua:culture-refresh',()=>{q('[data-culture-root]')?.remove();decorate().catch(console.error)});
 decorate().catch(console.error);
