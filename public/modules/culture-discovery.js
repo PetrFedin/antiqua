@@ -21,8 +21,8 @@ function displayPrice(catalog,lot){const a=auctionFor(catalog,lot.id),l=listingF
 
 function objectCard(catalog,lot,saved,reason=''){
  const card=make('article','culture-object-card');
- const media=make('button','culture-object-media');media.type='button';media.dataset.passport=lot.id;media.setAttribute('aria-label',local(lot.title));
- const img=make('img');img.loading='lazy';img.decoding='async';img.src=lot.image||'';img.alt=local(lot.title);media.append(img);
+ const media=make('div','culture-object-media'),open=make('button','culture-object-open');open.type='button';open.dataset.passport=lot.id;open.setAttribute('aria-label',local(lot.title));
+ const img=make('img');img.loading='lazy';img.decoding='async';img.src=lot.image||'';img.alt=local(lot.title);open.append(img);media.append(open);
  const save=make('button','culture-object-save '+(saved?'active':''),saved?'♥':'♡');save.type='button';save.dataset.save=lot.id;save.setAttribute('aria-label',copy('Сохранить','Save'));media.append(save);
  card.append(media);
  const body=make('div','culture-object-copy');
