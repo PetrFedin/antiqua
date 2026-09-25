@@ -45,5 +45,5 @@ assert.deepEqual([...seen].sort(),expected);
 const css=await read('styles.css');
 assert.ok(css.length>90000,'canonical stylesheet appears incomplete');
 for(const marker of ['styles-v07.css','styles-addon-v08.css','styles-addon-v09.css','styles-addon-v10.css','styles-v11.css','commerce-v11.css','styles-v12.css','styles-v13.css','styles-v14.css'])assert.match(css,new RegExp(marker.replaceAll('.','\\.')));
-assert.match(css,/v16-cockpit/);assert.match(css,/v20-public-auction-results/);assert.match(css,/auction-result-card-v20/);assert.match(css,/v21-object-inquiry/);assert.match(css,/inquiry-context-v21/);assert.match(css,/v22-offer-negotiation/);assert.match(css,/v23-condition-viewing/);assert.match(css,/v24-dealer-lead-cockpit/);assert.match(css,/v25-market-intelligence/);
-console.log('ANTIQUA v25 frontend consolidation: canonical module graph + commercial cycle + Market Intelligence surface + preserved cascade passed');
+assert.match(css,/v16-cockpit/);assert.match(css,/v20-public-auction-results/);assert.match(css,/auction-result-card-v20/);assert.match(css,/v21-object-inquiry/);assert.match(css,/inquiry-context-v21/);assert.match(css,/v22-offer-negotiation/);assert.match(css,/v23-condition-viewing/);assert.match(css,/v24-dealer-lead-cockpit/);assert.match(css,/v25-market-intelligence/);assert.match(css,/v26-saved-search-alerts/);
+console.log('ANTIQUA v26 frontend consolidation: canonical module graph + commercial cycle + saved-search alerts + preserved cascade passed');
