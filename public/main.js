@@ -8,6 +8,7 @@ import './modules/auction-results.js';
 import './modules/market-intelligence.js';
 import './modules/object-desire.js';
 import './modules/culture-discovery.js';
+import './modules/taste-signals.js';
 import './modules/inquiry.js';
 
 import './modules/services.js';
