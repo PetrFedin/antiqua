@@ -16,7 +16,7 @@ async function listFiles(dir=ROOT){
 }
 const publicFiles=(await listFiles()).sort();
 for(const p of publicFiles){const parts=p.split('/');const versioned=parts.some(part=>/^v\\d+$/.test(part))||/(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/.test(p);assert.equal(versioned,false,'legacy versioned frontend asset remains: '+p)}
-for(const p of ['index.html','styles.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
+for(const p of ['index.html','styles.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
 const scripts=[...index.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)].map(x=>x[1]);
@@ -39,11 +39,11 @@ async function walk(rel){
   }
 }
 await walk('main.js');
-const expected=['main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js'].sort();
+const expected=['main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js'].sort();
 assert.deepEqual([...seen].sort(),expected);
 
 const css=await read('styles.css');
 assert.ok(css.length>90000,'canonical stylesheet appears incomplete');
 for(const marker of ['styles-v07.css','styles-addon-v08.css','styles-addon-v09.css','styles-addon-v10.css','styles-v11.css','commerce-v11.css','styles-v12.css','styles-v13.css','styles-v14.css'])assert.match(css,new RegExp(marker.replaceAll('.','\\.')));
-assert.match(css,/v16-cockpit/);assert.match(css,/v20-public-auction-results/);assert.match(css,/auction-result-card-v20/);assert.match(css,/v21-object-inquiry/);assert.match(css,/inquiry-context-v21/);assert.match(css,/v22-offer-negotiation/);
-console.log('ANTIQUA v22 frontend consolidation: canonical module graph + inquiry + negotiation surfaces + preserved cascade passed');
+assert.match(css,/v16-cockpit/);assert.match(css,/v20-public-auction-results/);assert.match(css,/auction-result-card-v20/);assert.match(css,/v21-object-inquiry/);assert.match(css,/inquiry-context-v21/);assert.match(css,/v22-offer-negotiation/);assert.match(css,/v23-condition-viewing/);
+console.log('ANTIQUA v23 frontend consolidation: canonical module graph + inquiry + negotiation + services surfaces + preserved cascade passed');

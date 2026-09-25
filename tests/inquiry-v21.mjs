@@ -9,12 +9,12 @@ const operator=await db.findAccountByEmail('operator@demo.antiqua');
 assert.ok(buyer?.id&&seller?.id&&operator?.id);
 
 const id='inq-v21-proof-message';
-const first=await createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'CONDITION',message:'Please clarify the surface condition and any known restoration.',clientMessageId:id});
-assert.equal(first.idempotent,false);assert.equal(first.inquiryType,'CONDITION');assert.equal(first.conversation.listingId,'lst-110');assert.equal(first.conversation.objectId,'lot-110');
-assert.equal(first.message.body,'Please clarify the surface condition and any known restoration.');
-assert.equal(first.message.attachments[0].kind,'INQUIRY_CONTEXT');assert.equal(first.message.attachments[0].inquiryType,'CONDITION');
+const first=await createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'PROVENANCE',message:'Please clarify the provenance documents and known ownership history.',clientMessageId:id});
+assert.equal(first.idempotent,false);assert.equal(first.inquiryType,'PROVENANCE');assert.equal(first.conversation.listingId,'lst-110');assert.equal(first.conversation.objectId,'lot-110');
+assert.equal(first.message.body,'Please clarify the provenance documents and known ownership history.');
+assert.equal(first.message.attachments[0].kind,'INQUIRY_CONTEXT');assert.equal(first.message.attachments[0].inquiryType,'PROVENANCE');
 
-const replay=await createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'CONDITION',message:'Please clarify the surface condition and any known restoration.',clientMessageId:id});
+const replay=await createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'PROVENANCE',message:'Please clarify the provenance documents and known ownership history.',clientMessageId:id});
 assert.equal(replay.idempotent,true);assert.equal(replay.conversation.id,first.conversation.id);assert.equal(replay.message.id,first.message.id);
 
 let thread=await getConversation(buyer,first.conversation.id);
@@ -38,5 +38,7 @@ await assert.rejects(()=>createObjectInquiry(buyer,{listingId:'lst-110',inquiryT
 const li=listing('lst-110'),priorStatus=li.status;li.status='INACTIVE';
 try{await assert.rejects(()=>createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'OTHER',message:'Listing is inactive now',clientMessageId:'inq-inactive'}),e=>e.code==='LISTING_NOT_AVAILABLE')}finally{li.status=priorStatus}
 
-const cap=inquiryCapabilities();assert.equal(cap.threadReuse,true);assert.equal(cap.messageIdempotency,true);assert.equal(cap.notificationAfterMessage,true);
+await assert.rejects(()=>createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'CONDITION',message:'Condition should use structured workflow.',clientMessageId:'inq-structured-condition'}),e=>e.code==='INQUIRY_TYPE_INVALID');
+await assert.rejects(()=>createObjectInquiry(buyer,{listingId:'lst-110',inquiryType:'VIEWING',message:'Viewing should use structured workflow.',clientMessageId:'inq-structured-viewing'}),e=>e.code==='INQUIRY_TYPE_INVALID');
+const cap=inquiryCapabilities();assert.equal(cap.threadReuse,true);assert.equal(cap.messageIdempotency,true);assert.equal(cap.notificationAfterMessage,true);assert.equal(cap.structuredWorkflows.CONDITION,'/api/condition-report-requests');
 console.log('ANTIQUA v21 object inquiry: thread reuse + idempotent message + topic context + seller notification discipline passed');

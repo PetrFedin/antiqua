@@ -2,9 +2,7 @@ import {api,safe,copy,esc,local,toast} from './core.js';
 
 let passportSeq=0;
 const TOPICS=[
- ['CONDITION','Состояние и реставрация','Condition & restoration'],
  ['PROVENANCE','Провенанс и документы','Provenance & documents'],
- ['VIEWING','Просмотр предмета','Viewing appointment'],
  ['SHIPPING','Доставка и страхование','Shipping & insurance'],
  ['AVAILABILITY','Наличие и покупка','Availability & purchase'],
  ['OTHER','Другой вопрос','Other question']

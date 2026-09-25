@@ -18,7 +18,7 @@ async function logoutCurrentPreviewSession(page){
 }
 
 test('Object Passport inquiry reaches seller thread with durable topic context',async({page},testInfo)=>{
- const isMobile=testInfo.project.name.includes('mobile'),listingId='lst-110',objectId='lot-110',topic=isMobile?'SHIPPING':'CONDITION';
+ const isMobile=testInfo.project.name.includes('mobile'),listingId='lst-110',objectId='lot-110',topic=isMobile?'SHIPPING':'PROVENANCE';
  await page.goto('/',{waitUntil:'domcontentloaded'});
 
  let dialog=await openObject(page,objectId);
@@ -51,7 +51,7 @@ test('Object Passport inquiry reaches seller thread with durable topic context',
  const messages=page.locator('[data-v14-panel="messages"]');await expect(messages).toBeVisible();
  const threadButton=messages.locator('[data-v14-thread="'+sent.conversation.id+'"]');await expect(threadButton).toBeVisible();await threadButton.click();
  sheet=page.locator('#actionSheet[open]');await expect(sheet).toBeVisible();await expect(sheet).toContainText(body);
- const context=sheet.locator('.inquiry-context-v21').filter({hasText:isMobile?/Shipping|Доставка/i:/Condition|Состояние/i});await expect(context).toBeVisible();await sheet.locator('[data-close-sheet]').first().click();
+ const context=sheet.locator('.inquiry-context-v21').filter({hasText:isMobile?/Shipping|Доставка/i:/Provenance|Провенанс/i});await expect(context).toBeVisible();await sheet.locator('[data-close-sheet]').first().click();
 
  dialog=await openObject(page,objectId);await page.waitForTimeout(250);
  await expect(dialog.locator('[data-object-inquiry]')).toHaveCount(0);

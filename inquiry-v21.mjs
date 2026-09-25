@@ -2,9 +2,7 @@ import {listing,bi} from './runtime-v09.mjs';
 import {createConversation,postMessage} from './domain-e2e-v14.mjs';
 
 const TYPES={
- CONDITION:bi('Condition & restoration','Состояние и реставрация'),
  PROVENANCE:bi('Provenance & documents','Провенанс и документы'),
- VIEWING:bi('Viewing appointment','Просмотр предмета'),
  SHIPPING:bi('Shipping & insurance','Доставка и страхование'),
  AVAILABILITY:bi('Availability & purchase','Наличие и покупка'),
  OTHER:bi('Object inquiry','Вопрос по предмету')
@@ -18,7 +16,8 @@ export function inquiryCapabilities(){return{
  threadReuse:true,
  messageIdempotency:true,
  notificationAfterMessage:true,
- types:Object.keys(TYPES)
+ types:Object.keys(TYPES),
+ structuredWorkflows:{CONDITION:'/api/condition-report-requests',VIEWING:'/api/viewing-requests'}
 }}
 
 export async function createObjectInquiry(account,body={}){
