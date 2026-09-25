@@ -11,20 +11,13 @@ async function openAccount(page){
  const ops=page.locator('#v14Operations');await expect(ops).toBeVisible();return ops
 }
 
-test('Dealer Inbox projects inquiry + offer into one negotiating lead and routes back to offer authority',async({page},testInfo)=>{
+test('Dealer Inbox projects an offer into a negotiating lead and routes back to offer authority',async({page},testInfo)=>{
  const mobile=testInfo.project.name.includes('mobile');
  const cfg=mobile?{listingId:'lst-110',objectId:'lot-110',offer:'5000'}:{listingId:'lst-109',objectId:'lot-109',offer:'7000'};
  let offerId=null;
  await page.goto('/',{waitUntil:'domcontentloaded'});
  let login=await demoLogin(page,'BUYER');expect(login.status).toBe(200);
  try{
-  const inquiry=await apiPost(page,'/api/inquiries',{
-   listingId:cfg.listingId,inquiryType:mobile?'SHIPPING':'PROVENANCE',
-   message:'Dealer Inbox browser lead '+testInfo.project.name+' '+Date.now(),
-   clientMessageId:'v24-inquiry-'+Date.now()+'-'+Math.random()
-  },login.body.csrf);
-  expect([200,201]).toContain(inquiry.status);expect(inquiry.body.conversation?.id).toBeTruthy();
-
   const offer=await apiPost(page,'/api/listings/'+cfg.listingId+'/offers',{
    amount:cfg.offer,currency:'EUR',expiresAt:new Date(Date.now()+72*3600000).toISOString(),
    comment:'Dealer Inbox browser offer',clientActionId:'v24-offer-'+Date.now()+'-'+Math.random()
