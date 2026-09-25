@@ -31,6 +31,28 @@ export function normalizeDiscoveryCriteria(input={}){
  return out
 }
 export function discoveryCriteriaHash(criteria={}){return crypto.createHash('sha256').update(JSON.stringify(normalizeDiscoveryCriteria(criteria))).digest('hex')}
+const DELIVERY_MODES=['IMMEDIATE','DAILY_DIGEST'];
+export function normalizeDiscoveryDeliveryMode(value='IMMEDIATE'){
+ const mode=String(value||'IMMEDIATE').trim().toUpperCase();
+ if(!DELIVERY_MODES.includes(mode))throw Object.assign(new Error('Invalid discovery alert delivery mode'),{status:400,code:'DISCOVERY_DELIVERY_MODE_INVALID'});
+ return mode
+}
+export function normalizeDiscoveryDigestHour(value=8){
+ const hour=Number(value);
+ if(!Number.isInteger(hour)||hour<0||hour>23)throw Object.assign(new Error('Digest hour must be an integer from 0 to 23 UTC'),{status:400,code:'DISCOVERY_DIGEST_HOUR_INVALID'});
+ return hour
+}
+export function nextDiscoveryDigestAt(nowMs=Date.now(),hourUtc=8){
+ const hour=normalizeDiscoveryDigestHour(hourUtc),d=new Date(Number(nowMs));
+ if(!Number.isFinite(d.getTime()))throw Object.assign(new Error('Invalid digest schedule clock'),{status:400,code:'DISCOVERY_DIGEST_CLOCK_INVALID'});
+ let next=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),hour,0,0,0);
+ if(next<=d.getTime())next+=86400000;
+ return new Date(next).toISOString()
+}
+const deliveryModeOf=s=>normalizeDiscoveryDeliveryMode(s?.deliveryMode??s?.delivery_mode??'IMMEDIATE');
+export function discoverySubscriptionCapabilities(){
+ return{contractVersion:'v26',authority:'DISCOVERY_SUBSCRIPTION',criteria:criteriaKeys,deliveryModes:DELIVERY_MODES,digestClock:'UTC_HOUR',duplicatePolicy:'RETURN_EXISTING_ACTIVE_OR_PAUSED',pauseResume:true,unsubscribeStatus:'ARCHIVED',deterministicMatching:true,exactlyOnceOutbox:true}
+}
 
 function legacyTechniqueIds(term){
  const q=str(term).toLowerCase();if(!q)return[];
@@ -88,7 +110,7 @@ async function insertMatchTx(client,subscriptionId,objectId){
 }
 async function enqueueSummaryTx(client,s,hits,{reason='INITIAL'}={}){
  if(!hits.length)return null;const hash=discoveryCriteriaHash(s.criteria||{});
- return enqueueOutboxTx(client,{topic:'NOTIFICATION',aggregateType:'DISCOVERY_SUBSCRIPTION',aggregateId:s.id,idempotencyKey:`notification:discovery-summary:${s.id}:${hash}:${reason}`,payload:{accountId:s.accountId||s.account_id,type:'DISCOVERY_MATCHES',data:{subscriptionId:s.id,subscriptionType:s.subscriptionType||s.subscription_type,count:hits.length,objectIds:hits.slice(0,6).map(x=>x.id),label:s.label||{}},discoveryMatchSet:{subscriptionId:s.id,objectIds:hits.map(x=>x.id)}}})
+ return enqueueOutboxTx(client,{topic:'NOTIFICATION',aggregateType:'DISCOVERY_SUBSCRIPTION',aggregateId:s.id,idempotencyKey:`notification:discovery-summary:${s.id}:${hash}:${reason}`,payload:{accountId:s.accountId||s.account_id,type:'DISCOVERY_MATCHES',data:{subscriptionId:s.id,subscriptionType:s.subscriptionType||s.subscription_type,count:hits.length,objectIds:hits.slice(0,6).map(x=>x.id),label:s.label||{},deliveryMode:deliveryModeOf(s)},discoveryMatchSet:{subscriptionId:s.id,objectIds:hits.map(x=>x.id)}}})
 }
 
 export async function syncDiscoverySubscriptionTx(client,s,{reset=false,reason='INITIAL'}={}){
@@ -96,19 +118,19 @@ export async function syncDiscoverySubscriptionTx(client,s,{reset=false,reason='
  if(String(s.status||'ACTIVE')!=='ACTIVE')return{total:0,matches:[],inserted:0};
  const result=await searchDiscoveryPostgres(s.criteria||{},{client,limit:MAX_RESULTS}),inserted=[];
  for(const hit of result.matches)if(await insertMatchTx(client,s.id,hit.id))inserted.push(hit);
- if(inserted.length)await enqueueSummaryTx(client,s,inserted,{reason});
+ if(inserted.length&&deliveryModeOf(s)==='IMMEDIATE')await enqueueSummaryTx(client,s,inserted,{reason});
  return{...result,inserted:inserted.length}
 }
 
 export async function matchDiscoveryObjectTx(client,objectId){
  const exists=(await client.query("SELECT id FROM objects WHERE id=$1 AND publication_status='PUBLIC'",[String(objectId)])).rows[0];
  if(!exists)return{checked:0,matched:0,inserted:0,notifications:0,reason:'OBJECT_NOT_PUBLIC'};
- const subs=(await client.query("SELECT id,account_id,subscription_type,label,criteria,status FROM discovery_subscriptions WHERE status='ACTIVE' ORDER BY updated_at,id")).rows;
+ const subs=(await client.query("SELECT id,account_id,subscription_type,label,criteria,status,delivery_mode,digest_hour_utc,next_digest_at FROM discovery_subscriptions WHERE status='ACTIVE' ORDER BY updated_at,id")).rows;
  let matched=0,inserted=0,notifications=0;
  for(const s of subs){
   const hit=await searchDiscoveryPostgres(s.criteria||{},{client,objectId,limit:1});if(!hit.total)continue;matched++;
   const row=await insertMatchTx(client,s.id,objectId);if(!row)continue;inserted++;
-  const out=await enqueueOutboxTx(client,{topic:'NOTIFICATION',aggregateType:'DISCOVERY_MATCH',aggregateId:`${s.id}:${objectId}`,idempotencyKey:`notification:discovery-match:${s.id}:${objectId}`,payload:{accountId:s.account_id,type:'DISCOVERY_MATCH',data:{subscriptionId:s.id,subscriptionType:s.subscription_type,objectId,label:s.label||{}},discoveryMatch:{subscriptionId:s.id,objectId}}});if(!out.idempotent)notifications++
+  if(deliveryModeOf(s)==='IMMEDIATE'){const out=await enqueueOutboxTx(client,{topic:'NOTIFICATION',aggregateType:'DISCOVERY_MATCH',aggregateId:`${s.id}:${objectId}`,idempotencyKey:`notification:discovery-match:${s.id}:${objectId}`,payload:{accountId:s.account_id,type:'DISCOVERY_MATCH',data:{subscriptionId:s.id,subscriptionType:s.subscription_type,objectId,label:s.label||{},deliveryMode:'IMMEDIATE'},discoveryMatch:{subscriptionId:s.id,objectId}}});if(!out.idempotent)notifications++}
  }
  return{checked:subs.length,matched,inserted,notifications}
 }
@@ -118,6 +140,40 @@ export async function notifyDiscoveryForObjectPostgres(objectId){
  const cx=await db.pool.connect();try{await cx.query('BEGIN');const result=await matchDiscoveryObjectTx(cx,objectId);await cx.query('COMMIT');return result}catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}
 }
 
+export async function enqueuePendingDiscoverySummaryTx(client,s,{reason='DELIVERY_CHANGED'}={}){
+ const rows=(await client.query("SELECT object_id FROM discovery_matches WHERE subscription_id=$1 AND notified_at IS NULL ORDER BY matched_at,object_id LIMIT $2",[s.id,MAX_RESULTS])).rows;
+ if(!rows.length)return{pending:0,enqueued:false};
+ const hits=rows.map(x=>({id:x.object_id})),out=await enqueueSummaryTx(client,{...s,deliveryMode:'IMMEDIATE'},hits,{reason});
+ return{pending:hits.length,enqueued:!out?.idempotent,outboxId:out?.id||null}
+}
+
+export async function enqueueDueDiscoveryDigestsPostgres({nowMs=Date.now(),limit=50,maxMatches=100}={}){
+ if(db.kind!=='POSTGRES')return{checked:0,enqueued:0,matches:0,reason:'POSTGRES_REQUIRED'};
+ const nowIso=new Date(Number(nowMs)).toISOString();limit=Math.max(1,Math.min(200,Math.trunc(Number(limit)||50)));maxMatches=Math.max(1,Math.min(MAX_RESULTS,Math.trunc(Number(maxMatches)||100)));
+ const cx=await db.pool.connect();try{
+  await cx.query('BEGIN');
+  const due=(await cx.query(`SELECT id,account_id,subscription_type,label,criteria,status,delivery_mode,digest_hour_utc,next_digest_at
+    FROM discovery_subscriptions
+    WHERE status='ACTIVE' AND delivery_mode='DAILY_DIGEST' AND next_digest_at IS NOT NULL AND next_digest_at<=$1::timestamptz
+    ORDER BY next_digest_at,id FOR UPDATE SKIP LOCKED LIMIT $2`,[nowIso,limit])).rows;
+  let enqueued=0,matches=0;
+  for(const s of due){
+   const pending=(await cx.query(`SELECT object_id,matched_at FROM discovery_matches
+     WHERE subscription_id=$1 AND notified_at IS NULL ORDER BY matched_at,object_id LIMIT $2`,[s.id,maxMatches])).rows;
+   if(pending.length){
+    const objectIds=pending.map(x=>x.object_id),scheduledAt=iso(s.next_digest_at);
+    const out=await enqueueOutboxTx(cx,{topic:'NOTIFICATION',aggregateType:'DISCOVERY_SUBSCRIPTION',aggregateId:s.id,
+      idempotencyKey:`notification:discovery-digest:${s.id}:${scheduledAt}`,
+      payload:{accountId:s.account_id,type:'DISCOVERY_DIGEST',data:{subscriptionId:s.id,subscriptionType:s.subscription_type,count:objectIds.length,objectIds:objectIds.slice(0,12),label:s.label||{},deliveryMode:'DAILY_DIGEST',scheduledAt},discoveryMatchSet:{subscriptionId:s.id,objectIds}}});
+    if(!out.idempotent)enqueued++;matches+=objectIds.length
+   }
+   const next=nextDiscoveryDigestAt(nowMs,s.digest_hour_utc);
+   await cx.query('UPDATE discovery_subscriptions SET last_digest_at=$2::timestamptz,next_digest_at=$3::timestamptz WHERE id=$1',[s.id,nowIso,next])
+  }
+  await cx.query('COMMIT');return{checked:due.length,enqueued,matches}
+ }catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}
+}
+
 export async function markDiscoveryNotificationDeliveredTx(client,payload={}){
  const one=payload.discoveryMatch,set=payload.discoveryMatchSet;
  if(one?.subscriptionId&&one?.objectId){const r=await client.query('UPDATE discovery_matches SET notified_at=coalesce(notified_at,now()) WHERE subscription_id=$1 AND object_id=$2 RETURNING subscription_id',[String(one.subscriptionId),String(one.objectId)]);return r.rowCount}
@@ -125,4 +181,4 @@ export async function markDiscoveryNotificationDeliveredTx(client,payload={}){
  return 0
 }
 
-export function discoveryPostgresCapabilities(){return{postgresAuthority:db.kind==='POSTGRES',fullText:'POSTGRES_TSVECTOR',trigram:'PG_TRGM',criteria:criteriaKeys,publicObjectsOnly:true,commerceFromPostgres:true,durableMatches:true,notificationOutbox:true}}
+export function discoveryPostgresCapabilities(){return{postgresAuthority:db.kind==='POSTGRES',fullText:'POSTGRES_TSVECTOR',trigram:'PG_TRGM',criteria:criteriaKeys,publicObjectsOnly:true,commerceFromPostgres:true,durableMatches:true,notificationOutbox:true,savedSearchAlerts:discoverySubscriptionCapabilities()}}
