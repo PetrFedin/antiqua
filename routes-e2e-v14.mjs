@@ -4,6 +4,7 @@ import {majorToMinor,assertMinorAmount} from './money-v15.mjs';
 import {claimProviderEvent,markProviderEventProcessed,markProviderEventFailed,providerEventCapabilities} from './provider-events-v15.mjs';
 import {createSubscription,listSubscriptions,updateSubscription,createConversation,listConversations,getConversation,postMessage,markConversationRead,upsertCollectionRecord,listCollectionRecords,addMovement,addInsurancePolicy,createSettlementForAuction,settleDueAuctions,ensureShipment,listDisputes,getDispute,addDisputeEvidence,decideDispute,e2eCapabilities} from './domain-e2e-v14.mjs';
 import {getSettlement,listSettlements,transitionSettlement,listShipments,getShipment,quoteShipment,transitionShipment,createDispute,commerceLifecycleCapabilities} from './commerce-lifecycle-v16.mjs';
+import {discoverySubscriptionCapabilities} from './discovery-matching-v16.mjs';
 
 const SYSTEM={id:null,roles:['ADMIN'],sellerId:null};
 const paymentProvider=()=>process.env.PAYMENT_PROVIDER||'NOT_CONFIGURED';
@@ -51,8 +52,9 @@ export async function routeE2EV14(req,res,url,ctx){
  if(!ctx)return false;requireCsrf(req,ctx);const a=ctx.account;
  if(url.pathname==='/api/e2e/capabilities'&&req.method==='GET')return send(res,200,{capabilities:e2eCapabilities(),commerceLifecycle:commerceLifecycleCapabilities(),persistence:await db.health(),storage:storageConfig(),finance:financeCapabilities()});
 
+ if(url.pathname==='/api/discovery/subscriptions/capabilities'&&req.method==='GET')return send(res,200,{capabilities:discoverySubscriptionCapabilities()});
  if(url.pathname==='/api/discovery/subscriptions'&&req.method==='GET')return send(res,200,{subscriptions:await listSubscriptions(a)});
- if(url.pathname==='/api/discovery/subscriptions'&&req.method==='POST'){const x=await createSubscription(a,await readBody(req));await audit(req,a,'DISCOVERY_SUBSCRIPTION_CREATED','DISCOVERY_SUBSCRIPTION',x.id);return send(res,201,{subscription:x})}
+ if(url.pathname==='/api/discovery/subscriptions'&&req.method==='POST'){const x=await createSubscription(a,await readBody(req));await audit(req,a,x.idempotent?'DISCOVERY_SUBSCRIPTION_REUSED':'DISCOVERY_SUBSCRIPTION_CREATED','DISCOVERY_SUBSCRIPTION',x.id);return send(res,x.idempotent?200:201,{subscription:x})}
  const sub=url.pathname.match(/^\/api\/discovery\/subscriptions\/([^/]+)$/);if(sub&&req.method==='PATCH'){const x=await updateSubscription(a,sub[1],await readBody(req));if(!x)return send(res,404,{error:'Subscription not found'});await audit(req,a,'DISCOVERY_SUBSCRIPTION_UPDATED','DISCOVERY_SUBSCRIPTION',x.id);return send(res,200,{subscription:x})}
 
  if(url.pathname==='/api/conversations'&&req.method==='GET')return send(res,200,{conversations:await listConversations(a)});
