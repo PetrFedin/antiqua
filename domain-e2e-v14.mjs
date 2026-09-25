@@ -1,5 +1,5 @@
 import {db,lots,listings,auctions,orders,lot,listing,uid,now,notify} from './runtime-v09.mjs';
-import {normalizeDiscoveryCriteria,searchDiscoveryPostgres,syncDiscoverySubscriptionTx} from './discovery-matching-v16.mjs';
+import {normalizeDiscoveryCriteria,discoveryCriteriaHash,searchDiscoveryPostgres,syncDiscoverySubscriptionTx,normalizeDiscoveryDeliveryMode,normalizeDiscoveryDigestHour,nextDiscoveryDigestAt,enqueuePendingDiscoverySummaryTx} from './discovery-matching-v16.mjs';
 
 const clone=x=>x==null?x:structuredClone(x);
 const iso=v=>v?.toISOString?.()||v||null;
@@ -22,30 +22,55 @@ const contains=(v,q)=>JSON.stringify(v||'').toLowerCase().includes(String(q||'')
 function matches(o,c={}){const p=snapshot(o),n=v=>Number(v);if(c.q&&!contains([p.objectId,p.title,p.maker,p.department,p.period,p.origin,p.materials,p.technique],c.q))return false;if(c.category&&c.category!=='ALL'&&!contains(p.department,c.category))return false;if(c.era&&c.era!=='ALL'&&!contains(p.period,c.era))return false;if(c.country&&c.country!=='ALL'&&!contains(p.origin,c.country))return false;if(c.material&&c.material!=='ALL'&&!contains(p.materials,c.material))return false;if(c.technique&&c.technique!=='ALL'&&!contains(p.technique,c.technique))return false;if(c.condition&&c.condition!=='ALL'&&p.conditionGrade!==c.condition)return false;if(c.location&&c.location!=='ALL'&&String(p.location)!==String(c.location))return false;if(c.purchaseMethod&&c.purchaseMethod!=='ALL'&&!p.purchaseMethods.includes(c.purchaseMethod))return false;if(c.seller&&c.seller!=='ALL'&&p.sellerId!==c.seller)return false;if(c.maker&&!contains(p.maker,c.maker))return false;if(c.objectId&&p.objectId!==c.objectId&&p.id!==c.objectId)return false;if(c.priceMin!==''&&c.priceMin!=null&&p.price!=null&&p.price<n(c.priceMin))return false;if(c.priceMax!==''&&c.priceMax!=null&&p.price!=null&&p.price>n(c.priceMax))return false;return true}
 export const evaluateCriteria=c=>lots.filter(o=>matches(o,c)).map(snapshot);
 
-const mapSub=r=>({id:r.id,accountId:r.account_id??r.accountId,subscriptionType:r.subscription_type??r.subscriptionType,label:r.label||{},criteria:r.criteria||{},status:r.status,createdAt:iso(r.created_at??r.createdAt),updatedAt:iso(r.updated_at??r.updatedAt)});
+const mapSub=r=>({id:r.id,accountId:r.account_id??r.accountId,subscriptionType:r.subscription_type??r.subscriptionType,label:r.label||{},criteria:r.criteria||{},status:r.status,deliveryMode:r.delivery_mode??r.deliveryMode??'IMMEDIATE',digestHourUtc:Number(r.digest_hour_utc??r.digestHourUtc??8),nextDigestAt:iso(r.next_digest_at??r.nextDigestAt),lastDigestAt:iso(r.last_digest_at??r.lastDigestAt),createdAt:iso(r.created_at??r.createdAt),updatedAt:iso(r.updated_at??r.updatedAt)});
+const sameCriteria=(a,b)=>JSON.stringify(normalizeDiscoveryCriteria(a||{}))===JSON.stringify(normalizeDiscoveryCriteria(b||{}));
 export async function createSubscription(a,b){
  const type=String(b.subscriptionType||'SAVED_SEARCH').toUpperCase();if(!['SAVED_SEARCH','FOLLOW_SELLER','FOLLOW_MAKER','WANTED'].includes(type))throw Object.assign(new Error('Invalid subscription type'),{status:400});
- const s={id:uid('sub'),accountId:a.id,subscriptionType:type,label:bi(String(b.labelEn||b.label||''),String(b.labelRu||b.label||'')),criteria:b.criteria&&typeof b.criteria==='object'?b.criteria:{},status:'ACTIVE',createdAt:now(),updatedAt:now()};
+ const createdAt=now(),deliveryMode=normalizeDiscoveryDeliveryMode(b.deliveryMode||'IMMEDIATE'),digestHourUtc=normalizeDiscoveryDigestHour(b.digestHourUtc??8);
+ const s={id:uid('sub'),accountId:a.id,subscriptionType:type,label:bi(String(b.labelEn||b.label||''),String(b.labelRu||b.label||'')),criteria:b.criteria&&typeof b.criteria==='object'?b.criteria:{},status:'ACTIVE',deliveryMode,digestHourUtc,nextDigestAt:deliveryMode==='DAILY_DIGEST'?nextDiscoveryDigestAt(Date.parse(createdAt),digestHourUtc):null,lastDigestAt:null,createdAt,updatedAt:createdAt};
  if(type==='FOLLOW_SELLER'&&b.sellerId)s.criteria={seller:b.sellerId};if(type==='FOLLOW_MAKER'&&b.maker)s.criteria={maker:b.maker};if(type==='WANTED'&&b.objectId)s.criteria={objectId:b.objectId};s.criteria=normalizeDiscoveryCriteria(s.criteria);
- if(db.kind==='POSTGRES'){const cx=await db.pool.connect();try{await cx.query('BEGIN');await cx.query('INSERT INTO discovery_subscriptions(id,account_id,subscription_type,label,criteria,status,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$7)',[s.id,s.accountId,s.subscriptionType,s.label,s.criteria,s.status,s.createdAt]);const result=await syncDiscoverySubscriptionTx(cx,s,{reason:'INITIAL'});await cx.query('COMMIT');return{...clone(s),matchCount:result.total,matches:result.matches.slice(0,12)}}catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}}
- mem.subscriptions.set(s.id,s);const hits=evaluateCriteria(s.criteria);if(hits.length)await notify(a.id,'DISCOVERY_MATCHES',{subscriptionId:s.id,count:hits.length,objectIds:hits.slice(0,6).map(x=>x.id)});return{...clone(s),matchCount:hits.length,matches:hits.slice(0,12)}
+ if(db.kind==='POSTGRES'){const cx=await db.pool.connect();try{
+  await cx.query('BEGIN');
+  const hash=discoveryCriteriaHash(s.criteria),lockKey=[s.accountId,s.subscriptionType,hash].join('|');await cx.query('SELECT pg_advisory_xact_lock(hashtext($1)::bigint)',[lockKey]);
+  const prior=(await cx.query("SELECT * FROM discovery_subscriptions WHERE account_id=$1 AND subscription_type=$2 AND criteria=$3::jsonb AND status IN ('ACTIVE','PAUSED') ORDER BY created_at,id LIMIT 1",[s.accountId,s.subscriptionType,JSON.stringify(s.criteria)])).rows[0];
+  if(prior){const existing=mapSub(prior),result=await searchDiscoveryPostgres(existing.criteria,{client:cx,limit:12}),pending=Number((await cx.query('SELECT count(*)::int AS n FROM discovery_matches WHERE subscription_id=$1 AND notified_at IS NULL',[existing.id])).rows[0]?.n||0);await cx.query('COMMIT');return{...existing,matchCount:result.total,matches:result.matches,pendingAlertCount:pending,idempotent:true}}
+  await cx.query(`INSERT INTO discovery_subscriptions(id,account_id,subscription_type,label,criteria,status,delivery_mode,digest_hour_utc,next_digest_at,last_digest_at,created_at,updated_at)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,NULL,$10,$10)`,[s.id,s.accountId,s.subscriptionType,s.label,s.criteria,s.status,s.deliveryMode,s.digestHourUtc,s.nextDigestAt,s.createdAt]);
+  const result=await syncDiscoverySubscriptionTx(cx,s,{reason:'INITIAL'}),pending=Number((await cx.query('SELECT count(*)::int AS n FROM discovery_matches WHERE subscription_id=$1 AND notified_at IS NULL',[s.id])).rows[0]?.n||0);await cx.query('COMMIT');
+  return{...clone(s),matchCount:result.total,matches:result.matches.slice(0,12),pendingAlertCount:pending,idempotent:false}
+ }catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}}
+ const prior=[...mem.subscriptions.values()].find(x=>x.accountId===a.id&&x.subscriptionType===type&&x.status!=='ARCHIVED'&&sameCriteria(x.criteria,s.criteria));
+ if(prior){const hits=evaluateCriteria(prior.criteria);return{...clone(prior),matchCount:hits.length,matches:hits.slice(0,12),pendingAlertCount:0,idempotent:true}}
+ mem.subscriptions.set(s.id,s);const hits=evaluateCriteria(s.criteria);if(hits.length&&s.deliveryMode==='IMMEDIATE')await notify(a.id,'DISCOVERY_MATCHES',{subscriptionId:s.id,subscriptionType:s.subscriptionType,count:hits.length,objectIds:hits.slice(0,6).map(x=>x.id),label:s.label,deliveryMode:'IMMEDIATE'});return{...clone(s),matchCount:hits.length,matches:hits.slice(0,12),pendingAlertCount:0,idempotent:false}
 }
 export async function listSubscriptions(a){
  const rows=db.kind==='POSTGRES'?(await db.pool.query('SELECT * FROM discovery_subscriptions WHERE account_id=$1 ORDER BY updated_at DESC',[a.id])).rows.map(mapSub):[...mem.subscriptions.values()].filter(x=>x.accountId===a.id).map(clone);
- if(db.kind==='POSTGRES')return Promise.all(rows.map(async s=>{const result=await searchDiscoveryPostgres(s.criteria,{limit:12});return{...s,matchCount:result.total,matches:result.matches}}));
- return rows.map(s=>{const hits=evaluateCriteria(s.criteria);return{...s,matchCount:hits.length,matches:hits.slice(0,12)}})
+ if(db.kind==='POSTGRES')return Promise.all(rows.map(async s=>{const [result,pendingRow]=await Promise.all([searchDiscoveryPostgres(s.criteria,{limit:12}),db.pool.query('SELECT count(*)::int AS n FROM discovery_matches WHERE subscription_id=$1 AND notified_at IS NULL',[s.id])]);return{...s,matchCount:result.total,matches:result.matches,pendingAlertCount:Number(pendingRow.rows[0]?.n||0)}}));
+ return rows.map(s=>{const hits=evaluateCriteria(s.criteria);return{...s,matchCount:hits.length,matches:hits.slice(0,12),pendingAlertCount:0}})
 }
 export async function updateSubscription(a,id,p){
  let s;if(db.kind==='POSTGRES'){const cx=await db.pool.connect();try{
   await cx.query('BEGIN');
   const row=(await cx.query('SELECT * FROM discovery_subscriptions WHERE id=$1 AND account_id=$2 FOR UPDATE',[id,a.id])).rows[0];if(!row){await cx.query('ROLLBACK');return null}
-  s=mapSub(row);const wasActive=s.status==='ACTIVE',requestedCriteria=p.criteria&&typeof p.criteria==='object'?normalizeDiscoveryCriteria(p.criteria):null,currentCriteria=normalizeDiscoveryCriteria(s.criteria||{}),criteriaChanged=Boolean(requestedCriteria&&JSON.stringify(requestedCriteria)!==JSON.stringify(currentCriteria));
-  if(['ACTIVE','PAUSED','ARCHIVED'].includes(String(p.status||'')))s.status=String(p.status);if(requestedCriteria)s.criteria=requestedCriteria;if(p.label&&typeof p.label==='object')s.label=p.label;
-  const changedAt=now();s.updatedAt=changedAt;await cx.query('UPDATE discovery_subscriptions SET label=$3,criteria=$4,status=$5,updated_at=$6 WHERE id=$1 AND account_id=$2',[id,a.id,s.label,s.criteria,s.status,changedAt]);
+  s=mapSub(row);const wasActive=s.status==='ACTIVE',oldDelivery=s.deliveryMode,oldDigestHour=s.digestHourUtc,requestedCriteria=p.criteria&&typeof p.criteria==='object'?normalizeDiscoveryCriteria(p.criteria):null,currentCriteria=normalizeDiscoveryCriteria(s.criteria||{}),criteriaChanged=Boolean(requestedCriteria&&JSON.stringify(requestedCriteria)!==JSON.stringify(currentCriteria));
+  if(['ACTIVE','PAUSED','ARCHIVED'].includes(String(p.status||'')))s.status=String(p.status);
+  if(requestedCriteria)s.criteria=requestedCriteria;if(p.label&&typeof p.label==='object')s.label=p.label;
+  if(Object.prototype.hasOwnProperty.call(p,'deliveryMode'))s.deliveryMode=normalizeDiscoveryDeliveryMode(p.deliveryMode);
+  if(Object.prototype.hasOwnProperty.call(p,'digestHourUtc'))s.digestHourUtc=normalizeDiscoveryDigestHour(p.digestHourUtc);
+  const deliveryChanged=s.deliveryMode!==oldDelivery,digestHourChanged=s.digestHourUtc!==oldDigestHour,changedAt=now();s.updatedAt=changedAt;
+  if(s.status==='ARCHIVED'||s.deliveryMode==='IMMEDIATE')s.nextDigestAt=null;
+  else if(deliveryChanged||digestHourChanged||!s.nextDigestAt)s.nextDigestAt=nextDiscoveryDigestAt(Date.parse(changedAt),s.digestHourUtc);
+  await cx.query(`UPDATE discovery_subscriptions SET label=$3,criteria=$4,status=$5,delivery_mode=$6,digest_hour_utc=$7,next_digest_at=$8,updated_at=$9 WHERE id=$1 AND account_id=$2`,[id,a.id,s.label,s.criteria,s.status,s.deliveryMode,s.digestHourUtc,s.nextDigestAt,changedAt]);
   let result;if(criteriaChanged||(s.status==='ACTIVE'&&!wasActive))result=await syncDiscoverySubscriptionTx(cx,s,{reset:criteriaChanged,reason:criteriaChanged?`CRITERIA_UPDATED:${changedAt}`:'REACTIVATED'});else result=await searchDiscoveryPostgres(s.criteria,{client:cx,limit:12});
-  await cx.query('COMMIT');return{...clone(s),matchCount:result.total,matches:result.matches.slice(0,12)}
+  if(s.status==='ACTIVE'&&deliveryChanged&&s.deliveryMode==='IMMEDIATE')await enqueuePendingDiscoverySummaryTx(cx,s,{reason:`DELIVERY_IMMEDIATE:${changedAt}`});
+  const pending=Number((await cx.query('SELECT count(*)::int AS n FROM discovery_matches WHERE subscription_id=$1 AND notified_at IS NULL',[s.id])).rows[0]?.n||0);
+  await cx.query('COMMIT');return{...clone(s),matchCount:result.total,matches:result.matches.slice(0,12),pendingAlertCount:pending}
  }catch(e){try{await cx.query('ROLLBACK')}catch{}throw e}finally{cx.release()}}
- s=mem.subscriptions.get(id);if(!s||s.accountId!==a.id)return null;if(['ACTIVE','PAUSED','ARCHIVED'].includes(String(p.status||'')))s.status=String(p.status);if(p.criteria&&typeof p.criteria==='object')s.criteria=normalizeDiscoveryCriteria(p.criteria);if(p.label&&typeof p.label==='object')s.label=clone(p.label);s.updatedAt=now();const hits=evaluateCriteria(s.criteria);return{...clone(s),matchCount:hits.length,matches:hits.slice(0,12)}
+ s=mem.subscriptions.get(id);if(!s||s.accountId!==a.id)return null;
+ const oldDelivery=s.deliveryMode||'IMMEDIATE';if(['ACTIVE','PAUSED','ARCHIVED'].includes(String(p.status||'')))s.status=String(p.status);if(p.criteria&&typeof p.criteria==='object')s.criteria=normalizeDiscoveryCriteria(p.criteria);if(p.label&&typeof p.label==='object')s.label=clone(p.label);
+ if(Object.prototype.hasOwnProperty.call(p,'deliveryMode'))s.deliveryMode=normalizeDiscoveryDeliveryMode(p.deliveryMode);if(Object.prototype.hasOwnProperty.call(p,'digestHourUtc'))s.digestHourUtc=normalizeDiscoveryDigestHour(p.digestHourUtc);s.deliveryMode||='IMMEDIATE';s.digestHourUtc??=8;s.updatedAt=now();
+ if(s.status==='ARCHIVED'||s.deliveryMode==='IMMEDIATE')s.nextDigestAt=null;else if(s.deliveryMode!==oldDelivery||!s.nextDigestAt)s.nextDigestAt=nextDiscoveryDigestAt(Date.parse(s.updatedAt),s.digestHourUtc);
+ const hits=evaluateCriteria(s.criteria);return{...clone(s),matchCount:hits.length,matches:hits.slice(0,12),pendingAlertCount:0}
 }
 
 const mapC=r=>({id:r.id,objectId:r.object_id??r.objectId,listingId:r.listing_id??r.listingId,buyerAccountId:r.buyer_account_id??r.buyerAccountId,sellerId:r.seller_id??r.sellerId,status:r.status,subject:r.subject||{},createdAt:iso(r.created_at??r.createdAt),updatedAt:iso(r.updated_at??r.updatedAt)});
