@@ -87,17 +87,18 @@ async function memoryFacts(account){
 }
 
 function dedupeFacts(facts){const m=new Map();for(const f of facts){if(!SIGNAL_WEIGHTS[f.type]||!f.objectId)continue;const k=f.type+'|'+f.objectId,p=m.get(k);if(!p||String(f.at||'')>String(p.at||''))m.set(k,f)}return[...m.values()]}
+function dedupeFollows(follows){const m=new Map();for(const f of follows||[]){const value=String(f.value||'').trim();if(!value||!SIGNAL_WEIGHTS[f.type])continue;const k=f.type+'|'+value.toLowerCase(),p=m.get(k);if(!p||String(f.at||'')>String(p.at||''))m.set(k,{...f,value})}return[...m.values()]}
 function addFacet(store,dimension,value,fact){const key=canon(value);if(!key)return;const map=store[dimension],current=map.get(key)||{key,value:bi(value),points:0,signals:new Map()};const weight=SIGNAL_WEIGHTS[fact.type]||0;current.points+=weight;const s=current.signals.get(fact.type)||{type:fact.type,count:0,weight,points:0};s.count++;s.points+=weight;current.signals.set(fact.type,s);map.set(key,current)}
 function finalizeFacet(map){return[...map.values()].filter(x=>x.points!==0).map(x=>({...x,signals:[...x.signals.values()].sort((a,b)=>Math.abs(b.points)-Math.abs(a.points)||a.type.localeCompare(b.type))})).sort((a,b)=>b.points-a.points||canon(a.value).localeCompare(canon(b.value)))}
 
 export async function buildTasteProfile(account){
- const facts=db.kind==='POSTGRES'?await pgFacts(account):await memoryFacts(account),objects=await catalogue(),byId=new Map(objects.map(x=>[x.id,x])),objectFacts=dedupeFacts(facts.objectFacts),store=Object.fromEntries(DIMENSIONS.map(d=>[d,new Map()]));
+ const facts=db.kind==='POSTGRES'?await pgFacts(account):await memoryFacts(account),objects=await catalogue(),byId=new Map(objects.map(x=>[x.id,x])),objectFacts=dedupeFacts(facts.objectFacts),follows=dedupeFollows(facts.follows),store=Object.fromEntries(DIMENSIONS.map(d=>[d,new Map()]));
  const latestPositive=new Map(),latestDismiss=new Map(),exclude=new Set(facts.ownedIds);
  for(const fact of objectFacts){const o=byId.get(fact.objectId);if(!o)continue;if(POSITIVE.has(fact.type)){const p=latestPositive.get(fact.objectId);if(!p||String(fact.at||'')>p)latestPositive.set(fact.objectId,String(fact.at||''))}if(fact.type==='DISMISSED'){const p=latestDismiss.get(fact.objectId);if(!p||String(fact.at||'')>p)latestDismiss.set(fact.objectId,String(fact.at||''))}if(strongExclude.has(fact.type))exclude.add(fact.objectId);for(const d of DIMENSIONS)addFacet(store,d,o[d],fact)}
- for(const f of facts.follows){const d=f.type==='FOLLOW_MAKER'?'maker':'department';addFacet(store,d,bi(f.value),{type:f.type,at:f.at})}
+ for(const f of follows){const d=f.type==='FOLLOW_MAKER'?'maker':'department';addFacet(store,d,bi(f.value),{type:f.type,at:f.at})}
  for(const [id,at] of latestDismiss){if(!latestPositive.get(id)||at>=latestPositive.get(id))exclude.add(id)}
  const dimensions=Object.fromEntries(DIMENSIONS.map(d=>[d,finalizeFacet(store[d])]));
- const counts={};for(const f of objectFacts)counts[f.type]=(counts[f.type]||0)+1;for(const f of facts.follows)counts[f.type]=(counts[f.type]||0)+1;
+ const counts={};for(const f of objectFacts)counts[f.type]=(counts[f.type]||0)+1;for(const f of follows)counts[f.type]=(counts[f.type]||0)+1;
  return{profile:{signalCount:Object.values(counts).reduce((a,b)=>a+b,0),signalCounts:counts,dimensions},internal:{exclude},capabilities:tasteGraphCapabilities()}
 }
 
