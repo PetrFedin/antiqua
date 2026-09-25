@@ -1,12 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 async function demoLogin(page,persona){
- return page.evaluate(async persona=>{
-  const csrf=decodeURIComponent(document.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('antiqua_csrf='))?.split('=').slice(1).join('=')||'');
-  const headers={'content-type':'application/json'};if(csrf)headers['x-csrf-token']=csrf;
-  const r=await fetch('/api/auth/demo-login',{method:'POST',headers,body:JSON.stringify({persona})});
-  return{status:r.status,body:await r.json()}
- },persona)
+ return page.evaluate(async persona=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona})});return{status:r.status,body:await r.json()}},persona)
 }
 async function post(page,path,csrf,body={},headers={}){
  return page.evaluate(async({path,csrf,body,headers})=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf,...headers},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}},{path,csrf,body,headers})
@@ -44,13 +39,15 @@ async function makeSold(page,auctionId){
  }
  result=await page.evaluate(async id=>{const r=await fetch('/api/auctions/'+id+'/result');return{status:r.status,body:await r.json()}},auctionId);
  if(result.body.result.status!=='SOLD'){
+  const shipmentOperator=await demoLogin(page,'OPERATOR');expect(shipmentOperator.status).toBe(200);
   const shipmentId='shp-set-'+auctionId;
-  let current=await page.evaluate(async id=>{const r=await fetch('/api/shipments/'+id);return{status:r.status,body:await r.json()}},shipmentId);expect(current.status).toBe(200);
-  if(current.body.shipment.status==='QUOTE_REQUIRED')current=await post(page,'/api/shipments/'+shipmentId+'/quote',operator.body.csrf,{origin:'Amsterdam',destination:'Paris'});
+  let current=await page.evaluate(async id=>{const r=await fetch('/api/shipments/'+id);return{status:r.status,body:await r.json()}},shipmentId);expect(current.status).toBe(200);expect(current.body.shipment).toBeTruthy();
+  if(current.body.shipment.status==='QUOTE_REQUIRED'){current=await post(page,'/api/shipments/'+shipmentId+'/quote',shipmentOperator.body.csrf,{origin:'Amsterdam',destination:'Paris'});expect(current.status).toBe(200)}
   const next={QUOTED:'BOOKED',BOOKED:'PACKING',PACKING:'IN_TRANSIT',IN_TRANSIT:'DELIVERED'};
   while(next[current.body.shipment.status]){
-   current=await post(page,'/api/shipments/'+shipmentId+'/transition',operator.body.csrf,{status:next[current.body.shipment.status]});expect(current.status).toBe(200)
+   current=await post(page,'/api/shipments/'+shipmentId+'/transition',shipmentOperator.body.csrf,{status:next[current.body.shipment.status]});expect(current.status).toBe(200)
   }
+  expect(current.body.shipment.status).toBe('DELIVERED');
   buyer=await demoLogin(page,'BUYER');expect(buyer.status).toBe(200);
   const received=await post(page,'/api/shipments/'+shipmentId+'/confirm-receipt',buyer.body.csrf,{});expect(received.status).toBe(200)
  }
