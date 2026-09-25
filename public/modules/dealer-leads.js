@@ -59,7 +59,7 @@ function leadCard(l){
  const overdue=l.responseStatus==='OVERDUE';
  const next=l.nextAction||{};
  const actionable=!['WAIT_FOR_BUYER','NONE'].includes(next.code);
- return '<article class="v14-card v24-lead-card" data-v24-lead data-stage="'+esc(l.stage)+'">'+
+ return '<article class="v14-card v24-lead-card" data-v24-lead data-stage="'+esc(l.stage)+'" data-listing="'+esc(l.listingId||'')+'" data-buyer="'+esc(l.buyerAccountId||'')+'">'+
   '<div class="v14-card-head"><span class="status-pill v24-stage-'+esc(l.stage.toLowerCase())+'">'+esc(stageLabel(l.stage))+'</span><b>'+esc(potential)+'</b></div>'+
   '<h4>'+esc(local(l.object?.title)||l.object?.objectCode||l.objectId)+'</h4>'+
   '<div class="v24-lead-meta">'+
