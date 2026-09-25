@@ -17,5 +17,5 @@ process.once('SIGINT',()=>{void close()});
 console.log('ANTIQUA worker started',JSON.stringify({workerId,pollMs,leaseMs,limit,once,capabilities:workerCapabilities()}));
 try{
   if(once){const result=await runWorkerCycle({workerId,limit,leaseMs});console.log('ANTIQUA worker cycle',JSON.stringify(result));}
-  else while(!stopping){const started=Date.now();try{const result=await runWorkerCycle({workerId,limit,leaseMs});if(result.outbox.claimed||result.scheduled?.auctionsCreated||result.scheduled?.operational?.settlements?.changed||result.scheduled?.operational?.insurance?.changed)console.log('ANTIQUA worker cycle',JSON.stringify(result))}catch(e){console.error('ANTIQUA worker cycle failed',e)}const remaining=Math.max(0,pollMs-(Date.now()-started));if(remaining)await sleep(remaining)}
+  else while(!stopping){const started=Date.now();try{const result=await runWorkerCycle({workerId,limit,leaseMs});if(result.outbox.claimed||result.scheduled?.auctionsCreated||result.scheduled?.discoveryDigests?.enqueued||result.scheduled?.operational?.settlements?.changed||result.scheduled?.operational?.insurance?.changed)console.log('ANTIQUA worker cycle',JSON.stringify(result))}catch(e){console.error('ANTIQUA worker cycle failed',e)}const remaining=Math.max(0,pollMs-(Date.now()-started));if(remaining)await sleep(remaining)}
 }finally{await close()}
