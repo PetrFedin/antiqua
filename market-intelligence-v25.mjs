@@ -33,7 +33,7 @@ function catalogueReasons(source,candidate){
  return{reasons,rank:{sameMaker:Number(sameMaker),sameDepartment:Number(sameDepartment),materials:materialWords.length,samePeriod:Number(samePeriod),sameOrigin:Number(sameOrigin)}}
 }
 function comparable(source,record){
- const x=catalogueReasons(source,record.object);
+ const x=catalogueReasons(source,record);
  const conceptual=x.rank.sameMaker+x.rank.sameDepartment+x.rank.materials+x.rank.samePeriod;
  if(!conceptual)return null;
  const strength=(x.rank.sameMaker&&x.rank.sameDepartment)||(x.rank.sameDepartment&&(x.rank.materials||x.rank.samePeriod))||(x.rank.sameMaker&&(x.rank.materials||x.rank.samePeriod))?'HIGH':conceptual>=2?'MEDIUM':'LOW';
