@@ -527,7 +527,7 @@ body{overflow-x:hidden}
  .v27-why{padding-top:24px!important}.v27-why h3{font-size:34px!important}.v27-why p{font-size:17px}
  .desire-v27 .dossier-commerce-dock{position:sticky;z-index:24;bottom:calc(72px + env(safe-area-inset-bottom));grid-template-columns:1fr auto;margin:24px -10px 0;padding:13px 12px;border:1px solid rgba(25,21,17,.14);border-radius:16px;background:rgba(250,248,244,.94);box-shadow:0 12px 35px rgba(24,19,15,.14);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
  .desire-v27 .dock-summary>strong{font-size:26px}.desire-v27 .dock-summary>small{display:none}
- .desire-v27 .dock-actions{display:flex}.desire-v27 .dock-actions .primary-button{min-width:0;min-height:45px}.desire-v27 .dock-actions .secondary-button{display:none}
+ .desire-v27 .dock-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:min(58vw,330px)}.desire-v27 .dock-actions .primary-button,.desire-v27 .dock-actions .secondary-button{display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:44px;padding-inline:10px;font-size:10px;white-space:nowrap}.desire-v27 .dock-actions .inquiry-button-v21,.desire-v27 .dock-actions .v23-service-cta{display:inline-flex}
  .v27-trust-strip{grid-template-columns:repeat(2,1fr);margin-top:18px!important}
  .v27-trust-tile{min-height:94px;padding:13px 10px}
  .v27-trust-tile:nth-child(2n){border-right:0}.v27-trust-tile:nth-child(3){border-right:1px solid var(--line)}
