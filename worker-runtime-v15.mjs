@@ -3,7 +3,7 @@ import {db} from './runtime-v09.mjs';
 import {settleDueAuctions} from './domain-e2e-v14.mjs';
 import {runOperationalSweeps} from './sweeps-v14.mjs';
 import {claimOutboxBatch,failOutboxEvent,outboxStats} from './outbox-v15.mjs';
-import {matchDiscoveryObjectTx,markDiscoveryNotificationDeliveredTx} from './discovery-matching-v16.mjs';
+import {matchDiscoveryObjectTx,markDiscoveryNotificationDeliveredTx,enqueueDueDiscoveryDigestsPostgres} from './discovery-matching-v16.mjs';
 
 const SCHEDULE_LOCK_KEY=4815162501;
 const notificationId=()=>`notif-${crypto.randomUUID().replaceAll('-','').slice(0,20)}`;
@@ -81,7 +81,7 @@ export async function runScheduledWork({workerId='worker'}={}){
   const c=await db.pool.connect();let acquired=false;try{
     acquired=Boolean((await c.query('SELECT pg_try_advisory_lock($1) AS acquired',[SCHEDULE_LOCK_KEY])).rows[0]?.acquired);
     if(!acquired)return{acquired:false,reason:'ANOTHER_WORKER_OWNS_SCHEDULE'};
-    const auctions=await settleDueAuctions(),operational=await runOperationalSweeps();return{acquired:true,workerId,auctionsCreated:auctions.length,operational};
+    const auctions=await settleDueAuctions(),discoveryDigests=await enqueueDueDiscoveryDigestsPostgres(),operational=await runOperationalSweeps();return{acquired:true,workerId,auctionsCreated:auctions.length,discoveryDigests,operational};
   }finally{if(acquired){try{await c.query('SELECT pg_advisory_unlock($1)',[SCHEDULE_LOCK_KEY])}catch{}}c.release()}
 }
 
@@ -92,4 +92,4 @@ export async function runWorkerCycle({workerId='worker',limit=25,leaseMs=120000}
   return{scheduled,outbox:{...totals,cycles},stats:await outboxStats(db)};
 }
 
-export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',watchNotificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',lifecycleDelivery:'JOURNAL_VERIFIED_INTERNAL',passportRevisionDelivery:'REVISION_JOURNAL_VERIFIED_INTERNAL'}}
+export function workerCapabilities(){return{role:'WORKER',postgresRequired:true,scheduledWork:true,outbox:true,leasing:'FOR_UPDATE_SKIP_LOCKED',scheduleLock:'POSTGRES_ADVISORY',notificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',watchNotificationDelivery:'TRANSACTIONAL_EXACTLY_ONCE_INTERNAL',discoveryDigestDelivery:'SCHEDULED_OUTBOX_EXACTLY_ONCE',lifecycleDelivery:'JOURNAL_VERIFIED_INTERNAL',passportRevisionDelivery:'REVISION_JOURNAL_VERIFIED_INTERNAL'}}
