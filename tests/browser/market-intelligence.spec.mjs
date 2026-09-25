@@ -1,7 +1,12 @@
 import {test,expect} from '@playwright/test';
 
 async function demoLogin(page,persona){
- return page.evaluate(async persona=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona})});return{status:r.status,body:await r.json()}},persona)
+ return page.evaluate(async persona=>{
+  const csrf=decodeURIComponent(document.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('antiqua_csrf='))?.split('=').slice(1).join('=')||'');
+  const headers={'content-type':'application/json'};if(csrf)headers['x-csrf-token']=csrf;
+  const r=await fetch('/api/auth/demo-login',{method:'POST',headers,body:JSON.stringify({persona})});
+  return{status:r.status,body:await r.json()}
+ },persona)
 }
 async function post(page,path,csrf,body={},headers={}){
  return page.evaluate(async({path,csrf,body,headers})=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf,...headers},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}},{path,csrf,body,headers})
