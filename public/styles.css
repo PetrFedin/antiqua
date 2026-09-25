@@ -339,3 +339,27 @@ body{overflow-x:hidden}
  .v24-sla,.v24-next{grid-template-columns:auto 1fr}
  .v24-sla>small{grid-column:1/-1;text-align:left}
 }
+
+
+/* v25-market-intelligence */
+.dossier-market-v25{margin-top:34px;padding-top:26px;border-top:1px solid var(--line);display:grid;gap:16px}
+.v25-head h3{margin:2px 0 5px;font-family:var(--display);font-size:28px;font-weight:400}
+.v25-head p{max-width:760px;margin:0;color:var(--muted);font-size:10px;line-height:1.55}
+.v25-ranges{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.v25-ranges>div{display:grid;gap:4px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(249,247,242,.72)}
+.v25-ranges span,.v25-ranges small{font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.v25-ranges b{font-family:var(--display);font-size:20px;font-weight:400}
+.v25-no-realized{padding:11px 12px;border-radius:12px;background:rgba(127,127,127,.07);font-size:9px;color:var(--muted)}
+.v25-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.v25-comp{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--line);border-radius:15px;background:rgba(249,247,242,.72)}
+.v25-comp-head,.v25-source{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:8px;letter-spacing:.05em;text-transform:uppercase}
+.v25-comp h4{margin:2px 0 0;font-family:var(--display);font-size:19px;font-weight:400}
+.v25-comp>p{margin:0;color:var(--muted);font-size:9px}
+.v25-values{display:flex;gap:8px;flex-wrap:wrap}
+.v25-values>div{display:grid;gap:2px;min-width:120px}
+.v25-values span{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.v25-values b{font-family:var(--display);font-size:18px;font-weight:400}
+.v25-reasons{display:flex;gap:5px;flex-wrap:wrap}
+.v25-reason{padding:5px 7px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:8px}
+.v25-comp .quiet-button{margin-top:auto}
+@media(max-width:720px){.v25-grid{grid-template-columns:1fr}.v25-ranges{grid-template-columns:1fr}}
