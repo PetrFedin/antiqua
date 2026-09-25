@@ -72,8 +72,8 @@ function reorder(body){
  const tabs=q('.dossier-tabs',body),disclaimer=q('.dossier-disclaimer',body);if(!tabs)return;
  const order=['#dossier-provenance','#dossier-condition','#dossierMarketIntelligenceV25','#dossierStoryV27','#dossierSimilarV18','#dossier-overview','#dossier-evidence'];
  let cursor=tabs;
- for(const selector of order){const node=q(selector,body);if(node){cursor.after(node);cursor=node}}
- if(disclaimer)cursor.after(disclaimer);rebuildTabs(body)
+ for(const selector of order){const node=q(selector,body);if(node){if(cursor.nextElementSibling!==node)cursor.after(node);cursor=node}}
+ if(disclaimer&&cursor.nextElementSibling!==disclaimer)cursor.after(disclaimer);rebuildTabs(body)
 }
 
 function scheduleReorder(body){if(reorderQueued)return;reorderQueued=true;queueMicrotask(()=>{reorderQueued=false;reorder(body)})}
