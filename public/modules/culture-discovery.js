@@ -90,10 +90,15 @@ function taste(data){
  const items=authority?authority.items:fallback.items,grid=make('div','culture-feed-grid');for(const item of items){const wrap=make('div','culture-feed-item'),saved=authority?authority.savedIds.has(item.lot.id):fallback.profile.ids.has(item.lot.id);wrap.append(objectCard(data.catalog,item.lot,saved,item.reasons.slice(0,2).join(' · '),{dismissible:Boolean(authority)}));grid.append(wrap)}section.append(grid);return section
 }
 
+function dropDate(v){return v?new Intl.DateTimeFormat(document.documentElement.lang==='ru'?'ru-RU':'en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):''}
 function drop(data){
- const exhibition=(data.exhibitions||[]).find(x=>x.status==='LIVE')||(data.exhibitions||[])[0];if(!exhibition)return null;const f=feature(data),section=make('section','page culture-drop');section.dataset.cultureDrop='';
- const media=make('div','culture-drop-media');if(f.cover){const img=make('img');img.loading='lazy';img.src=f.cover.image||'';img.alt=local(f.cover.title);media.append(img)}section.append(media);
- const body=make('div','culture-drop-copy');body.append(make('div','eyebrow',copy('КУРАТОРСКИЙ ВЫПУСК · СЕЙЧАС','CURATED DROP · LIVE')));body.append(make('h2','',local(exhibition.title)));body.append(make('p','',local(exhibition.subtitle)||local(exhibition.curatorialStatement)||''));const link=make('a','primary-button link-button',copy('Открыть выпуск','Open the drop'));link.href='#exhibition/'+exhibition.id;body.append(link);section.append(body);return section
+ const drop=(data.drops||[]).find(x=>x.status==='LIVE')||(data.drops||[]).find(x=>x.status==='PREVIEW')||(data.drops||[])[0];if(!drop)return null;
+ const cover=drop.items?.find(x=>x.objectId===drop.coverObjectId)?.object||drop.items?.[0]?.object||null,section=make('section','page culture-drop');section.dataset.cultureDrop=drop.id;
+ const media=make('div','culture-drop-media');if(cover?.image){const img=make('img');img.loading='lazy';img.decoding='async';img.src=cover.image;img.alt=local(drop.title);media.append(img)}section.append(media);
+ const body=make('div','culture-drop-copy'),eyebrow=drop.status==='LIVE'?copy('DROP · СЕЙЧАС','DROP · LIVE'):drop.status==='PREVIEW'?copy('DROP · ПРЕДПРОСМОТР','DROP · PREVIEW'):copy('DROP · АРХИВ','DROP · ARCHIVE');body.append(make('div','eyebrow',eyebrow));body.append(make('h2','',local(drop.title)));body.append(make('p','',local(drop.subtitle)||local(drop.statement)||''));
+ const meta=make('div','culture-drop-meta');meta.append(make('span','',copy('Куратор · ','Curator · ')+(local(drop.curatorLabel)||'ANTIQUA')));meta.append(make('span','',String(drop.items?.length||0)+' '+copy('предметов','objects')));if(drop.releaseAt)meta.append(make('span','',copy('Релиз · ','Release · ')+dropDate(drop.releaseAt)));body.append(meta);
+ const actions=make('div','culture-hero-actions'),link=make('a','primary-button link-button',drop.status==='ARCHIVED'?copy('Открыть архив','Open archive'):copy('Открыть выпуск','Open the drop'));link.href='#drop/'+encodeURIComponent(drop.slug||drop.id);actions.append(link);
+ if(['PREVIEW','LIVE'].includes(drop.status)){const followed=data.dropFollows?.has(drop.id),follow=make('button',followed?'secondary-button active':'secondary-button',followed?copy('✓ Слежу','✓ Following'):drop.status==='PREVIEW'?copy('Следить за релизом','Follow release'):copy('Следить за выпуском','Follow drop'));follow.type='button';follow.dataset.dropFollow=drop.id;follow.dataset.followed=followed?'true':'false';actions.append(follow)}body.append(actions);section.append(body);return section
 }
 
 function collections(data){
@@ -107,8 +112,8 @@ function refineCatalogue(catalogue){
 
 async function decorate(){
  updateBrandShell();if(route()!=='shop'||q('[data-culture-root]'))return;const catalogue=q('#app > .page.section');if(!catalogue)return;const ticket=++sequence;
- const [catalog,collectionsData,exhibitionsData,client,tasteData]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=4')]);if(ticket!==sequence||route()!=='shop'||!catalog)return;
- const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{},taste:tasteData||null};refineCatalogue(catalogue);
+ const [catalog,collectionsData,exhibitionsData,client,tasteData,dropsData,dropFollowData]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=4'),safe('/api/drops'),safe('/api/drop-follows')]);if(ticket!==sequence||route()!=='shop'||!catalog)return;
+ const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{},taste:tasteData||null,drops:dropsData?.drops||[],dropFollows:new Set((dropFollowData?.follows||[]).map(x=>x.dropId))};refineCatalogue(catalogue);
  const root=make('div','culture-discovery-root');root.dataset.cultureRoot='';root.append(hero(data));root.append(taste(data));const d=drop(data);if(d)root.append(d);const c=collections(data);if(c)root.append(c);catalogue.before(root)
 }
 
