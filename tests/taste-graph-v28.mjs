@@ -23,6 +23,14 @@ assert.ok(built.profile.dimensions.department.some(x=>x.key==='sculpture'&&x.poi
 const recs=await tasteRecommendations(account,{limit:8});
 assert.equal(recs.recommendations.some(x=>x.object.id==='lot-101'),false,'saved object must not be rediscovered as a new recommendation');
 assert.equal(recs.recommendations.some(x=>x.object.id==='lot-103'),false,'latest dismiss must exclude the object');
+await new Promise(r=>setTimeout(r,5));
+await recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-103',sourceKey:'engaged-after-dismiss-lot-103',metadata:{depth:.7,dwellSeconds:14}});
+const reversed=await tasteRecommendations(account,{limit:20});
+assert.equal(reversed.recommendations.some(x=>x.object.id==='lot-103'),true,'later positive intent must reverse dismiss exclusion');
+const reversedProfile=await buildTasteProfile(account);
+const sculptureFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='sculpture');
+assert.ok(sculptureFacet);
+assert.equal(sculptureFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
 const sculpture=recs.recommendations.find(x=>x.object.id==='lot-112');assert.ok(sculpture,'category follow should surface another sculpture');
 assert.ok(sculpture.reasons.some(x=>x.dimension==='department'&&x.signals.some(s=>s.type==='FOLLOW_CATEGORY')));
 assert.equal(recs.capabilities.aiUsed,false);assert.equal(recs.capabilities.priceUsedForMatching,false);assert.equal(recs.capabilities.explainable,true);
