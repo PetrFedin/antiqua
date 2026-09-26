@@ -1,0 +1,17 @@
+import {test,expect} from '@playwright/test';
+
+async function demoBuyer(page){return page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}})}
+
+test('native Drop discovery opens release page, follows durably and keeps sale authority on listing/auction',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});const login=await demoBuyer(page);expect(login.status).toBe(200);await page.reload({waitUntil:'domcontentloaded'});
+ const home=page.locator('[data-culture-drop="drop-objects-of-power"]');await expect(home).toBeVisible();await expect(home).toContainText(/Objects of Power|Предметы власти/i);await expect(home).toContainText(/DROP/i);
+ const authority=await page.evaluate(async()=>{const [d,e]=await Promise.all([fetch('/api/drops').then(r=>r.json()),fetch('/api/exhibitions').then(r=>r.json())]);return{drops:d.drops||[],exhibitions:e.exhibitions||[]}});const drop=authority.drops.find(x=>x.id==='drop-objects-of-power');expect(drop).toBeTruthy();expect(authority.exhibitions.some(x=>x.id===drop.id)).toBe(false);expect(drop.capabilities.saleAuthority).toBe('LISTING_OR_AUCTION');
+ await home.locator('a[href^="#drop/"]').click();await expect(page).toHaveURL(/#drop\/objects-of-power$/);
+ const detail=page.locator('.drop-page.live');await expect(detail).toBeVisible();await expect(detail).toContainText(/Objects of Power|Предметы власти/i);await expect(detail.locator('[data-drop-object]')).toHaveCount(4);
+ const listingItem=detail.locator('[data-drop-object="lot-110"]');await expect(listingItem).toBeVisible();await expect(listingItem).toContainText(/LISTING/i);await expect(listingItem).toContainText(/5[\s,.]?600|€5/i);
+ let follow=detail.locator('[data-drop-follow="drop-objects-of-power"]');await expect(follow).toBeVisible();if(await follow.getAttribute('data-followed')==='true'){const w=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/drops/drop-objects-of-power/follow'&&r.request().method()==='POST');await follow.click();expect((await w).status()).toBe(200);await expect(detail.locator('[data-drop-follow="drop-objects-of-power"]')).toHaveAttribute('data-followed','false')}follow=detail.locator('[data-drop-follow="drop-objects-of-power"]');
+ const wait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/drops/drop-objects-of-power/follow'&&r.request().method()==='POST');await follow.click();expect((await wait).status()).toBe(200);await expect(detail.locator('[data-drop-follow="drop-objects-of-power"]')).toHaveAttribute('data-followed','true');
+ const follows=await page.evaluate(async()=>{const r=await fetch('/api/drop-follows');return r.json()});expect(follows.follows.some(x=>x.dropId==='drop-objects-of-power')).toBe(true);
+ await listingItem.locator('[data-passport="lot-110"]').last().click();const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();await expect(dialog).toContainText(/silver candlesticks|серебряных подсвечников/i);await dialog.locator('[data-close-dialog]').click();
+ follow=detail.locator('[data-drop-follow="drop-objects-of-power"]');const unwait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/drops/drop-objects-of-power/follow'&&r.request().method()==='POST');await follow.click();expect((await unwait).status()).toBe(200);await expect(detail.locator('[data-drop-follow="drop-objects-of-power"]')).toHaveAttribute('data-followed','false');
+});
