@@ -18,7 +18,8 @@ const files=[
   '015_v16_db_integrity.sql',
   '016_v17_object_engagement.sql',
   '017_v22_offer_negotiation.sql',
-  '018_v23_condition_viewing.sql'
+  '018_v23_condition_viewing.sql',
+  '019_v28_taste_graph.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({

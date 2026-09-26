@@ -543,3 +543,24 @@ body{overflow-x:hidden}
  .desire-v27 .dossier-toolbar h2{font-size:44px}
  .desire-v27 .dossier-commerce-dock{margin-left:-6px;margin-right:-6px}
 }
+
+
+/* ---- v0.28 · Explainable Taste Graph ---- */
+.culture-taste-explain{display:inline-flex;margin-top:12px;padding:0;border:0;background:transparent;font-size:10px;letter-spacing:.04em;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.culture-object-dismiss{display:inline-flex;margin-top:11px;padding:0;border:0;background:transparent;color:#7a726a;font-size:9px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.culture-object-dismiss:hover,.culture-taste-explain:hover{color:var(--ink)}
+.taste-signal-summary{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 22px}
+.taste-signal-summary span{padding:8px 10px;border:1px solid var(--line);border-radius:999px;font-size:9px;color:var(--muted)}
+.taste-signal-summary b{color:var(--ink)}
+.taste-explain-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.taste-explain-grid section{min-width:0}
+.taste-explain-grid h4{margin:0 0 10px;font-family:var(--display);font-size:22px;font-weight:400}
+.taste-explain-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:9px 0;border-top:1px solid var(--line)}
+.taste-explain-row>span{font-size:11px}
+.taste-explain-row>b{font-size:11px}
+.taste-explain-row>small{grid-column:1/-1;color:var(--muted);font-size:8px;line-height:1.4;overflow-wrap:anywhere}
+.desire-v27 .dossier-tools [data-taste-follow]{border-style:dashed}
+@media(max-width:800px){
+ .taste-explain-grid{grid-template-columns:1fr}
+ .culture-object-dismiss{min-height:32px;align-items:center}
+}
