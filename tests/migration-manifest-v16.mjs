@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {migrationManifest,baselineMigration,v10Migration,v14PlusMigrations,migrationVersions} from '../migration-manifest-v16.mjs';
 
-assert.equal(migrationManifest.length,20);
+assert.equal(migrationManifest.length,21);
 assert.equal(new Set(migrationVersions()).size,migrationManifest.length,'migration versions must be unique');
 assert.equal(baselineMigration.version,'001_v09_foundation');
 assert.equal(v10Migration.version,'002_v10_collection_graph_and_auction_integrity');
 assert.equal(v14PlusMigrations[0].version,'003_v14_e2e_lifecycles');
-assert.equal(v14PlusMigrations.at(-1).version,'020_v29_partner_drops');
+assert.equal(v14PlusMigrations.at(-1).version,'021_v30_creator_gallery_graph');
 
 for(let i=0;i<migrationManifest.length;i++){
  const m=migrationManifest[i],prefix=String(i+1).padStart(3,'0')+'_';
@@ -16,4 +16,4 @@ for(let i=0;i<migrationManifest.length;i++){
  assert.ok(sql.trim().length>0,`migration ${m.file} is empty`);
 }
 
-console.log('ANTIQUA v29 migration manifest: one ordered authority 001..020 with complete files passed');
+console.log('ANTIQUA v30 migration manifest: one ordered authority 001..021 with complete files passed');
