@@ -20,7 +20,8 @@ const files=[
   '017_v22_offer_negotiation.sql',
   '018_v23_condition_viewing.sql',
   '019_v28_taste_graph.sql',
-  '020_v29_partner_drops.sql'
+  '020_v29_partner_drops.sql',
+  '021_v30_creator_gallery_graph.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
