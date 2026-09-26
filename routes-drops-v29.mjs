@@ -1,5 +1,5 @@
 import {send,readBody,requireCsrf,requirePermission,audit} from './runtime-v09.mjs';
-import {listPublicDrops,getPublicDrop,listDropsForOperator,getDropForOperator,createDrop,updateDrop,upsertDropItem,removeDropItem,transitionDrop,setDropFollow,dropsCapabilities} from './drops-v29.mjs';
+import {listPublicDrops,getPublicDrop,listDropsForOperator,getDropForOperator,createDrop,updateDrop,upsertDropItem,removeDropItem,transitionDrop,setDropFollow,listDropFollows,dropsCapabilities} from './drops-v29.mjs';
 
 export async function routeDropsPublicV29(req,res,url){
  if(url.pathname==='/api/drops'&&req.method==='GET')return send(res,200,{drops:await listPublicDrops(),capabilities:dropsCapabilities()});
@@ -10,6 +10,7 @@ export async function routeDropsPublicV29(req,res,url){
 
 export async function routeDropsV29(req,res,url,ctx){
  if(!ctx)return false;const a=ctx.account;
+ if(url.pathname==='/api/drop-follows'&&req.method==='GET')return send(res,200,{follows:await listDropFollows(a)});
  const follow=url.pathname.match(/^\/api\/drops\/([^/]+)\/follow$/);
  if(follow&&req.method==='POST'){requireCsrf(req,ctx);const body=await readBody(req),x=await setDropFollow(a,decodeURIComponent(follow[1]),body.enabled!==false);await audit(req,a,x.followed?'DROP_FOLLOWED':'DROP_UNFOLLOWED','DROP',x.dropId);return send(res,200,x)}
 
