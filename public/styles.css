@@ -564,3 +564,33 @@ body{overflow-x:hidden}
  .taste-explain-grid{grid-template-columns:1fr}
  .culture-object-dismiss{min-height:32px;align-items:center}
 }
+
+
+/* ---- v0.29 · Partner Drops / Fair Edition Engine ---- */
+.partner-drop-panel{max-width:980px;margin:38px auto 0;padding:0;border-top:1px solid #bdb5aa;border-bottom:1px solid #bdb5aa;text-align:left}
+.partner-drop-top{display:flex;align-items:stretch;justify-content:space-between;gap:28px;border-bottom:1px solid #d0c8bc}
+.partner-drop-identity{display:flex;align-items:center;gap:10px;padding:14px 0}
+.partner-drop-identity span{font-size:9px;letter-spacing:.13em;text-transform:uppercase}
+.partner-drop-identity b{padding:6px 9px;border:1px solid #aca397;border-radius:999px;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+.partner-drop-partner{display:grid;justify-items:end;align-content:center;padding:10px 0;text-align:right}
+.partner-drop-partner small{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#776f65}
+.partner-drop-partner strong{font:400 17px/1.2 Georgia,serif}
+.partner-drop-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:42px;padding:26px 0 28px}
+.partner-drop-meta>p{max-width:620px;margin:0 0 15px;font:400 18px/1.55 Georgia,serif}
+.partner-drop-meta>p small{display:block;margin-bottom:3px;font:9px/1.4 Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#776f65}
+.partner-drop-time{display:grid;gap:4px;margin-top:21px;padding-top:17px;border-top:1px solid #d0c8bc}
+.partner-drop-time span{font-size:8px;letter-spacing:.11em;text-transform:uppercase;color:#776f65}
+.partner-drop-time strong{font:400 27px/1.1 Georgia,serif}
+.partner-drop-time small{font-size:10px;color:#776f65}
+.partner-drop-actions{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:11px}
+.partner-drop-actions .primary-button{min-height:48px}
+.partner-drop-actions>small{font-size:9px;line-height:1.5;color:#776f65}
+.partner-drop-card-partner{display:block;margin-top:12px;color:#aaa39a;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.exhibition-card[data-partner-drop-decorated="1"] .exhibition-image span{border-radius:999px}
+@media(max-width:760px){
+ .partner-drop-panel{margin-top:28px}
+ .partner-drop-top{display:grid;gap:0}.partner-drop-partner{justify-items:start;text-align:left;padding:0 0 14px}
+ .partner-drop-grid{grid-template-columns:1fr;gap:22px;padding:22px 0 24px}
+ .partner-drop-meta>p{font-size:17px}.partner-drop-time strong{font-size:24px}
+ .partner-drop-actions .primary-button{width:100%}
+}
