@@ -1,4 +1,4 @@
-const PUBLIC_EXHIBITION_STATUSES=new Set(['LIVE','ARCHIVED']);
+const PUBLIC_EXHIBITION_STATUSES=new Set(['SCHEDULED','LIVE','ARCHIVED']);
 
 export function isPublicCollection(resource){
   return Boolean(resource&&resource.visibility==='PUBLIC');
