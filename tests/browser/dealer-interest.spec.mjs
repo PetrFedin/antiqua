@@ -1,0 +1,18 @@
+import {test,expect} from '@playwright/test';
+
+const rank={NO_SIGNAL:0,DISCOVERED:1,ENGAGED:2,INQUIRY:3,VIEWING:4,NEGOTIATING:5,TRANSACTING:6};
+async function login(page,persona){return page.evaluate(async persona=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona})});return{status:r.status,body:await r.json()}},persona)}
+async function post(page,path,csrf,body){return page.evaluate(async({path,csrf,body})=>{const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}},{path,csrf,body})}
+
+test('Dealer Interest projects anonymous demand into explicit commercial intent without exposing passive identity',async({page},testInfo)=>{
+ const mobile=testInfo.project.name.includes('mobile'),objectId=mobile?'lot-110':'lot-109',listingId=mobile?'lst-110':'lst-109';
+ await page.goto('/',{waitUntil:'domcontentloaded'});
+ const publicCaps=await page.evaluate(async()=>{const r=await fetch('/api/dealer/interest/capabilities');return{status:r.status,body:await r.json()}});expect(publicCaps.status).toBe(200);expect(publicCaps.body.capabilities.projectionOnly).toBe(true);expect(publicCaps.body.capabilities.opaqueScore).toBe(false);expect(publicCaps.body.capabilities.passiveIdentityExposed).toBe(false);
+ let auth=await login(page,'BUYER');expect(auth.status).toBe(200);const buyerId=auth.body.account.id;
+ const passive=await page.evaluate(async objectId=>{const passport=await fetch('/api/lots/'+objectId+'/passport');const csrf=document.cookie.split('; ').find(x=>x.startsWith('antiqua_csrf='))?.split('=').slice(1).join('=')||'';const save=await fetch('/api/lots/'+objectId+'/save',{method:'POST',headers:{'content-type':'application/json','x-csrf-token':decodeURIComponent(csrf)},body:JSON.stringify({enabled:true})});return{passport:passport.status,save:save.status}},objectId);expect(passive.passport).toBe(200);expect(passive.save).toBe(200);
+ const inquiry=await post(page,'/api/inquiries',auth.body.csrf,{listingId,inquiryType:'AVAILABILITY',message:'Dealer Interest browser proof '+Date.now(),clientMessageId:'v32-inquiry-'+Date.now()+'-'+Math.random()});expect([200,201]).toContain(inquiry.status);
+ auth=await login(page,'SELLER');expect(auth.status).toBe(200);
+ const interest=await page.evaluate(async()=>{const r=await fetch('/api/dealer/interest');return{status:r.status,body:await r.json()}});expect(interest.status).toBe(200);const row=interest.body.interest.objects.find(x=>x.objectId===objectId);expect(row).toBeTruthy();expect(rank[row.stage]).toBeGreaterThanOrEqual(rank.INQUIRY);expect(row.passive.views).toBeGreaterThanOrEqual(1);expect(row.passive.saved).toBeGreaterThanOrEqual(1);expect(row.privacy.passiveViewerIdentityExposed).toBe(false);expect(JSON.stringify(row)).not.toContain(buyerId);
+ await page.goto('/#account',{waitUntil:'domcontentloaded'});const panel=page.locator('#dealerInterestV32');await expect(panel).toBeVisible();await expect(panel).toContainText(/Где интерес становится намерением|Where interest becomes intent/i);await expect(panel).toContainText(/нет скрытого score|no hidden score/i);await expect(panel).toContainText(/не складываются|are not added/i);
+ const card=panel.locator('.v32-interest-card').filter({has:panel.locator('[data-passport="'+objectId+'"]')}).first();await expect(card).toBeVisible();await expect(card).toContainText(/Запрос|Inquiry|Просмотр|Viewing|Переговоры|Negotiating|Сделка|Transacting/i);await expect(card.locator('[data-v32-open-dealer]')).toBeVisible();
+});
