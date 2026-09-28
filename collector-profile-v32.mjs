@@ -16,7 +16,8 @@ export function collectorProfileCapabilities(){return{contractVersion:'v32',defa
 
 async function rawByAccount(accountId){if(db.kind==='POSTGRES')return mapProfile((await db.pool.query('SELECT * FROM collector_profiles WHERE account_id=$1',[accountId])).rows[0]);return clone(profiles.get(accountId)||null)}
 async function rawBySlug(id){if(db.kind==='POSTGRES')return mapProfile((await db.pool.query('SELECT * FROM collector_profiles WHERE slug=$1 OR account_id=$1',[id])).rows[0]);return clone([...profiles.values()].find(x=>x.slug===id||x.accountId===id)||null)}
-async function publicCollectionsFor(accountId){const all=await listCollections();return all.filter(c=>ownerMatches(c.ownerAccountId,accountId)&&c.visibility==='PUBLIC')}
+function publicCollection(c){if(!c)return null;const {ownerAccountId,accessRole,...rest}=c;return clone(rest)}
+async function publicCollectionsFor(accountId){const all=await listCollections();return all.filter(c=>ownerMatches(c.ownerAccountId,accountId)&&c.visibility==='PUBLIC').map(publicCollection)}
 async function followerState(accountId,viewerId=null){if(db.kind==='POSTGRES'){const count=Number((await db.pool.query("SELECT count(*)::int n FROM collector_follows WHERE collector_account_id=$1 AND status='ACTIVE'",[accountId])).rows[0]?.n||0);const following=viewerId?(await db.pool.query("SELECT 1 FROM collector_follows WHERE collector_account_id=$1 AND follower_account_id=$2 AND status='ACTIVE'",[accountId,viewerId])).rowCount>0:false;return{count,following}}let count=0,following=false;for(const x of follows.values())if(x.collectorAccountId===accountId&&x.status==='ACTIVE'){count++;if(x.followerAccountId===viewerId)following=true}return{count,following}}
 function publicProfile(p){return{slug:p.slug,displayName:p.displayName,bio:p.bio,locationLabel:p.locationLabel,interests:p.interests,avatarUrl:p.avatarUrl,coverUrl:p.coverUrl,visibility:p.visibility,featuredCollectionId:p.featuredCollectionId,updatedAt:p.updatedAt}}
 
