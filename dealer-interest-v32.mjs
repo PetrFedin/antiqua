@@ -37,10 +37,9 @@ export function buildDealerInterestProjection({account,analytics,dealerLeads,edi
   const objectLeads=leadByObject.get(a.objectId)||[],activeLeads=objectLeads.filter(x=>x.stage!=='LOST'),editorial=editorialByObject[a.objectId]||{opens:0,uniqueViewers:0,lastOccurredAt:null};
   let stage='NO_SIGNAL';
   if(Number(a.views)>0)stage=maxStage(stage,'DISCOVERED');
-  if(Number(a.saved)>0||Number(a.watching)>0||Number(editorial.opens)>0||Number(a.views)>=2)stage=maxStage(stage,'ENGAGED');
+  if(Number(a.saved)>0||Number(a.watching)>0||Number(editorial.opens)>0||Number(a.views)>=2||Number(a.bids)>0||Number(a.offers)>0)stage=maxStage(stage,'ENGAGED');
   const leadStages=activeLeads.map(leadStage).filter(Boolean);for(const x of leadStages)stage=maxStage(stage,x);
-  if(!leadStages.length&&Number(a.conversations)>0)stage=maxStage(stage,'INQUIRY');
-  if(Number(a.bids)>0||Number(a.offers)>0)stage=maxStage(stage,'NEGOTIATING');
+  if(!objectLeads.length&&Number(a.conversations)>0)stage=maxStage(stage,'INQUIRY');
   if(Number(a.acceptedOffers)>0||Number(a.orders)>0||Number(a.settlements)>0)stage=maxStage(stage,'TRANSACTING');
   const hasViewing=activeLeads.some(x=>x.stage==='VIEWING'||x.refs?.viewingRequestId);if(hasViewing)stage=maxStage(stage,'VIEWING');
   const hasCondition=activeLeads.some(x=>x.refs?.conditionRequestId);if(hasCondition)stage=maxStage(stage,'INQUIRY');
@@ -51,7 +50,7 @@ export function buildDealerInterestProjection({account,analytics,dealerLeads,edi
    signal('CONVERSATION',a.conversations,{active:activeLeads.some(x=>['NEW_LEAD','UNANSWERED','REPLIED'].includes(x.stage))}),
    signal('CONDITION_REPORT',activeLeads.filter(x=>x.refs?.conditionRequestId).length,{active:true}),
    signal('VIEWING',activeLeads.filter(x=>x.refs?.viewingRequestId).length,{active:true}),
-   signal('OFFER',a.offers,{active:activeLeads.some(x=>x.refs?.offerId)}),signal('AUCTION_BID',a.bids,{active:true}),
+   signal('OFFER',a.offers,{active:activeLeads.some(x=>x.refs?.offerId)}),signal('AUCTION_BID',a.bids,{active:false,detail:'BID_ACTIVITY'}),
    signal('ORDER',a.orders,{active:true}),signal('SETTLEMENT',a.settlements,{active:true})
   ].filter(Boolean);
   const nextActions=[...new Map(activeLeads.map(x=>[x.nextAction?.code,x.nextAction]).filter(([k])=>k)).values()];
