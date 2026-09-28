@@ -1,0 +1,15 @@
+import {test,expect} from '@playwright/test';
+
+async function login(page,persona){return page.evaluate(async persona=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona})});return{status:r.status,body:await r.json()}},persona)}
+async function put(page,path,csrf,body){return page.evaluate(async({path,csrf,body})=>{const r=await fetch(path,{method:'PUT',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify(body)});let json={};try{json=await r.json()}catch{}return{status:r.status,body:json}},{path,csrf,body})}
+
+test('Collector Profile exposes only opt-in profile fields and PUBLIC collections',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});let auth=await login(page,'BUYER');expect(auth.status).toBe(200);const token=Date.now().toString(),slug='browser-collector-'+token;
+ const mine=await page.evaluate(async()=>{const r=await fetch('/api/collector-profile/me');return{status:r.status,body:await r.json()}});expect(mine.status).toBe(200);const publicCollection=mine.body.collections.find(c=>c.visibility==='PUBLIC');expect(publicCollection).toBeTruthy();
+ const saved=await put(page,'/api/collector-profile/me',auth.body.csrf,{displayName:'Browser Collector '+token,slug,bio:'Collector profile browser proof',locationLabel:'Europe',interests:['Design','Sculpture'],visibility:'PUBLIC',featuredCollectionId:publicCollection.id});expect(saved.status).toBe(200);expect(saved.body.profile.visibility).toBe('PUBLIC');
+ await page.goto('/#collectors',{waitUntil:'domcontentloaded'});const card=page.locator('.collector-card').filter({hasText:token});await expect(card).toBeVisible();await card.click();
+ const profile=page.locator('.collector-profile');await expect(profile).toBeVisible();await expect(profile).toContainText(token);await expect(profile.locator('.collector-collection-card')).toHaveCount(1);
+ const publicJson=await page.evaluate(async slug=>{const r=await fetch('/api/collectors/'+slug);return{status:r.status,body:await r.json()}},slug);expect(publicJson.status).toBe(200);const serialized=JSON.stringify(publicJson.body);expect(serialized).not.toMatch(/savedLots|purchases|collectionRecords|taste/i);expect(publicJson.body.collections.every(c=>c.visibility==='PUBLIC')).toBe(true);
+ auth=await login(page,'SELLER');expect(auth.status).toBe(200);await page.goto('/#collector/'+slug,{waitUntil:'domcontentloaded'});const follow=page.locator('[data-collector-follow]');await expect(follow).toBeVisible();const response=page.waitForResponse(r=>new URL(r.url()).pathname===`/api/collectors/${slug}/follow`&&r.request().method()==='POST');await follow.click();expect((await response).status()).toBe(200);await expect(follow).toContainText(/Слежу|Following/i);
+ const caps=await page.evaluate(async()=>{const r=await fetch('/api/collectors/capabilities');return r.json()});expect(caps.capabilities.defaultVisibility).toBe('PRIVATE');expect(caps.capabilities.inferredTasteExposed).toBe(false);expect(caps.capabilities.purchasesExposed).toBe(false);
+});
