@@ -6,9 +6,9 @@ test('Partner and Investor Showcase explains collaboration paths and honest prod
  await expect(root).toContainText(/Платформа, на которой человек становится коллекционером|The platform where a person becomes a collector/i);
  const roles=root.locator('.showcase-role-card');await expect(roles).toHaveCount(6);
  await expect(roles).toContainText([/Организатор ярмарки|Fair organizer/i,/Галерея или ассоциация|Gallery or association/i,/Инвестор|Investor/i]);
- const readiness=root.locator('.showcase-readiness-grid article');await expect(readiness).toHaveCount(7);
+ const readiness=root.locator('.showcase-readiness-grid article');await expect(readiness).toHaveCount(8);
  await expect(root.locator('.showcase-readiness-grid article.blocked')).toContainText(/PostgreSQL live/i);
- await expect(root.locator('.showcase-readiness-grid article.blocked')).toContainText(/MEMORY_FALLBACK|отдельная БД|dedicated DB/i);await expect(root).toContainText(/Dealer Interest Signals/i);
+ await expect(root.locator('.showcase-readiness-grid article.blocked')).toContainText(/MEMORY_FALLBACK|отдельная БД|dedicated DB/i);await expect(root).toContainText(/Dealer Interest Signals/i);await expect(root).toContainText(/Partner Pilot Analytics/i);
 
  await page.locator('a[href="#partners/fair"]').first().click();
  const fair=page.locator('.showcase-detail');await expect(fair).toBeVisible();await expect(fair).toContainText(/10–20 участников|10–20 exhibitors/i);await expect(fair).toContainText(/300–500 предметов|300–500 objects/i);
