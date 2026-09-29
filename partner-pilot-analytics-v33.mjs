@@ -3,6 +3,7 @@ import {db,uid,now} from './runtime-v09.mjs';
 import {appSecret} from './security-v09.mjs';
 import {getExhibition} from './collection-graph-v10.mjs';
 import {canReadExhibition} from './access-policy.mjs';
+import {getPartnerDrop} from './partner-drops-v29.mjs';
 
 const WINDOW_MS=30*60*1000;
 const DAY_MS=24*60*60*1000;
@@ -81,17 +82,17 @@ async function insertEvent(event){
    :`INSERT INTO partner_attribution_events(id,exhibition_id,account_id,viewer_key_hash,event_type,target_key,object_id,source_entity_id,window_started_at,occurred_at,metadata)
       VALUES($1,$2,$3,$4,$5,$6,$7,NULL,$8,$9,$10)
       ON CONFLICT(exhibition_id,event_type,target_key,viewer_key_hash,window_started_at) WHERE source_entity_id IS NULL
-      DO UPDATE SET occurred_at=GREATEST(partner_attribution_events.occurred_at,excluded.occurred_at),account_id=COALESCE(partner_attribution_events.account_id,excluded.account_id)
-      RETURNING *`;
+      DO NOTHING RETURNING *`;
   const vals=event.sourceEntityId
    ?[event.id,event.exhibitionId,event.accountId,event.viewerKeyHash,event.eventType,event.targetKey,event.objectId,event.sourceEntityId,event.windowStartedAt,event.occurredAt,event.metadata]
    :[event.id,event.exhibitionId,event.accountId,event.viewerKeyHash,event.eventType,event.targetKey,event.objectId,event.windowStartedAt,event.occurredAt,event.metadata];
   const row=(await db.pool.query(q,vals)).rows[0];
   if(row)return{event:mapEvent(row),deduplicated:false};
-  if(event.sourceEntityId){
-   const prior=(await db.pool.query('SELECT * FROM partner_attribution_events WHERE exhibition_id=$1 AND event_type=$2 AND source_entity_id=$3',[event.exhibitionId,event.eventType,event.sourceEntityId])).rows[0];
-   return{event:mapEvent(prior),deduplicated:true}
-  }
+  const prior=event.sourceEntityId
+   ?(await db.pool.query('SELECT * FROM partner_attribution_events WHERE exhibition_id=$1 AND event_type=$2 AND source_entity_id=$3',[event.exhibitionId,event.eventType,event.sourceEntityId])).rows[0]
+   :(await db.pool.query('SELECT * FROM partner_attribution_events WHERE exhibition_id=$1 AND event_type=$2 AND target_key=$3 AND viewer_key_hash=$4 AND window_started_at=$5',[event.exhibitionId,event.eventType,event.targetKey,event.viewerKeyHash,event.windowStartedAt])).rows[0];
+  if(prior)return{event:mapEvent(prior),deduplicated:true};
+  fail(409,'PARTNER_EVENT_DEDUPE_UNRESOLVED','Partner event replay could not be resolved')
  }
  const k=event.sourceEntityId
   ?[event.exhibitionId,event.eventType,event.sourceEntityId].join('|')
@@ -186,7 +187,7 @@ export async function partnerPilotAnalytics(account,exhibitionId,{at=Date.now()}
  const byObject=new Map(cohort.map(id=>[id,{objectId:id,events:Object.fromEntries(ALL_TYPES.map(t=>[t,0]))}]));
  for(const e of events){counts[e.eventType]=(counts[e.eventType]||0)+1;viewers[e.eventType]??=new Set();viewers[e.eventType].add(e.viewerKeyHash);if(e.objectId&&byObject.has(e.objectId))byObject.get(e.objectId).events[e.eventType]=(byObject.get(e.objectId).events[e.eventType]||0)+1}
  const uniqueViewers=Object.fromEntries(Object.entries(viewers).map(([k,v])=>[k,v.size]));
- let currentFollowers=0;if(db.kind==='POSTGRES')currentFollowers=Number((await db.pool.query("SELECT count(*)::int n FROM exhibition_follows WHERE exhibition_id=$1 AND status='ACTIVE'",[exhibition.id])).rows[0]?.n||0);else currentFollowers=counts.FOLLOW||0;
+ const drop=await getPartnerDrop(account,exhibition.id),currentFollowers=Number(drop?.drop?.follow?.count||0);
  return{
   exhibition:{id:exhibition.id,title:clone(exhibition.title),status:exhibition.status,startsAt:iso(exhibition.startsAt),endsAt:iso(exhibition.endsAt),partner:clone(exhibition.metadata?.drop?.partner||null)},
   cohort:{objects:cohort.length,objectIds:cohort},
