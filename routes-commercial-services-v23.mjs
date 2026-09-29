@@ -1,6 +1,7 @@
 import {send,readBody,requireCsrf,audit} from './runtime-v09.mjs';
 import {conditionReportCapabilities,createConditionReportRequest,getConditionReportRequest,listConditionReportRequests,publishConditionReportVersion,cancelConditionReportRequest,conditionReportRead} from './condition-report-v23.mjs';
 import {viewingCapabilities,createViewingRequest,getViewingRequest,listViewingRequests,proposeViewingSlots,confirmViewingSlot,requestViewingReschedule,cancelViewingRequest,viewingCalendarIcs} from './viewing-v23.mjs';
+import {tryRecordPartnerCommercialEvent} from './partner-pilot-analytics-v33.mjs';
 
 export async function routeCommercialServicesV23(req,res,url,ctx){
  if(url.pathname==='/api/commercial-services/capabilities'&&req.method==='GET')return send(res,200,{conditionReports:conditionReportCapabilities(),viewings:viewingCapabilities()});
@@ -9,7 +10,8 @@ export async function routeCommercialServicesV23(req,res,url,ctx){
  if(url.pathname==='/api/condition-report-requests'&&req.method==='GET')return send(res,200,{requests:await listConditionReportRequests(a)});
  let m=url.pathname.match(/^\/api\/listings\/([^/]+)\/condition-report-requests$/);
  if(m&&req.method==='POST'){
-  requireCsrf(req,ctx);const result=await createConditionReportRequest(a,m[1],await readBody(req));
+  requireCsrf(req,ctx);const body=await readBody(req),result=await createConditionReportRequest(a,m[1],body);
+  await tryRecordPartnerCommercialEvent(req,a,body.partnerAttribution,{eventType:'CONDITION_REQUESTED',objectId:result.request.objectId,sourceEntityId:result.request.id,authority:'CONDITION_V23'});
   await audit(req,a,result.idempotent?'CONDITION_REPORT_REQUEST_REPLAY':'CONDITION_REPORT_REQUESTED','CONDITION_REPORT_REQUEST',result.request.id,null,null,{listingId:result.request.listingId,objectId:result.request.objectId,version:result.request.version,reusedOpen:Boolean(result.reusedOpen)});
   return send(res,result.idempotent?200:201,result)
  }
@@ -33,7 +35,8 @@ export async function routeCommercialServicesV23(req,res,url,ctx){
  if(url.pathname==='/api/viewing-requests'&&req.method==='GET')return send(res,200,{requests:await listViewingRequests(a)});
  m=url.pathname.match(/^\/api\/listings\/([^/]+)\/viewing-requests$/);
  if(m&&req.method==='POST'){
-  requireCsrf(req,ctx);const result=await createViewingRequest(a,m[1],await readBody(req));
+  requireCsrf(req,ctx);const body=await readBody(req),result=await createViewingRequest(a,m[1],body);
+  await tryRecordPartnerCommercialEvent(req,a,body.partnerAttribution,{eventType:'VIEWING_REQUESTED',objectId:result.request.objectId,sourceEntityId:result.request.id,authority:'VIEWING_V23'});
   await audit(req,a,result.idempotent?'VIEWING_REQUEST_REPLAY':'VIEWING_REQUESTED','VIEWING_REQUEST',result.request.id,null,null,{listingId:result.request.listingId,objectId:result.request.objectId,version:result.request.version,reusedOpen:Boolean(result.reusedOpen)});
   return send(res,result.idempotent?200:201,result)
  }
