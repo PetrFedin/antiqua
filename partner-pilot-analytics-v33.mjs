@@ -154,8 +154,8 @@ async function eventsForExhibition(exhibitionId){
 }
 
 export function retentionProjection(events,at=Date.now()){
- const auth=events.filter(x=>x.accountId),first=new Map();
- for(const e of auth){const t=Date.parse(e.occurredAt),p=first.get(e.accountId);if(!p||t<p)first.set(e.accountId,t)}
+ const auth=events.filter(x=>x.accountId),exposures=auth.filter(x=>EXPOSURE_TYPES.has(x.eventType)),first=new Map();
+ for(const e of exposures){const t=Date.parse(e.occurredAt),p=first.get(e.accountId);if(!p||t<p)first.set(e.accountId,t)}
  const window=(startDay,endDayExclusive)=>{
   let matured=0,pending=0,returned=0;
   for(const [accountId,firstAt] of first){
