@@ -1,5 +1,6 @@
 import {send,readBody,requireCsrf,audit} from './runtime-v09.mjs';
 import {createOffer,getOffer,listOffers,actOnOffer,offerNegotiationCapabilities} from './offer-negotiation-v22.mjs';
+import {tryRecordPartnerCommercialEvent,tryRecordPartnerOrderFromOffer} from './partner-pilot-analytics-v33.mjs';
 
 export async function routeOfferNegotiationV22(req,res,url,ctx){
  if(url.pathname==='/api/offers/capabilities'&&req.method==='GET')return send(res,200,{capabilities:offerNegotiationCapabilities()});
@@ -10,7 +11,8 @@ export async function routeOfferNegotiationV22(req,res,url,ctx){
 
  const create=url.pathname.match(/^\/api\/listings\/([^/]+)\/offers$/);
  if(create&&req.method==='POST'){
-  const result=await createOffer(account,create[1],await readBody(req));
+  const body=await readBody(req),result=await createOffer(account,create[1],body);
+  await tryRecordPartnerCommercialEvent(req,account,body.partnerAttribution,{eventType:'OFFER_CREATED',objectId:result.offer.objectId,sourceEntityId:result.offer.id,authority:'OFFER_V22'});
   await audit(req,account,result.idempotent?'OFFER_CREATE_REPLAY':'OFFER_CREATED','OFFER',result.offer.id,null,null,{listingId:result.offer.listingId,objectId:result.offer.objectId,version:result.offer.version});
   return send(res,result.idempotent?200:201,result)
  }
@@ -24,6 +26,7 @@ export async function routeOfferNegotiationV22(req,res,url,ctx){
  const action=url.pathname.match(/^\/api\/offers\/([^/]+)\/actions$/);
  if(action&&req.method==='POST'){
   const result=await actOnOffer(account,action[1],await readBody(req));
+  if(result.order)await tryRecordPartnerOrderFromOffer(req,action[1],result.order);
   await audit(req,account,result.idempotent?'OFFER_ACTION_REPLAY':'OFFER_ACTION_APPLIED','OFFER',result.offer.id,null,null,{status:result.offer.status,version:result.offer.version,orderId:result.order?.id||null});
   return send(res,result.idempotent?200:201,result)
  }
