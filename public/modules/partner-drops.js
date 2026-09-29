@@ -30,6 +30,26 @@ function renderPanel(data){
  grid.append(actions);wrap.append(grid);return wrap
 }
 
+
+function retentionCell(label,r){
+ const rate=r?.rate==null?'—':Math.round(Number(r.rate)*100)+'%';
+ return '<div><span>'+label+'</span><strong>'+rate+'</strong><small>'+copy('вернулись','returned')+' '+Number(r?.returned||0)+' / '+copy('созрело','matured')+' '+Number(r?.matured||0)+' · '+copy('ожидает окна','pending')+' '+Number(r?.pending||0)+'</small></div>'
+}
+function renderPilotAnalytics(a){
+ const x=a.attributed||{},c=x.counts||{},wrap=document.createElement('section');wrap.className='partner-pilot-analytics';
+ wrap.innerHTML='<div class="partner-pilot-analytics-head"><div><span>PARTNER PILOT ANALYTICS · v0.33</span><h3>'+copy('Что действительно пришло из этого выпуска','What actually came from this edition')+'</h3><p>'+copy('Только attributed path. Общие просмотры предметов из Shop, Journal или прямых ссылок сюда не засчитываются.','Attributed path only. Object-wide views from Shop, Journal or direct links are not credited here.')+'</p></div><b>'+Number(a.cohort?.objects||0)+' '+copy('предм.','objects')+'</b></div>'+
+ '<div class="partner-pilot-kpis">'+
+ '<div><span>'+copy('Открытия выпуска','Edition opens')+'</span><strong>'+Number(c.DROP_OPEN||0)+'</strong><small>'+Number(x.uniqueViewers?.DROP_OPEN||0)+' '+copy('deduped viewers','deduped viewers')+'</small></div>'+
+ '<div><span>'+copy('Открытия предметов','Object opens')+'</span><strong>'+Number(c.OBJECT_OPEN||0)+'</strong><small>'+Number(x.uniqueViewers?.OBJECT_OPEN||0)+' '+copy('deduped viewers','deduped viewers')+'</small></div>'+
+ '<div><span>'+copy('Сейчас следят','Current followers')+'</span><strong>'+Number(x.currentFollowers||0)+'</strong><small>'+Number(c.FOLLOW||0)+' '+copy('attributed follow events','attributed follow events')+'</small></div>'+
+ '<div><span>'+copy('Явный intent','Explicit intent')+'</span><strong>'+Number(x.explicitIntent||0)+'</strong><small>'+Number(c.INQUIRY_CREATED||0)+' inquiry · '+Number(c.VIEWING_REQUESTED||0)+' viewing · '+Number(c.OFFER_CREATED||0)+' offer</small></div>'+
+ '<div><span>'+copy('Заказы','Orders')+'</span><strong>'+Number(x.orders||0)+'</strong><small>'+copy('только подтверждённый order authority','confirmed order authority only')+'</small></div>'+
+ '</div>'+
+ '<div class="partner-pilot-retention">'+retentionCell('D7',a.retention?.d7)+retentionCell('D30',a.retention?.d30)+'</div>'+
+ '<div class="partner-pilot-method"><strong>'+copy('Методология','Methodology')+'</strong><p>'+copy('D7/D30 считаются только для авторизованных пользователей после созревания окна. Анонимный cross-day retention не оценивается. Метрики разных типов не складываются в фиктивную “уникальную аудиторию”.','D7/D30 are measured only for authenticated users after the window matures. Anonymous cross-day retention is not estimated. Different signal types are not summed into a fictitious “unique audience”.')+'</p></div>';
+ return wrap
+}
+
 function startCountdown(releaseAt){clearInterval(timer);if(!releaseAt)return;const tick=()=>qa('[data-drop-countdown]').forEach(el=>el.textContent=remaining(releaseAt));tick();timer=setInterval(tick,30000)}
 
 async function decorateDetail(){
