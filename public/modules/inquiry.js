@@ -1,4 +1,4 @@
-import {api,safe,copy,esc,local,toast} from './core.js';
+import {api,safe,copy,esc,local,toast,partnerAttributionFor} from './core.js';
 
 let passportSeq=0;
 const TOPICS=[
@@ -20,7 +20,7 @@ function authRequired(){
 function inquiryForm(ctx){
  const options=TOPICS.map(([value,ru,en])=>`<option value="${value}">${copy(ru,en)}</option>`).join('');
  return openSheet(`<div class="action-sheet-head"><div><div class="micro">OBJECT INQUIRY</div><h2>${copy('Запросить информацию','Ask the dealer')}</h2><p><strong>${esc(local(ctx.title))}</strong>${ctx.sellerName?` · ${esc(ctx.sellerName)}`:''}</p></div><button class="action-sheet-close" data-close-sheet>×</button></div>
- <form id="v21InquiryForm" data-listing="${esc(ctx.id)}" data-client-message-id="${esc(crypto.randomUUID())}">
+ <form id="v21InquiryForm" data-listing="${esc(ctx.id)}" data-object="${esc(ctx.objectId||'')}" data-client-message-id="${esc(crypto.randomUUID())}">
   <div class="action-sheet-field"><label>${copy('Тема запроса','Inquiry topic')}<select name="inquiryType">${options}</select></label></div>
   <div class="action-sheet-field"><label>${copy('Сообщение','Message')}<textarea name="message" minlength="5" maxlength="4000" rows="6" required placeholder="${copy('Например: уточните, пожалуйста, состояние поверхности и известные реставрации.','For example: could you clarify the surface condition and any known restoration?')}"></textarea></label></div>
   <div class="inquiry-note-v21">${copy('Сообщение будет добавлено в переписку по этому предмету. Повторная отправка после сетевого сбоя не создаст дубль.','Your message will be added to this object thread. Retrying after a network interruption will not create a duplicate.')}</div>
@@ -54,7 +54,7 @@ document.addEventListener('submit',async e=>{
  const f=e.target;if(f.id!=='v21InquiryForm')return;
  e.preventDefault();const submit=f.querySelector('button[type="submit"]');submit.disabled=true;
  try{
-  const fd=new FormData(f),result=await api('/api/inquiries',{method:'POST',body:JSON.stringify({listingId:f.dataset.listing,inquiryType:fd.get('inquiryType'),message:fd.get('message'),clientMessageId:f.dataset.clientMessageId})});
+  const fd=new FormData(f),result=await api('/api/inquiries',{method:'POST',body:JSON.stringify({listingId:f.dataset.listing,inquiryType:fd.get('inquiryType'),message:fd.get('message'),clientMessageId:f.dataset.clientMessageId,partnerAttribution:partnerAttributionFor(f.dataset.object)})});
   actionSheet().dialog?.close();
   toast(result.idempotent?copy('Запрос уже был отправлен','Inquiry was already sent'):copy('Сообщение отправлено дилеру','Message sent to dealer'));
  }catch(err){submit.disabled=false;toast(err.message)}
