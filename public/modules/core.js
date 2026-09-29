@@ -1,12 +1,21 @@
 const PARTNER_ATTRIBUTION_KEY='antiqua_partner_attribution_v33';
+const PARTNER_EXHIBITION_KEY='antiqua_partner_exhibition_v33';
 const PARTNER_ATTRIBUTION_TTL_MS=2*60*60*1000;
+const PARTNER_EXHIBITION_TTL_MS=30*60*1000;
+export function setPartnerExhibitionContext(exhibitionId){
+ exhibitionId=String(exhibitionId||'');if(!exhibitionId)return null;const value={exhibitionId,capturedAt:Date.now()};sessionStorage.setItem(PARTNER_EXHIBITION_KEY,JSON.stringify(value));return value
+}
+export function partnerExhibitionContext(){
+ try{const x=JSON.parse(sessionStorage.getItem(PARTNER_EXHIBITION_KEY)||'null');if(!x||Date.now()-Number(x.capturedAt||0)>PARTNER_EXHIBITION_TTL_MS)return null;return{exhibitionId:String(x.exhibitionId)}}catch{return null}
+}
 export function setPartnerAttribution(exhibitionId,objectId){
  exhibitionId=String(exhibitionId||'');objectId=String(objectId||'');if(!exhibitionId||!objectId)return null;
- const value={exhibitionId,objectId,capturedAt:Date.now()};sessionStorage.setItem(PARTNER_ATTRIBUTION_KEY,JSON.stringify(value));return value
+ setPartnerExhibitionContext(exhibitionId);const value={exhibitionId,objectId,capturedAt:Date.now()};sessionStorage.setItem(PARTNER_ATTRIBUTION_KEY,JSON.stringify(value));return value
 }
 export function partnerAttributionFor(objectId){
  try{const x=JSON.parse(sessionStorage.getItem(PARTNER_ATTRIBUTION_KEY)||'null');if(!x||String(x.objectId)!==String(objectId||'')||Date.now()-Number(x.capturedAt||0)>PARTNER_ATTRIBUTION_TTL_MS)return null;return{exhibitionId:String(x.exhibitionId)}}catch{return null}
 }
+export function clearPartnerAttribution(){sessionStorage.removeItem(PARTNER_ATTRIBUTION_KEY);sessionStorage.removeItem(PARTNER_EXHIBITION_KEY)}
 export const lang=()=>localStorage.getItem('antiqua_lang')==='en'?'en':'ru';
 export const copy=(ru,en)=>lang()==='ru'?ru:en;
 export const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
