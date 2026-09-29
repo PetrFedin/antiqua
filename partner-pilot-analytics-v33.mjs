@@ -140,6 +140,16 @@ async function attributedOfferEvent(offerId){
  return clone([...memoryEvents.values()].find(x=>x.eventType==='OFFER_CREATED'&&x.sourceEntityId===offerId)||null)
 }
 
+export async function tryRecordPartnerDirectOrder(req,account,partnerAttribution,order){
+ try{
+  const exhibitionId=String(partnerAttribution?.exhibitionId||'');if(!exhibitionId||!account?.id||!order?.id)return{recorded:false,reason:'NO_PARTNER_ATTRIBUTION'};
+  const exhibition=await exhibitionForEvent(exhibitionId,account),objectId=String(order.lotId||order.objectId||'');
+  if(!exhibitionCohortObjectIds(exhibition).includes(objectId))return{recorded:false,reason:'OBJECT_OUTSIDE_PARTNER_COHORT'};
+  const occurredAt=now(),at=Date.parse(occurredAt),event={id:uid('pae'),exhibitionId:exhibition.id,accountId:account.id,viewerKeyHash:viewerHash(req,account,exhibition.id,at),eventType:'ORDER_CREATED',targetKey:objectId,objectId,sourceEntityId:String(order.id),windowStartedAt:windowStart(at),occurredAt,metadata:{surface:'COMMERCIAL_AUTHORITY',authority:'BUY_NOW'}};
+  const x=await insertEvent(event);return{recorded:true,...x}
+ }catch(e){console.error('Partner direct order attribution skipped:',e.code||e.message);return{recorded:false,reason:e.code||'ATTRIBUTION_ERROR'}}
+}
+
 export async function tryRecordPartnerOrderFromOffer(req,offerId,order){
  try{
   const prior=await attributedOfferEvent(offerId);if(!prior||!order?.id)return{recorded:false,reason:'NO_ATTRIBUTED_OFFER'};
