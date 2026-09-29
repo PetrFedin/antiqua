@@ -1,4 +1,4 @@
-import {api,safe,copy,esc,local,date,status,sheet,toast} from './core.js';
+import {api,safe,copy,esc,local,date,status,sheet,toast,partnerAttributionFor} from './core.js';
 
 let passportSeq=0;
 const fmtDateTime=v=>v?new Intl.DateTimeFormat(localStorage.getItem('antiqua_lang')==='en'?'en-GB':'ru-RU',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
@@ -10,7 +10,7 @@ function authSheet(){
 function requestSheet(kind,ctx){
  const isCondition=kind==='condition',title=isCondition?copy('Запросить Condition Report','Request Condition Report'):copy('Запросить просмотр','Request viewing');
  return sheet('<div class="action-sheet-head"><div><div class="micro">'+(isCondition?'CONDITION REPORT':'VIEWING')+'</div><h2>'+title+'</h2><p><strong>'+esc(local(ctx.title))+'</strong>'+(ctx.sellerName?' · '+esc(ctx.sellerName):'')+'</p></div><button class="action-sheet-close" data-close-sheet>×</button></div>'+
- '<form id="v23ServiceRequestForm" data-kind="'+kind+'" data-listing="'+esc(ctx.id)+'" data-action-id="'+esc(crypto.randomUUID())+'" class="v14-stack-form">'+
+ '<form id="v23ServiceRequestForm" data-kind="'+kind+'" data-listing="'+esc(ctx.id)+'" data-object="'+esc(ctx.objectId||'')+'" data-action-id="'+esc(crypto.randomUUID())+'" class="v14-stack-form">'+
  '<label>'+copy('Комментарий','Note')+'<textarea name="note" maxlength="2000" rows="5" placeholder="'+(isCondition?copy('Например: особенно важны следы реставрации на основании и креплениях.','For example: please focus on restoration around the base and mounts.'):copy('Укажите предпочтительные дни или ограничения по времени.','Share preferred days or time constraints.'))+'"></textarea></label>'+
  '<div class="inquiry-note-v21">'+copy('Повторная отправка после сетевого сбоя не создаст второй запрос.','Retrying after a network interruption will not create a duplicate request.')+'</div>'+
  '<button class="primary-button" type="submit">'+title+'</button></form>')
@@ -111,7 +111,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('submit',async e=>{
  const f=e.target;
  if(f.id==='v23ServiceRequestForm'){
-  e.preventDefault();const b=f.querySelector('button[type="submit"]');b.disabled=true;try{const d=Object.fromEntries(new FormData(f).entries()),kind=f.dataset.kind,path=kind==='condition'?'/api/listings/'+encodeURIComponent(f.dataset.listing)+'/condition-report-requests':'/api/listings/'+encodeURIComponent(f.dataset.listing)+'/viewing-requests';await api(path,{method:'POST',body:JSON.stringify({note:d.note,clientActionId:f.dataset.actionId})});document.querySelector('#actionSheet')?.close();toast(kind==='condition'?copy('Condition Report запрошен','Condition Report requested'):copy('Просмотр запрошен','Viewing requested'));window.dispatchEvent(new CustomEvent('antiqua:operations-refresh'))}catch(err){b.disabled=false;toast(err.message)}return
+  e.preventDefault();const b=f.querySelector('button[type="submit"]');b.disabled=true;try{const d=Object.fromEntries(new FormData(f).entries()),kind=f.dataset.kind,path=kind==='condition'?'/api/listings/'+encodeURIComponent(f.dataset.listing)+'/condition-report-requests':'/api/listings/'+encodeURIComponent(f.dataset.listing)+'/viewing-requests';await api(path,{method:'POST',body:JSON.stringify({note:d.note,clientActionId:f.dataset.actionId,partnerAttribution:partnerAttributionFor(f.dataset.object)})});document.querySelector('#actionSheet')?.close();toast(kind==='condition'?copy('Condition Report запрошен','Condition Report requested'):copy('Просмотр запрошен','Viewing requested'));window.dispatchEvent(new CustomEvent('antiqua:operations-refresh'))}catch(err){b.disabled=false;toast(err.message)}return
  }
  if(f.id==='v23ConditionPublishForm'){
   e.preventDefault();const b=f.querySelector('button[type="submit"]');b.disabled=true;try{
