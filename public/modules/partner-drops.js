@@ -78,6 +78,6 @@ document.addEventListener('click',e=>{
  if(direct){const id=routeId();return attributeObject(id,direct.dataset.passport,'EXHIBITION')}
  const ensemble=e.target.closest?.('.exhibition-page a[href^="#ensemble/"]');
  if(ensemble){const id=routeId();if(id)setPartnerExhibitionContext(id);return}
- const ensembleObject=e.target.closest?.('[class*="ensemble"] [data-passport]');
+ const ensembleObject=e.target.closest?.('[data-passport]');
  if(ensembleObject&&location.hash.startsWith('#ensemble/')){const ctx=partnerExhibitionContext();if(ctx)attributeObject(ctx.exhibitionId,ensembleObject.dataset.passport,'EXHIBITION')}
 },true);
