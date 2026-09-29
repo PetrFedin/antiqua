@@ -51,6 +51,15 @@ export async function recordEditorialEvent(req,account,id,input={}){const story=
 
 export async function editorialAnalytics(account,id){requirePermission(account,'editorial.manage');const story=await storyById(id);if(!story)fail(404,'EDITORIAL_NOT_FOUND','Story not found');let rows;if(db.kind==='POSTGRES')rows=(await db.pool.query('SELECT event_type,target_key,count(*)::int AS events,count(DISTINCT viewer_key_hash)::int AS unique_viewers FROM editorial_events WHERE story_id=$1 GROUP BY event_type,target_key ORDER BY event_type,target_key',[story.id])).rows.map(r=>({eventType:r.event_type,targetKey:r.target_key,events:Number(r.events),uniqueViewers:Number(r.unique_viewers)}));else{const m=new Map();for(const e of memoryEvents.values())if(e.storyId===story.id){const k=e.eventType+'|'+e.targetKey,p=m.get(k)||{eventType:e.eventType,targetKey:e.targetKey,events:0,viewers:new Set()};p.events++;p.viewers.add(e.viewerKeyHash);m.set(k,p)}rows=[...m.values()].map(x=>({eventType:x.eventType,targetKey:x.targetKey,events:x.events,uniqueViewers:x.viewers.size}))}return{story:{id:story.id,slug:story.slug,title:story.title},rows,capabilities:editorialCapabilities()}}
 
+export async function listEditorialObjectEvents(objectIds=[]){
+ const ids=[...new Set((objectIds||[]).map(String).filter(Boolean))];if(!ids.length)return[];
+ if(db.kind==='POSTGRES'){
+  const rows=(await db.pool.query("SELECT story_id,object_id,occurred_at,event_type FROM editorial_events WHERE event_type='OBJECT_OPEN' AND object_id=ANY($1::text[]) ORDER BY occurred_at ASC",[ids])).rows;
+  return rows.map(r=>({storyId:r.story_id,objectId:r.object_id,eventType:r.event_type,occurredAt:iso(r.occurred_at)}))
+ }
+ return [...memoryEvents.values()].filter(e=>e.eventType==='OBJECT_OPEN'&&ids.includes(String(e.objectId||''))).map(e=>({storyId:e.storyId,objectId:e.objectId,eventType:e.eventType,occurredAt:e.occurredAt})).sort((a,b)=>String(a.occurredAt).localeCompare(String(b.occurredAt)))
+}
+
 export async function aggregateEditorialObjectOpens(objectIds=[]){
  await ensureSeed();const ids=[...new Set((objectIds||[]).map(String).filter(Boolean))],out={};for(const id of ids)out[id]={opens:0,uniqueViewers:0,lastOccurredAt:null};if(!ids.length)return out;
  if(db.kind==='POSTGRES'){const rows=(await db.pool.query("SELECT object_id,count(*)::int AS opens,count(DISTINCT viewer_key_hash)::int AS unique_viewers,max(occurred_at) AS last_at FROM editorial_events WHERE event_type='OBJECT_OPEN' AND object_id=ANY($1::text[]) GROUP BY object_id",[ids])).rows;for(const r of rows)out[r.object_id]={opens:Number(r.opens||0),uniqueViewers:Number(r.unique_viewers||0),lastOccurredAt:iso(r.last_at)};return out}
