@@ -1,4 +1,4 @@
-import {api,safe,copy,local,toast} from './core.js';
+import {api,safe,copy,local,toast,setPartnerAttribution} from './core.js';
 
 const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
@@ -34,6 +34,7 @@ function startCountdown(releaseAt){clearInterval(timer);if(!releaseAt)return;con
 
 async function decorateDetail(){
  const id=routeId(),hero=q('.exhibition-page .exhibition-hero');if(!id||!hero||q('[data-partner-drop-panel]',hero))return;const ticket=++seq,data=await safe('/api/exhibitions/'+encodeURIComponent(id)+'/drop');if(ticket!==seq||routeId()!==id||!data)return;
+ await api('/api/exhibitions/'+encodeURIComponent(id)+'/pilot/events',{method:'POST',body:JSON.stringify({eventType:'DROP_OPEN',metadata:{surface:'PARTNER_DROP',stage:data.drop.stage}})}).catch(()=>null);
  const eyebrow=q('.eyebrow',hero);if(eyebrow)eyebrow.textContent=fmt(data.drop.format)+' · '+stage(data.drop.stage);const title=q('h1',hero);const panel=renderPanel(data);(q('.curatorial-statement',hero)||title)?.after(panel);startCountdown(data.drop.stage==='PREVIEW'?data.drop.releaseAt:null)
 }
 
@@ -46,3 +47,6 @@ const observer=new MutationObserver(()=>queueMicrotask(()=>refresh().catch(conso
 window.addEventListener('hashchange',()=>{clearInterval(timer);setTimeout(()=>refresh().catch(console.error),0)});
 document.addEventListener('click',async e=>{const b=e.target.closest?.('[data-drop-follow]');if(!b)return;e.preventDefault();b.disabled=true;try{const enabled=b.dataset.enabled==='true';const result=await api('/api/exhibitions/'+encodeURIComponent(b.dataset.dropFollow)+'/follow',{method:'POST',body:JSON.stringify({enabled})});b.dataset.enabled=String(!result.enabled);b.textContent=result.enabled?copy('✓ Слежу за выпуском','✓ Following'):copy('Следить за выпуском','Follow this edition');toast(result.enabled?copy('Уведомим, когда выпуск откроется','We will notify you when the edition opens'):copy('Подписка на выпуск отключена','Edition follow removed'))}catch(err){toast(err.message)}finally{b.disabled=false}});
 refresh().catch(console.error);
+
+// partner object attribution: context is synchronous; analytics POST is best-effort and never blocks Passport.
+document.addEventListener('click',e=>{const b=e.target.closest?.('.exhibition-page [data-passport]');if(!b)return;const id=routeId(),objectId=b.dataset.passport;if(!id||!objectId)return;setPartnerAttribution(id,objectId);void api('/api/exhibitions/'+encodeURIComponent(id)+'/pilot/events',{method:'POST',body:JSON.stringify({eventType:'OBJECT_OPEN',objectId,metadata:{surface:'EXHIBITION'}})}).catch(()=>null)},true);
