@@ -1,3 +1,4 @@
+import {partnerAttributionFor} from './modules/core.js';
 import {showcaseView} from './modules/partner-investor-showcase.js';
 import {journalView,storyPage} from './modules/editorial-commerce.js';
 import {creatorsView,creatorPage} from './modules/creators.js';
@@ -199,7 +200,7 @@ function closeSheet(){const d=$('#actionSheet');if(d?.open)d.close()}
 function installSheetDrag(dialog){if(!dialog||dialog.dataset.dragReady)return;dialog.dataset.dragReady='1';let g=dialog.querySelector(':scope > .sheet-grabber');if(!g){g=document.createElement('div');g.className='sheet-grabber';dialog.prepend(g)}let drag=null;g.addEventListener('pointerdown',e=>{if(innerWidth>800)return;drag={id:e.pointerId,y:e.clientY,dy:0};dialog.classList.add('is-dragging');g.setPointerCapture?.(e.pointerId)});dialog.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;drag.dy=Math.max(0,e.clientY-drag.y);dialog.style.setProperty('--sheet-y',`${drag.dy}px`)});const done=e=>{if(!drag||e.pointerId!==drag.id)return;const close=drag.dy>110;drag=null;dialog.classList.remove('is-dragging');dialog.style.setProperty('--sheet-y','0px');if(close&&dialog.open)dialog.close()};dialog.addEventListener('pointerup',done);dialog.addEventListener('pointercancel',done)}
 function bidSheet(btn){const id=btn.dataset.bid,min=Number(btn.dataset.min||0);const d=openSheet(`<div class="action-sheet-body"><div class="action-sheet-head"><div><div class="micro">ONLINE AUCTION</div><h2>${t('maximumBid')}</h2><p>${state.lang==='ru'?'Система повышает ставку только настолько, насколько необходимо. Максимум остаётся скрытым.':'The system increases only as needed. Your maximum remains private.'}</p></div><button class="action-sheet-close" data-close-sheet>×</button></div><div class="action-sheet-field"><label>${t('maximumBid')}</label><input id="bidAmount" type="number" inputmode="numeric" min="${min}" value="${min}"></div><div class="action-sheet-actions"><button class="secondary-button" data-close-sheet>${t('close')}</button><button class="primary-button" id="confirmBid">${t('confirmBid')}</button></div></div>`);$('#confirmBid',d).onclick=async()=>{const amount=Math.round(Number($('#bidAmount',d).value)),b=$('#confirmBid',d);if(!Number.isFinite(amount)||amount<min)return toast(`${t('maximumBid')}: ≥ ${money(min)}`);b.disabled=true;try{if(!state.client.registeredSales?.includes(state.catalog.sale.id))await api(`/api/sales/${state.catalog.sale.id}/register`,{method:'POST',body:JSON.stringify({acceptTerms:true,termsVersion:'v13-preview'})});await api(`/api/auctions/${id}/bid`,{method:'POST',headers:{'idempotency-key':crypto.randomUUID()},body:JSON.stringify({maxAmount:amount})});closeSheet();await refresh();toast(t('bidSuccess'));render()}catch(e){b.disabled=false;toast(e.message)}}}
 function offerSheet(btn){
- const id=btn.dataset.offer,asking=Number(btn.dataset.price),currency=btn.dataset.currency||'EUR',suggest=Math.round(asking*.9),clientActionId=crypto.randomUUID();
+ const id=btn.dataset.offer,objectId=state.catalog?.listings?.find(x=>x.id===id)?.lotId||null,asking=Number(btn.dataset.price),currency=btn.dataset.currency||'EUR',suggest=Math.round(asking*.9),clientActionId=crypto.randomUUID();
  const html='<div class="action-sheet-body v22-create-offer"><div class="action-sheet-head"><div><div class="micro">PRIVATE NEGOTIATION</div><h2>'+t('offer')+'</h2><p>'+t('askingPrice')+': '+money(asking,currency)+'</p></div><button class="action-sheet-close" data-close-sheet>×</button></div>'+
   '<div class="action-sheet-field"><label>'+t('yourOffer')+'</label><input id="offerAmount" type="number" inputmode="decimal" value="'+suggest+'" min="1" max="'+Math.max(1,asking-1)+'" step="1"></div>'+
   '<div class="quick-bids"><button data-offer-pct="85">85%</button><button data-offer-pct="90">90%</button><button data-offer-pct="95">95%</button></div>'+
@@ -215,7 +216,7 @@ function offerSheet(btn){
   b.disabled=true;
   try{
    const expiresAt=new Date(Date.now()+ttl*60*60*1000).toISOString();
-   await api('/api/listings/'+encodeURIComponent(id)+'/offers',{method:'POST',body:JSON.stringify({amount,currency,expiresAt,comment:$('#offerComment',d).value,clientActionId})});
+   await api('/api/listings/'+encodeURIComponent(id)+'/offers',{method:'POST',body:JSON.stringify({amount,currency,expiresAt,comment:$('#offerComment',d).value,clientActionId,partnerAttribution:partnerAttributionFor(objectId)})});
    closeSheet();await refresh();toast(t('offerSuccess'));window.dispatchEvent(new CustomEvent('antiqua:operations-refresh'));render()
   }catch(e){b.disabled=false;toast(e.message)}
  }
@@ -238,7 +239,7 @@ async function toggleWatch(id){
  toast(enabled?(state.lang==='ru'?'Наблюдение включено':'Watching enabled'):(state.lang==='ru'?'Наблюдение отключено':'Watching disabled'));
  if(location.hash==='#account')await render()
 }
-async function buyNow(id){await api(`/api/listings/${id}/buy`,{method:'POST',body:'{}'});closePassportForNavigation();await refresh();toast(t('orderSuccess'));location.hash='account'}
+async function buyNow(id){const objectId=state.catalog?.listings?.find(x=>x.id===id)?.lotId||null;await api(`/api/listings/${id}/buy`,{method:'POST',body:JSON.stringify({partnerAttribution:partnerAttributionFor(objectId)})});closePassportForNavigation();await refresh();toast(t('orderSuccess'));location.hash='account'}
 async function collect(id){
  const mine=await api('/api/collections/mine'),collections=mine.collections||[];
  if(!collections.length){
