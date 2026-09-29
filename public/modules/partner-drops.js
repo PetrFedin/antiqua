@@ -1,4 +1,4 @@
-import {api,safe,copy,local,toast,setPartnerAttribution} from './core.js';
+import {api,safe,copy,local,toast,setPartnerAttribution,setPartnerExhibitionContext,partnerExhibitionContext,clearPartnerAttribution} from './core.js';
 
 const q=(s,r=document)=>r?.querySelector?.(s)||null;
 const qa=(s,r=document)=>[...(r?.querySelectorAll?.(s)||[])];
@@ -64,9 +64,20 @@ async function decorateCards(){
 
 async function refresh(){await Promise.all([decorateDetail(),decorateCards()])}
 const observer=new MutationObserver(()=>queueMicrotask(()=>refresh().catch(console.error)));const app=q('#app');if(app)observer.observe(app,{childList:true,subtree:false});
-window.addEventListener('hashchange',()=>{clearInterval(timer);setTimeout(()=>refresh().catch(console.error),0)});
+window.addEventListener('hashchange',()=>{clearInterval(timer);const root=location.hash.slice(1).split('/')[0];if(!['exhibition','ensemble'].includes(root))clearPartnerAttribution();setTimeout(()=>refresh().catch(console.error),0)});
 document.addEventListener('click',async e=>{const b=e.target.closest?.('[data-drop-follow]');if(!b)return;e.preventDefault();b.disabled=true;try{const enabled=b.dataset.enabled==='true';const result=await api('/api/exhibitions/'+encodeURIComponent(b.dataset.dropFollow)+'/follow',{method:'POST',body:JSON.stringify({enabled})});b.dataset.enabled=String(!result.enabled);b.textContent=result.enabled?copy('✓ Слежу за выпуском','✓ Following'):copy('Следить за выпуском','Follow this edition');toast(result.enabled?copy('Уведомим, когда выпуск откроется','We will notify you when the edition opens'):copy('Подписка на выпуск отключена','Edition follow removed'))}catch(err){toast(err.message)}finally{b.disabled=false}});
 refresh().catch(console.error);
 
-// partner object attribution: context is synchronous; analytics POST is best-effort and never blocks Passport.
-document.addEventListener('click',e=>{const b=e.target.closest?.('.exhibition-page [data-passport]');if(!b)return;const id=routeId(),objectId=b.dataset.passport;if(!id||!objectId)return;setPartnerAttribution(id,objectId);void api('/api/exhibitions/'+encodeURIComponent(id)+'/pilot/events',{method:'POST',body:JSON.stringify({eventType:'OBJECT_OPEN',objectId,metadata:{surface:'EXHIBITION'}})}).catch(()=>null)},true);
+// partner path attribution: exhibition -> direct object or exhibition -> ensemble -> object.
+function attributeObject(exhibitionId,objectId,surface){
+ if(!exhibitionId||!objectId)return;setPartnerAttribution(exhibitionId,objectId);
+ void api('/api/exhibitions/'+encodeURIComponent(exhibitionId)+'/pilot/events',{method:'POST',body:JSON.stringify({eventType:'OBJECT_OPEN',objectId,metadata:{surface}})}).catch(()=>null)
+}
+document.addEventListener('click',e=>{
+ const direct=e.target.closest?.('.exhibition-page [data-passport]');
+ if(direct){const id=routeId();return attributeObject(id,direct.dataset.passport,'EXHIBITION')}
+ const ensemble=e.target.closest?.('.exhibition-page a[href^="#ensemble/"]');
+ if(ensemble){const id=routeId();if(id)setPartnerExhibitionContext(id);return}
+ const ensembleObject=e.target.closest?.('[class*="ensemble"] [data-passport]');
+ if(ensembleObject&&location.hash.startsWith('#ensemble/')){const ctx=partnerExhibitionContext();if(ctx)attributeObject(ctx.exhibitionId,ensembleObject.dataset.passport,'EXHIBITION')}
+},true);
