@@ -68,6 +68,9 @@ test('Dealer Interest projects anonymous demand into explicit commercial intent 
   await page.reload({waitUntil:'domcontentloaded'});
   await page.goto('/#account',{waitUntil:'domcontentloaded'});
   await expect(page.locator('#sellerAnalyticsV17')).toBeVisible();
+  const dealerTab=page.locator('[data-v14-tab="dealer"]');
+  await expect(dealerTab).toBeVisible();
+  await dealerTab.click();
   const panel=page.locator('#dealerInterestV32');
   await expect(panel).toBeVisible();
   await expect(panel).toContainText(/Где интерес становится намерением|Where interest becomes intent/i);
