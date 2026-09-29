@@ -669,3 +669,21 @@ body{overflow-x:hidden}
 .v32-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.v32-actions .secondary-button{min-height:38px;padding:0 10px;font-size:9px}
 @media(max-width:1050px){.v32-metrics{grid-template-columns:repeat(3,1fr)}.v32-interest-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.v32-metrics{grid-template-columns:repeat(2,1fr)}.v32-interest-grid{grid-template-columns:1fr}.v32-privacy{grid-template-columns:1fr;gap:5px}.v32-object-title{min-height:0}}
+
+
+/* ---- v0.33 · Partner Pilot Analytics ---- */
+.partner-pilot-analytics{margin-top:24px;padding:20px;border:1px solid rgba(55,46,38,.22);background:rgba(247,243,236,.58)}
+.partner-pilot-analytics-head{display:flex;justify-content:space-between;gap:28px;align-items:start;border-bottom:1px solid rgba(55,46,38,.18);padding-bottom:16px}
+.partner-pilot-analytics-head>div{max-width:760px}.partner-pilot-analytics-head span{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.partner-pilot-analytics-head h3{margin:8px 0 8px;font:400 29px/1.05 Georgia,serif}.partner-pilot-analytics-head p{margin:0;color:var(--muted);font-size:10px;line-height:1.55}
+.partner-pilot-analytics-head>b{white-space:nowrap;font:400 22px/1 Georgia,serif}
+.partner-pilot-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px}
+.partner-pilot-kpis>div,.partner-pilot-retention>div{min-height:108px;padding:12px;border:1px solid rgba(55,46,38,.16);background:rgba(255,255,255,.42);display:grid;align-content:space-between}
+.partner-pilot-kpis span,.partner-pilot-retention span{font-size:8px;text-transform:uppercase;letter-spacing:.075em;color:var(--muted)}
+.partner-pilot-kpis strong,.partner-pilot-retention strong{font:400 28px/1 Georgia,serif}
+.partner-pilot-kpis small,.partner-pilot-retention small{font-size:8px;line-height:1.45;color:var(--muted)}
+.partner-pilot-retention{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.partner-pilot-method{display:grid;grid-template-columns:100px 1fr;gap:16px;padding-top:14px;margin-top:14px;border-top:1px solid rgba(55,46,38,.18)}
+.partner-pilot-method strong{font-size:8px;letter-spacing:.08em;text-transform:uppercase}.partner-pilot-method p{margin:0;max-width:850px;font-size:9px;line-height:1.55;color:var(--muted)}
+@media(max-width:900px){.partner-pilot-kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.partner-pilot-analytics{margin-left:-4px;margin-right:-4px;padding:14px}.partner-pilot-analytics-head{display:block}.partner-pilot-analytics-head>b{display:block;margin-top:14px}.partner-pilot-kpis{grid-template-columns:repeat(2,1fr)}.partner-pilot-retention{grid-template-columns:1fr}.partner-pilot-method{grid-template-columns:1fr;gap:5px}}
