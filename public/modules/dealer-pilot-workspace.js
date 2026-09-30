@@ -67,13 +67,14 @@ function evidence(proof,performance,lang){
 }
 
 export async function dealerPilotWorkspace(lang='ru'){
- const [proofRes,performanceRes,pilotRes]=await Promise.all([
+ const [proofRes,performanceRes,pilotRes,authorityRes]=await Promise.all([
   api('/api/pilot/commercial-proof'),
   api('/api/dealer/performance'),
-  api('/api/partner/pilot-analytics')
+  api('/api/partner/pilot-analytics'),
+  api('/api/dealer/pilots')
  ]);
- const proof=proofRes.proof||{},performance=performanceRes.performance||{},pilot=pilotRes.analytics||{};
- return`<main class="pilot-workspace page section"><section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
+ const proof=proofRes.proof||{},performance=performanceRes.performance||{},pilot=pilotRes.analytics||{},engagement=(authorityRes.pilots||[]).find(x=>x.status==='ACTIVE')||(authorityRes.pilots||[])[0]||null;
+ return`<main class="pilot-workspace page section">${engagement?`<section class="pilot-engagement-banner"><div><span>REAL PILOT · ${esc(engagement.status)}</span><strong>${esc(engagement.name)}</strong><small>${esc((engagement.startsAt||'').slice(0,10))} → ${esc((engagement.endsAt||'').slice(0,10))}</small></div><div><span>CONTRACT</span><code>${esc(engagement.contractDigest||'DRAFT · NOT FROZEN')}</code></div></section>`:`<section class="pilot-engagement-banner draft"><div><span>REAL PILOT AUTHORITY</span><strong>${copy(lang,'Engagement ещё не создан','No engagement created yet')}</strong><small>${copy(lang,'Метрики ниже остаются техническим evidence workspace до фиксации реального пилота.','Metrics below remain a technical evidence workspace until a real pilot is contracted.')}</small></div></section>`}<section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
  ${scorecard(proof,lang)}
  <div class="pilot-two-col">${comparison(proof,lang)}${rolling(proof,lang)}</div>
  ${inventory(proof,performance,lang)}
