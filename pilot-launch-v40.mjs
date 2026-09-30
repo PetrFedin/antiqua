@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import {db} from './runtime-v09.mjs';
 import {dealerPilotDetail} from './dealer-pilot-authority-v37.mjs';
 import {governanceStatus,schemaProof} from './pilot-governance-v39.mjs';
