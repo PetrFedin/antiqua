@@ -24,7 +24,8 @@ const files=[
   '021_v30_creator_gallery_graph.sql',
   '022_v31_editorial_commerce.sql',
   '023_v37_real_dealer_pilot.sql',
-  '024_v38_counterparty_acceptance.sql'
+  '024_v38_counterparty_acceptance.sql',
+  '025_v39_pilot_governance_verification.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
