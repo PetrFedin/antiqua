@@ -138,3 +138,61 @@ Verifiable credentials only after passport/ownership authority is stable. Creden
 
 ## Recommendation refresh protocol
 This file is the canonical integration sequence and must be re-checked at every gate transition. Update recommendations when live evidence changes, a dependency becomes obsolete, or a safer/stronger integration path is demonstrated. Do not advance a phase merely because its code can be written; advance it only when the preceding authority and evidence gate is satisfied.
+
+## Additional wave — IIIF delivery, signed-document evidence and 3D admission
+
+### Cantaloupe IIIF image server — ADOPT/CONDITIONAL SIDECAR
+
+Reference: https://github.com/cantaloupe-project/cantaloupe
+
+Mirador is the viewer; Cantaloupe can become the bounded image-delivery service when object imagery volume/resolution makes static derivatives inefficient.
+
+Architecture:
+
+`Antiqua media authority -> approved source/derivative -> Cantaloupe IIIF Image API -> IIIF manifest -> Mirador`
+
+Cantaloupe must have read-only access to admitted media and must not become the media metadata/provenance database.
+
+Use only after Object Media Authority is stable.
+
+### pyHanko signed provenance-document verification — ADOPT
+
+Reference: https://github.com/MatthiasValvekens/pyHanko
+
+For uploaded certificates, invoices, provenance records or institutional PDFs containing digital signatures:
+
+`original signed PDF -> cryptographic verification -> certificate/timestamp/trust evidence -> Antiqua document-evidence record`
+
+Persist source checksum, signature status, certificate/trust details and validator version.
+
+A valid PDF signature can establish document integrity/signing identity under the configured trust policy; it does **not** authenticate the artwork, establish title or prove the factual truth of a provenance statement.
+
+Never rewrite the original signed document before verification.
+
+### glTF Validator 3D admission — ADOPT when photogrammetry opens
+
+Reference: https://github.com/KhronosGroup/glTF-Validator
+
+When Meshroom/other 3D derivatives are admitted, every glTF/GLB passes a deterministic validation gate.
+
+Store:
+
+- source capture set ID;
+- Meshroom/processor version;
+- model checksum;
+- validation report;
+- triangle/texture/size metrics;
+- object relation;
+- generated_at.
+
+3D is always a derivative; the original photo set and condition evidence remain authoritative.
+
+### Acceptance extension
+
+- IIIF delivery can be rebuilt from admitted media;
+- signed PDF validation never becomes artwork-authentication logic;
+- invalid 3D cannot publish into the object viewer;
+- every 3D model traces back to source captures and processor version.
+
+**Sequencing:** Cantaloupe follows Object Media + IIIF manifest stability; pyHanko can follow document evidence admission; glTF validation activates only when the photogrammetry gate is opened.
+
