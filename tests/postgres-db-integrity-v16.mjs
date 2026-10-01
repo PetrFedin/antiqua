@@ -19,10 +19,10 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 try{
  assert.equal(db.kind,'POSTGRES');
  assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
- assert.equal(migrationManifest.at(-1).version,'022_v31_editorial_commerce');
+ assert.equal(migrationManifest.at(-1).version,'026_v40_real_pilot_launch');
 
- const versions=(await db.pool.query("SELECT version FROM schema_migrations WHERE version IN ('014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement','017_v22_offer_negotiation','018_v23_condition_viewing','019_v28_taste_graph','020_v29_partner_drops','021_v30_creator_gallery_graph','022_v31_editorial_commerce') ORDER BY version")).rows.map(x=>x.version);
- assert.deepEqual(versions,['014_v16_discovery_postgres_matching','015_v16_db_integrity','016_v17_object_engagement','017_v22_offer_negotiation','018_v23_condition_viewing','019_v28_taste_graph','020_v29_partner_drops','021_v30_creator_gallery_graph','022_v31_editorial_commerce'],'CLI/server migration authority must include 014 through 022');
+ const versions=(await db.pool.query('SELECT version FROM schema_migrations ORDER BY version')).rows.map(x=>x.version);
+ assert.deepEqual(versions,migrationManifest.map(x=>x.version),'CLI/server migration authority must match the complete registered migration manifest');
 
  const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
  assert.ok(buyer);
