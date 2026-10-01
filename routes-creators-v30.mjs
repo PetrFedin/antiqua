@@ -1,9 +1,10 @@
 import {send,readBody,requireCsrf,audit,authContext} from './runtime-v09.mjs';
-import {creatorGraphCapabilities,listCreators,getCreatorProfile,createCreator,publishCreator,addRepresentation,linkCreatorObject,setCreatorFollow,creatorSalesAuthority} from './creator-graph-v30.mjs';
+import {creatorGraphCapabilities,listCreators,getCreatorProfile,createCreator,publishCreator,addRepresentation,linkCreatorObject,setCreatorFollow,creatorSalesAuthority,creatorsForObject} from './creator-graph-v30.mjs';
 
 export async function routeCreatorsV30(req,res,url,ctx=null){
  if(url.pathname==='/api/creators/capabilities'&&req.method==='GET')return send(res,200,{capabilities:creatorGraphCapabilities()});
  if(url.pathname==='/api/creators'&&req.method==='GET'){const auth=ctx||await authContext(req);return send(res,200,{creators:await listCreators(auth?.account||null),capabilities:creatorGraphCapabilities()})}
+ const om=url.pathname.match(/^\/api\/objects\/([^/]+)\/creators$/);if(om&&req.method==='GET'){const auth=ctx||await authContext(req);return send(res,200,{objectId:decodeURIComponent(om[1]),creators:await creatorsForObject(auth?.account||null,decodeURIComponent(om[1]))})}
  if(url.pathname==='/api/creators'&&req.method==='POST'){const auth=ctx||await authContext(req);if(!auth)return send(res,401,{error:'Authentication required',code:'AUTH_REQUIRED'});requireCsrf(req,auth);const creator=await createCreator(auth.account,await readBody(req));await audit(req,auth.account,'CREATOR_DRAFT_CREATED','CREATOR',creator.id,null,{creatorType:creator.creatorType,salesModel:creator.salesModel});return send(res,201,{creator})}
  const m=url.pathname.match(/^\/api\/creators\/([^/]+)(?:\/(publish|follow|representations|objects|sales-authority))?$/);if(!m)return false;const id=decodeURIComponent(m[1]),sub=m[2]||null;
  if(!sub&&req.method==='GET'){const auth=ctx||await authContext(req),profile=await getCreatorProfile(auth?.account||null,id);return profile?send(res,200,profile):send(res,404,{error:'Creator not found',code:'CREATOR_NOT_FOUND'})}
