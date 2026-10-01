@@ -196,3 +196,98 @@ Store:
 
 **Sequencing:** Cantaloupe follows Object Media + IIIF manifest stability; pyHanko can follow document evidence admission; glTF validation activates only when the photogrammetry gate is opened.
 
+## Additional wave — semantic provenance export, preservation packaging and high-resolution derivative pipeline
+
+This wave strengthens museum/research interoperability after the dedicated DB, Object Media and Provenance Graph authorities are stable.
+
+### RDF / CIDOC-CRM-oriented semantic projection — ADAPT
+
+Library reference: https://github.com/RDFLib/rdflib
+
+Build a derived semantic export of approved Antiqua facts using stable URIs and a documented mapping inspired by CIDOC CRM / cultural-heritage vocabularies.
+
+Candidate mappings:
+
+- object/work;
+- creator/person/organisation;
+- creation/production event;
+- ownership/holding/provenance event;
+- place;
+- auction/sale event;
+- document/source;
+- material/technique;
+- identifier/authority link.
+
+Every exported statement traces back to an Antiqua record + version/evidence state.
+
+The RDF graph is interoperability/read-model output. It must not become the writable provenance authority.
+
+### Controlled Vocabulary / Authority Links — ADOPT
+
+Add explicit external-authority link records for creators, places, materials, object types and techniques.
+
+Store:
+
+- authority/provider;
+- external ID/URI;
+- label at reconciliation time;
+- relation type (same-as / broader/narrower/candidate);
+- confidence/status;
+- reviewer;
+- source/version.
+
+Examples may include Getty vocabularies, Wikidata, VIAF or institutional authorities where licensing/API terms permit.
+
+Do not collapse two Antiqua entities solely because an external authority candidate matches approximately.
+
+### OCFL-style Preservation Package — ADOPT/ADAPT
+
+Specification reference: https://github.com/OCFL/spec
+
+For high-value object/document/media records, create preservation packages with:
+
+- logical object ID;
+- version inventory;
+- fixity/checksums;
+- content paths;
+- metadata/evidence manifest;
+- creation/version timestamps.
+
+The goal is reproducible long-term preservation and integrity, not replacing live PostgreSQL/object storage.
+
+A package should be rebuildable/exportable from authoritative Antiqua state and admitted originals.
+
+### libvips High-resolution Derivative Pipeline — ADOPT
+
+Reference: https://github.com/libvips/libvips
+
+Use libvips in the media worker for efficient:
+
+- large TIFF/JPEG processing;
+- thumbnails;
+- tiled pyramids/derivatives where required;
+- IIIF-ready image preparation;
+- colour-managed derivative stages in conjunction with OpenColorIO.
+
+Original/source masters remain immutable. Every derivative records processor/version/profile/source checksum.
+
+### IIIF Change Discovery / incremental publication — ADAPT
+
+Use IIIF change-discovery patterns so downstream research/catalogue consumers can detect newly published/updated/withdrawn manifests without crawling the full catalogue.
+
+Publish change records only from approved Antiqua publication events.
+
+A withdrawn public manifestation should remain historically auditable internally even when no longer publicly served.
+
+### Additional acceptance
+
+- semantic triples resolve to exact Antiqua source records/versions;
+- authority links have reviewer/status and do not auto-merge entities;
+- preservation package fixity validates;
+- high-res derivatives can be regenerated from immutable source masters;
+- downstream IIIF change feed reflects only approved publication changes.
+
+**Sequencing:** Object Media + Provenance Graph -> controlled authority links -> RDF projection -> OCFL preservation export -> IIIF change discovery. libvips belongs inside the Object Media processing layer.
+
+**Dependency hygiene:** check current external authority API/licensing terms before automated harvesting or redistribution.
+
