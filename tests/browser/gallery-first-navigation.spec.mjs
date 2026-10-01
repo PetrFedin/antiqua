@@ -3,6 +3,7 @@ import {test,expect} from '@playwright/test';
 test('Gallery-first navigation keeps consumer journey separate from professional tools',async({page})=>{
  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
  const nav=page.locator('.main-nav');
+ if(await page.locator('.mobile-tabbar').isVisible()){await page.setViewportSize({width:1280,height:900});await page.reload({waitUntil:'domcontentloaded'})}
  await expect(nav.locator('[data-nav="gallery"]')).toHaveText(/Галерея|Gallery/i);
  await expect(nav.locator('[data-nav="creators"]')).toHaveText(/Художники|Artists/i);
  await expect(nav.locator('[data-nav="collections"]')).toBeVisible();
