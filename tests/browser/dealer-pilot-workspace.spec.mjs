@@ -14,6 +14,8 @@ test('Dealer Pilot Workspace renders signed commercial proof for seller',async({
  expect(afterNav.me.status,'auth/me after /#pilot navigation').toBe(200);
  expect(afterNav.me.body.account?.roles||[],'seller role after /#pilot navigation').toContain('SELLER');
  for(const [path,x] of Object.entries(afterNav.endpoints))expect(x.status,`after navigation ${path}: ${JSON.stringify(x.body)}`).toBe(200);
+ // demo-login is intentionally called outside the app UI in this test. Reload once so client state reflects the authenticated SELLER session.
+ await page.reload({waitUntil:'domcontentloaded'});
  const ws=page.locator('.pilot-workspace');await expect(ws,`pilot toast: ${await page.locator('#toast').textContent().catch(()=> '')}`).toBeVisible();
  await expect(ws).toContainText(/Pilot commercial control|Коммерческий контроль пилота/i);
  await expect(ws).toContainText(/PILOT SCORECARD/i);
