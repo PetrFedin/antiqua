@@ -294,3 +294,31 @@ After INT-00 runtime durability is proven, prioritize:
 8. OCR/reconciliation/provenance/similarity/C2PA according to their gates.
 
 Do not delete v0.22-v0.40. Remove professional surfaces only from primary consumer navigation; preserve their routes/data until an explicit retirement decision.
+
+
+## 2026-10-01 implementation checkpoint — Artwork → Artist → Related Works
+
+The first post-reset content graph is now implemented on the gallery-first mainline without creating a parallel object authority.
+
+- Artwork remains the existing authoritative object/passport (objects + passport/revision authority).
+- Artist remains the existing v30 creator graph (creators + creator_object_links); free-text maker is never promoted into a biography automatically.
+- GET /api/objects/:id/creators exposes only published creator profiles explicitly linked to the artwork, with creator role and attribution status.
+- Artwork dossier links directly to the verified Artist profile when that relationship exists; otherwise it states that no verified creator profile is linked.
+- Related Works reuse v18 explainable similarity (CATALOGUE_RULES_V1) and surface human-readable reason codes instead of introducing an opaque recommendation score.
+- Shareable artwork URLs canonicalize to #gallery; legacy #shop remains a compatibility route.
+- Desktop/mobile Browser E2E now owns the Gallery-first contract and the Artwork → Artist → Related Works journey.
+
+### Next implementation gate
+
+After this checkpoint is green, continue in this order:
+
+1. deepen Artist pages: biography evidence, chronology/exhibitions where sourced, works grouping;
+2. make Related Works a reusable gallery surface, preserving explainable reasons;
+3. Collections/Taste on top of existing collection + taste authorities;
+4. Books/Courses/Events;
+5. Auction integration into artwork context;
+6. Media Authority;
+7. IIIF/Mirador;
+8. Cantaloupe only after Media Authority + IIIF image-service requirements are explicit and operationally justified.
+
+Do not re-promote dealer/pilot surfaces into the primary consumer navigation. Dealer/pilot capabilities remain preserved professional infrastructure behind role-appropriate surfaces.
