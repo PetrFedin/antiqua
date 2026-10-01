@@ -34,3 +34,11 @@ Target end-to-end chain:
 `object passport -> collection -> provenance/authentication workflow -> listing -> sale/auction -> payment/settlement -> delivery -> ownership/passport transfer`
 
 All further ANTIQUA development should be committed to this repository only.
+
+## Planned integration roadmap
+
+Canonical implementation plan:
+
+- [docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md](./docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md)
+
+This file is a **planned implementation source**, not evidence that all listed capabilities are already live. Future full-roadmap implementation should cite this filename explicitly and follow its phases, authority boundaries, dependencies and acceptance gates.
