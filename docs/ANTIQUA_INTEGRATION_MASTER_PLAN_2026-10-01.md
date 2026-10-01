@@ -322,3 +322,26 @@ After this checkpoint is green, continue in this order:
 8. Cantaloupe only after Media Authority + IIIF image-service requirements are explicit and operationally justified.
 
 Do not re-promote dealer/pilot surfaces into the primary consumer navigation. Dealer/pilot capabilities remain preserved professional infrastructure behind role-appropriate surfaces.
+
+
+## 2026-10-01 implementation checkpoint — Artist depth + reusable Related Works
+
+Prepared as stacked PR #81 on top of Gallery-first PR #80.
+
+- Artist profile projection now exposes research context only from explicit creator metadata: evidence status, biography sources and chronology.
+- Public exhibition context is derived only from PUBLIC/SCHEDULED/LIVE/ARCHIVED exhibitions that actually contain a published work linked to the creator.
+- Artist works retain the existing creator_object_links authority and are grouped in the UI by explicit technique, falling back to explicit period only when technique is absent.
+- Related Works rendering is extracted into a reusable gallery component; ranking still comes exclusively from v18 explainable similarity.
+- No free-text catalogue maker is promoted into creator identity, chronology or biography.
+- No artist research field is inferred from browsing behavior or generated text.
+- Dealer/pilot infrastructure remains preserved but absent from primary consumer navigation.
+
+### Exit gate for this checkpoint
+
+Before Collections/Taste work is allowed to merge:
+1. PR #80 must be fully green and merged;
+2. PR #81 must be rebased onto the resulting main;
+3. CI + Browser E2E must be green for the rebased Artist-depth head;
+4. Artwork → Artist → Related Works must remain functional on desktop and mobile.
+
+Only then open the Collections/Taste implementation slice.
