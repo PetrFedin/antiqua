@@ -5,6 +5,10 @@ test('Dealer Pilot Workspace renders signed commercial proof for seller',async({
  const auth=await login(page,'SELLER');expect(auth.status).toBe(200);
  const caps=await page.evaluate(async()=>{const r=await fetch('/api/pilot/commercial-proof/capabilities');return{status:r.status,body:await r.json()}});
  expect(caps.status).toBe(200);expect(caps.body.capabilities.contractVersion).toBe('v35');expect(caps.body.capabilities.causalClaims).toBe(false);
+ for(const path of ['/api/pilot/commercial-proof','/api/dealer/performance','/api/partner/pilot-analytics','/api/dealer/pilots']){
+  const x=await page.evaluate(async path=>{const r=await fetch(path);let body={};try{body=await r.json()}catch{}return{path,status:r.status,body}},path);
+  expect(x.status,`${path}: ${JSON.stringify(x.body)}`).toBe(200);
+ }
  await page.goto('/#pilot',{waitUntil:'domcontentloaded'});
  const ws=page.locator('.pilot-workspace');await expect(ws).toBeVisible();
  await expect(ws).toContainText(/Pilot commercial control|Коммерческий контроль пилота/i);
