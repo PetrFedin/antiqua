@@ -45,6 +45,90 @@ Before new product waves:
 
 Do not reuse another project's DB.
 
+## Product reset — Gallery-first Art Platform
+
+**Decision:** Antiqua is now oriented first around paintings and works on paper: painting, drawing, graphics, engraving, printmaking and adjacent visual-art categories. The reset is product-level, not a technical rewrite.
+
+### Public product promise
+**Discover art → understand the work and artist → learn → save/collect → attend → bid/buy when relevant.**
+
+Primary public journey:
+`Home → Gallery → Artwork → Artist → Related Works → Save → Collection → Personalized Discovery`
+
+Extended cultural journey:
+`Artwork/Artist/Theme → Books → Courses → Events/Exhibitions → deeper discovery`
+
+Commercial journey:
+`Artwork → Auction lot → Watch → Bid → Result → Collection/ownership record`
+
+### Public information architecture
+1. **Gallery** — image-first discovery of paintings, drawings, graphics, engravings and prints.
+2. **Artists** — creator pages, periods, works, exhibitions, editorial context and related artists.
+3. **Artworks** — high-quality media, object facts, provenance/research depth, related works and auction state where applicable.
+4. **Collections** — saved works, personal/private collections, curated/public collections and collection records.
+5. **Learn** — books about painting/artists/movements, courses/lectures and editorial material.
+6. **Events** — exhibitions, lectures, courses, viewings and cultural events linked to artists/works/themes.
+7. **Auction** — Antiqua's existing auction authority surfaced as a native art-market action, not a separate product.
+8. **For professionals** — dealer/pilot/evidence tools remain available only as a secondary/backstage professional surface.
+
+### Scope boundary
+Initial taxonomy prioritizes:
+- painting;
+- drawing;
+- graphics;
+- engraving;
+- etching;
+- lithography;
+- woodcut/linocut;
+- screenprint and other artist prints;
+- watercolor/gouache/pastel and related works on paper.
+
+Sculpture, decorative art, photography and other object categories may remain technically supported but do not define the initial public positioning.
+
+### Authority reuse — no parallel systems
+- existing object/passport remains artwork authority;
+- existing creator/gallery graph remains artist/relationship authority;
+- existing collection graph remains collection authority;
+- existing Taste Graph remains personalization authority;
+- existing exhibition/editorial systems are extended for cultural discovery;
+- existing auction authority remains the only auction/bid/result authority;
+- v0.22-v0.40 dealer/pilot/evidence code is retained, not deleted, but removed from primary consumer navigation.
+
+### New content model required
+Add a cultural-content layer linked to existing authorities rather than duplicating them:
+- `Book` → authors/editors/publisher/ISBN/language/year/cover/description → artists/themes/periods/works;
+- `Course` → provider/instructor/format/dates/level/language/enrollment URL or internal registration → artists/themes/periods;
+- `Event` → venue/organizer/date/time/type/ticket URL or internal registration → artists/works/themes;
+- `Theme/Movement` → editorial hub connecting works, artists, books, courses and events.
+
+Books/courses/events are contextual discovery entities. They must never become alternate artwork, creator, auction or provenance authorities.
+
+### UX rule
+The consumer UI must remain visually quiet and image-first. Research depth, provenance and market state are progressive disclosure. Dealer pilot KPIs, bilateral acceptance, evidence governance and operational controls must not appear in the normal Gallery journey.
+
+### Commerce rule
+Commerce is optional at the artwork level. A work may be:
+- discovery/research only;
+- linked to an upcoming/live/closed Antiqua auction lot;
+- linked to a historical auction result;
+- part of a collection/exhibition with no sale state.
+
+The Gallery must not imply that every artwork is for sale.
+
+### Product metrics after reset
+Primary consumer metrics:
+- artwork opens per session;
+- save/favorite rate;
+- artwork → artist continuation;
+- related-work continuation;
+- collection creation/add rate;
+- D7/D30 authenticated return;
+- personalized discovery engagement;
+- artwork/artist → book/course/event continuation;
+- auction watch/bid conversion only for auction-eligible works.
+
+Professional pilot metrics remain separate and must not be blended into consumer engagement metrics.
+
 ## Integration map
 
 | Capability | Source | Decision |
@@ -133,8 +217,22 @@ Verifiable credentials only after passport/ownership authority is stable. Creden
 9. ANTIQUA-INT-08 Photogrammetry gate — #69 — DEFERRED
 10. ANTIQUA-INT-09 Credential/passport gate — #70 — DEFERRED
 
-**Implementation instruction:** real pilot evidence first; integrations deepen the object/provenance product afterwards.
+**Implementation instruction:** complete the durable runtime/pilot proof without expanding dealer UX; then integrations deepen the gallery-first artwork/research product. Consumer Gallery is the primary product surface; professional pilot/evidence remains backstage.
 
 
 ## Recommendation refresh protocol
 This file is the canonical integration sequence and must be re-checked at every gate transition. Update recommendations when live evidence changes, a dependency becomes obsolete, or a safer/stronger integration path is demonstrated. Do not advance a phase merely because its code can be written; advance it only when the preceding authority and evidence gate is satisfied.
+
+
+## Gallery-first delivery sequence
+After INT-00 runtime durability is proven, prioritize the product reset in this order:
+1. consumer navigation and Home/Gallery hierarchy;
+2. artwork taxonomy for painting/works on paper;
+3. Artwork + Artist + Related Works continuity using existing authorities;
+4. Collections + Taste Graph personalized discovery;
+5. Books/Courses/Events cultural-content graph;
+6. Auction surfacing from existing auction authority;
+7. INT-01 Media Authority and INT-02 IIIF/Mirador to raise image/research quality;
+8. OCR/reconciliation/provenance/similarity/C2PA according to existing gates.
+
+Do not delete v0.22-v0.40 during the reset. Deprecate only public navigation to those surfaces; preserve routes/data until an explicit later retirement decision.
