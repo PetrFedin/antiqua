@@ -16,7 +16,7 @@ async function start(){child=spawn(process.execPath,['server-v14.mjs'],{cwd:new 
 async function stop(){if(!child)return;const p=child;child=null;if(p.exitCode==null)p.kill('SIGTERM');await Promise.race([new Promise(r=>p.once('exit',r)),sleep(5000)]);if(p.exitCode==null)p.kill('SIGKILL');await sleep(100)}
 async function login(persona){const c=new Client(),x=await c.call('/api/auth/demo-login',{method:'POST',body:JSON.stringify({persona})});assert.equal(x.r.status,200);return c}
 
-let collectionId=null,ownerId=null,priorRecord=null;
+let collectionId=null,ownerId=null,priorRecord=null,hadCollected108=false;
 try{
  assert.equal(db.kind,'POSTGRES');await start();
  const owner=await login('BUYER'),other=await login('SELLER');
@@ -30,6 +30,7 @@ try{
  const publicList=await(await fetch(base+'/api/collections')).json();assert.equal(publicList.collections.some(c=>c.id===collectionId),false);
 
  let membership=Number((await db.pool.query('SELECT count(*)::int n FROM collection_objects WHERE collection_id=$1',[collectionId])).rows[0].n);assert.equal(membership,0);
+ hadCollected108=(await db.pool.query("SELECT 1 FROM account_object_flags WHERE account_id=$1 AND object_id='lot-108' AND flag_type='COLLECTED'",[ownerId])).rowCount>0;
  priorRecord=(await db.pool.query('SELECT * FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-109'])).rows[0]||null;
  const recordsBefore=priorRecord?1:0;
  x=await owner.call('/api/collection-records/lot-109',{method:'PUT',body:JSON.stringify({status:'OWNED',privateNotes:`boundary-record-${marker}`,appraisal:{value:7700,currency:'EUR'},storage:{location:'Private vault'}})});
@@ -41,6 +42,7 @@ try{
  x=await owner.call(`/api/collections/${collectionId}/objects`,{method:'POST',body:JSON.stringify({objectId:'lot-108',section:'Boundary proof',ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'})});
  assert.equal(x.r.status,200);
  const member=(await db.pool.query('SELECT collection_id,object_id,section FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[collectionId,'lot-108'])).rows[0];assert.equal(member?.section,'Boundary proof');
+ const collectedFlag=(await db.pool.query("SELECT 1 FROM account_object_flags WHERE account_id=$1 AND object_id='lot-108' AND flag_type='COLLECTED'",[ownerId])).rowCount;assert.equal(collectedFlag,1,'Curated Collection membership must feed Taste through COLLECTED flag');
  const otherRecordAfter=(await db.pool.query('SELECT id,updated_at,private_notes FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-108'])).rows[0]||null;
  assert.deepEqual(otherRecordAfter,otherRecordBefore,'Curated Collection membership must not mutate private Collection Record');
 
@@ -51,6 +53,6 @@ try{
 }finally{
  await stop();
  if(collectionId)await db.pool.query('DELETE FROM collections WHERE id=$1',[collectionId]).catch(()=>{});
- if(ownerId){if(priorRecord)await db.pool.query(`UPDATE collection_records SET acquisition=$3,appraisal=$4,storage=$5,insurance=$6,private_notes=$7,status=$8,updated_at=$9 WHERE account_id=$1 AND object_id=$2`,[ownerId,'lot-109',priorRecord.acquisition,priorRecord.appraisal,priorRecord.storage,priorRecord.insurance,priorRecord.private_notes,priorRecord.status,priorRecord.updated_at]).catch(()=>{});else await db.pool.query("DELETE FROM collection_records WHERE account_id=$1 AND object_id='lot-109' AND private_notes=$2",[ownerId,`boundary-record-${marker}`]).catch(()=>{})}
+ if(ownerId){if(!hadCollected108)await db.pool.query("DELETE FROM account_object_flags WHERE account_id=$1 AND object_id='lot-108' AND flag_type='COLLECTED'",[ownerId]).catch(()=>{});if(priorRecord)await db.pool.query(`UPDATE collection_records SET acquisition=$3,appraisal=$4,storage=$5,insurance=$6,private_notes=$7,status=$8,updated_at=$9 WHERE account_id=$1 AND object_id=$2`,[ownerId,'lot-109',priorRecord.acquisition,priorRecord.appraisal,priorRecord.storage,priorRecord.insurance,priorRecord.private_notes,priorRecord.status,priorRecord.updated_at]).catch(()=>{});else await db.pool.query("DELETE FROM collection_records WHERE account_id=$1 AND object_id='lot-109' AND private_notes=$2",[ownerId,`boundary-record-${marker}`]).catch(()=>{})}
  await db.pool.end();
 }

@@ -635,3 +635,311 @@ Before Collections/Taste work is allowed to merge:
 4. Artwork → Artist → Related Works must remain functional on desktop and mobile.
 
 Only then open the Collections/Taste implementation slice.
+
+
+## Product expansion — Antiqua Art Network
+
+**Direction:** Antiqua is a focused digital ecosystem for painting, drawing, graphics, engraving/printmaking and adjacent works on paper. It brings together people and institutions around authoritative Artwork/Artist records instead of building a generic social network.
+
+### Network graph
+
+`Account / Public Art Profile ↔ Artist ↔ Artwork ↔ Collection ↔ Gallery/Institution ↔ Exhibition/Event ↔ Book/Course ↔ Auction`
+
+The public network is a projection over existing authorities. It does not replace authentication, creator identity, organization authority, collections, exhibitions or auction records.
+
+### Participant types
+
+Public participation may describe one or several cultural roles:
+
+- ARTIST;
+- GALLERY_REPRESENTATIVE;
+- CURATOR;
+- EXPERT;
+- ART_HISTORIAN;
+- RESEARCHER;
+- COLLECTOR;
+- ENTHUSIAST;
+- INSTITUTION_REPRESENTATIVE.
+
+These are **public profile descriptors**, not security permissions. Authorization continues to use the existing account/organization role system.
+
+### Identity and authority rules
+
+1. One account identity per user. Do not create a second community login.
+2. An Artist public identity continues to use the existing Creator Graph.
+3. A gallery continues to use existing Organizations; use organizationType=GALLERY or an approved cultural organization type rather than a parallel gallery table.
+4. A person may claim/link a creator profile only through an explicit reviewed relationship.
+5. Expert / historian / curator status is never inferred from biography text.
+6. Expertise claims are scoped and reviewable, for example:
+   - Russian avant-garde;
+   - nineteenth-century European painting;
+   - prints/engraving;
+   - paper conservation;
+   - provenance research;
+   - specific artist/catalogue raisonné domain.
+7. Platform review of a profile or expertise claim does not mean Antiqua guarantees every opinion supplied by that person.
+8. Collector identity and collection contents remain private/pseudonymous by default.
+
+### Public Art Profile
+
+A shared profile shell may include:
+
+- display name;
+- portrait/avatar;
+- city/country;
+- languages;
+- participant roles;
+- biography/about;
+- areas of interest;
+- expertise claims + evidence state where applicable;
+- linked Creator profile if the account represents an artist;
+- linked Organizations/Galleries;
+- selected PUBLIC Collections;
+- selected exhibitions/events;
+- published editorial/book/course contributions;
+- contact/collaboration preferences;
+- website/social references where permitted.
+
+Sensitive fields, legal identity, private ownership and private contact data are never copied into the public profile.
+
+### Gallery / institution surface
+
+Extend existing Organization authority rather than creating a new commercial seller identity.
+
+Gallery pages may show:
+
+- public identity and locations;
+- represented artists from creator_representations;
+- current/upcoming exhibitions;
+- selected artworks;
+- published collections/editorial;
+- events/talks/courses;
+- historical auction/market context where relevant;
+- collaboration/contact entry;
+- professional consignment/sales tools only to authorized members.
+
+Representation is displayed only from explicit creator_representations evidence.
+
+### Expert / historian / curator surface
+
+Profiles should emphasize research quality rather than popularity:
+
+- areas of expertise;
+- bibliography/publications;
+- lectures/courses;
+- exhibition participation;
+- reviewed annotations or research contributions;
+- provenance/document contributions;
+- institutional affiliations where documented;
+- languages;
+- collaboration availability.
+
+Expertise is a scoped claim with statuses such as:
+`SELF_DECLARED → EVIDENCE_SUBMITTED → REVIEWED → VERIFIED / REJECTED / EXPIRED`.
+
+Never create a single universal “expert score”.
+
+### Collector / enthusiast surface
+
+Collector participation must support different privacy levels:
+
+- PRIVATE — account-only;
+- PSEUDONYMOUS — public cultural profile without legal identity;
+- PUBLIC — explicit public identity.
+
+Possible public activity:
+- curated PUBLIC collections;
+- saved public exhibitions/events;
+- following artists/galleries/topics;
+- editorial comments/contributions only if moderation opens;
+- event participation only when user explicitly chooses to display it.
+
+Private collection records, value, storage, insurance, offers/bids and acquisition history must never leak into community surfaces.
+
+### Connections
+
+Prefer bounded cultural relationships over generic social mechanics:
+
+- follow Artist;
+- follow Gallery;
+- follow Expert/Curator;
+- follow Theme/Movement;
+- save Artwork;
+- save Collection;
+- save Event;
+- collaboration request;
+- exhibition participation invitation;
+- expert/research request;
+- lecture/course invitation;
+- consignment inquiry;
+- reproduction/image request.
+
+Do not make follower count a research/authority ranking factor.
+
+### Collaboration requests
+
+Use structured requests rather than unrestricted anonymous messaging as the first release.
+
+Request types:
+- ARTIST_GALLERY_COLLABORATION;
+- EXHIBITION_PROPOSAL;
+- CURATORIAL_INVITATION;
+- EXPERT_REVIEW_REQUEST;
+- PROVENANCE_RESEARCH_REQUEST;
+- EVENT_SPEAKER_INVITATION;
+- COURSE_LECTURE_INVITATION;
+- CONSIGNMENT_INQUIRY;
+- PRESS_EDITORIAL_REQUEST.
+
+Workflow:
+`draft → sent → viewed → accepted / declined → in_progress → completed / cancelled`.
+
+Each request has sender, recipient/profile/org, subject entity IDs, purpose, optional schedule, visibility boundary and immutable event history.
+
+### Events and exhibitions as community glue
+
+Events should connect people to actual Art Graph entities.
+
+Examples:
+- exhibition opening;
+- gallery viewing;
+- artist talk;
+- curator tour;
+- expert lecture;
+- printmaking workshop;
+- collection discussion;
+- auction preview;
+- live auction;
+- book presentation;
+- course session.
+
+Event pages link to participating Artists, Galleries, Experts, Artworks, Books/Courses and relevant Auction lots.
+
+### Promotion and discovery
+
+Promotion is allowed, but must be separated from research/editorial authority.
+
+Supported future promotion:
+- Featured Artist;
+- Featured Gallery;
+- Featured Exhibition/Event;
+- sponsored editorial placement;
+- auction promotion;
+- course/book promotion.
+
+Rules:
+- sponsored/paid placement is explicitly labeled;
+- promotion does not modify creator evidence status;
+- promotion does not affect provenance/authentication;
+- promotion does not silently alter Related Works or Taste affinity scores;
+- paid reach analytics is separate from organic discovery metrics.
+
+### Community discovery surfaces
+
+After the existing Gallery/Artist/Collections gates are green:
+
+1. **For You** — explainable artwork discovery from Taste Graph.
+2. **Artists** — published Artist profiles.
+3. **Galleries** — organizations with cultural profiles.
+4. **Experts & Historians** — scoped research profiles.
+5. **Collections** — public curated collections with privacy-safe attribution.
+6. **Exhibitions & Events** — calendar + discovery.
+7. **Learn** — books, courses, editorial.
+8. **Auction** — authoritative auction surface.
+9. **Network** — collaboration/people discovery, not a generic engagement feed.
+
+### Activity feed rule
+
+If a feed is introduced, it is a **derived cultural activity projection** from authoritative events:
+
+- new published work;
+- new public collection;
+- exhibition announced/opened;
+- artist/gallery followed;
+- article/book/course published;
+- event scheduled;
+- auction opened/closed.
+
+No feed item becomes an authority record by itself.
+
+### Trust, safety and moderation
+
+Before open community contribution:
+- impersonation reporting;
+- profile/report moderation;
+- block/mute;
+- spam/rate limits;
+- collaboration-request abuse controls;
+- evidence review for expert/representation claims;
+- audit trail for moderation decisions;
+- clear separation of platform review from artwork authentication.
+
+### Product metrics
+
+Prefer meaningful cultural outcomes:
+- Artwork → Artist continuation;
+- Artist → Gallery/Exhibition continuation;
+- Save → Collection rate;
+- Collection → personalized discovery return;
+- D7/D30 return;
+- Artist/Gallery follow retention;
+- Event save/registration;
+- collaboration request acceptance/completion;
+- Expert profile → research request;
+- Learn → Artwork/Artist continuation;
+- Auction watch/bid only for eligible works.
+
+Do not optimize the core product around raw likes, follower races or time-on-screen.
+
+### Commercial paths
+
+Commercialization may later include:
+- gallery/professional subscriptions;
+- artist/gallery promotion packages;
+- exhibition/event packages;
+- auction seller commissions;
+- premium research/expert requests;
+- courses/lectures;
+- image/reproduction licensing workflows;
+- institutional data/research services.
+
+Commercial services must remain visibly distinct from editorial, provenance and expert evidence status.
+
+### Sequencing update
+
+The gallery-first delivery sequence is refined as:
+
+1. Gallery + Artwork + Artist + Related Works — **landed**;
+2. Collections + Taste — **current implementation gate**;
+3. participant/galleries/expertise identity design and trust model;
+4. Books/Courses/Events cultural graph;
+5. collaboration requests + Network discovery;
+6. Auction integration into Artwork/Artist/Gallery journey;
+7. Media Authority;
+8. IIIF/Mirador/Cantaloupe;
+9. OCR/reconciliation/provenance/similarity/C2PA;
+10. scholarly annotations/Linked Art/rights/preservation layers according to existing gates.
+
+The Art Network must never delay core Artwork/Artist quality or create competing authorities.
+
+## 2026-10-02 implementation checkpoint — Collections + Taste
+
+Current branch: `feature/gallery-collections-taste-ecosystem`.
+
+- Gallery discovery is being refocused from legacy “Culture of Objects” wording to painting / works on paper / printmaking.
+- `#gallery` is the canonical personalized discovery surface; legacy `#shop` remains compatibility only.
+- existing v28 Taste Graph remains the recommendation authority;
+- adding an artwork to a user's curated Collection now records the existing `COLLECTED` object flag so Taste receives the same durable fact;
+- after Collection add, Gallery personalized discovery refreshes;
+- collected/saved/owned/purchased works remain excluded from “new discovery” recommendations according to v28 rules;
+- PRIVATE collections remain absent from the public Collections API;
+- Browser E2E covers PRIVATE Collection → COLLECTED signal → explainable recommendation exclusion → personalized Gallery.
+
+### Exit gate
+
+Before Books/Courses/Events or Art Network runtime entities may merge:
+1. Collection/Taste branch CI is green;
+2. Browser E2E is green on desktop/mobile;
+3. PRIVATE collection non-leak is proven;
+4. v28 explainability/no-AI/no-price-matching assertions remain green;
+5. Gallery copy and canonical routing are painting/graphics/engraving-first.
