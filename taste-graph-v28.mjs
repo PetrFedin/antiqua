@@ -4,6 +4,7 @@ import {listSubscriptions} from './domain-e2e-v14.mjs';
 import {listOffers} from './offer-negotiation-v22.mjs';
 import {listViewingRequests} from './viewing-v23.mjs';
 import {listCollectionRecords} from './domain-e2e-v14.mjs';
+import {fineArtClassificationFor,isFineArtPublished} from './fine-art-v41.mjs';
 
 const memoryEvents=new Map();
 const DIMENSIONS=['maker','department','period','origin'];
@@ -18,14 +19,12 @@ const fail=(status,code,message)=>{const e=new Error(message);e.status=status;e.
 
 function publicObject(row){
  const p=row?.passport||row||{};
- return{id:row?.id||p.id,objectId:row?.object_code||p.objectId||p.id,title:p.title||bi('Object'),maker:p.maker||bi(''),department:p.department||p.category||bi(''),period:p.period||bi(''),origin:p.origin||bi(''),materials:p.materials||bi(''),image:p.image||p.media?.find?.(x=>x.role==='PRIMARY')?.url||null,conditionGrade:p.conditionGrade||null};
+ return{id:row?.id||p.id,objectId:row?.object_code||p.objectId||p.id,title:p.title||bi('Object'),maker:p.maker||bi(''),department:p.department||p.category||bi(''),period:p.period||bi(''),origin:p.origin||bi(''),materials:p.materials||bi(''),image:p.image||p.media?.find?.(x=>x.role==='PRIMARY')?.url||null,conditionGrade:p.conditionGrade||null,galleryClassification:fineArtClassificationFor(row)||fineArtClassificationFor(p)||null};
 }
 
-async function catalogue({publicOnly=false}={}){
- if(db.kind!=='POSTGRES')return lots.map(publicObject);
- const where=publicOnly?"WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'":'';
- const rows=(await db.pool.query('SELECT id,object_code,passport,publication_status,catalogue_status FROM objects '+where)).rows;
- return rows.map(publicObject)
+async function catalogue({publicOnly=false,scope='ALL'}={}){
+ let objects;if(db.kind!=='POSTGRES')objects=lots.map(publicObject);else{const where=publicOnly?"WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'":'';const rows=(await db.pool.query('SELECT id,object_code,passport,publication_status,catalogue_status FROM objects '+where)).rows;objects=rows.map(publicObject)}
+ return String(scope||'ALL').toUpperCase()==='FINE_ART'?objects.filter(isFineArtPublished):objects
 }
 
 function eventMapKey(accountId,sourceKey){return accountId+'|'+sourceKey}
@@ -106,8 +105,8 @@ export async function buildTasteProfile(account){
 function preferenceMap(profile){return Object.fromEntries(DIMENSIONS.map(d=>[d,new Map((profile.dimensions[d]||[]).map(x=>[x.key,x]))]))}
 function coldStart(objects,exclude,limit){const seen=new Set(),out=[];for(const o of objects){if(exclude.has(o.id))continue;const k=canon(o.department)||o.id;if(seen.has(k))continue;seen.add(k);out.push({object:o,affinityPoints:0,reasons:[],coldStart:true});if(out.length>=limit)return out}for(const o of objects){if(out.length>=limit)break;if(!exclude.has(o.id)&&!out.some(x=>x.object.id===o.id))out.push({object:o,affinityPoints:0,reasons:[],coldStart:true})}return out}
 
-export async function tasteRecommendations(account,{limit=8}={}){
- limit=Math.max(1,Math.min(50,Number(limit)||8));const built=await buildTasteProfile(account),objects=await catalogue({publicOnly:true}),prefs=preferenceMap(built.profile);if(!built.profile.signalCount)return{...built,recommendations:coldStart(objects,built.internal.exclude,limit)};
+export async function tasteRecommendations(account,{limit=8,scope='ALL'}={}){
+ limit=Math.max(1,Math.min(50,Number(limit)||8));const built=await buildTasteProfile(account),objects=await catalogue({publicOnly:true,scope}),prefs=preferenceMap(built.profile);if(!built.profile.signalCount)return{...built,recommendations:coldStart(objects,built.internal.exclude,limit)};
  const ranked=[];for(const o of objects){if(built.internal.exclude.has(o.id))continue;let points=0;const reasons=[];for(const d of DIMENSIONS){const pref=prefs[d].get(canon(o[d]));if(!pref)continue;points+=pref.points;reasons.push({dimension:d,value:pref.value,points:pref.points,signals:pref.signals})}if(points>0)ranked.push({object:o,affinityPoints:points,reasons:reasons.sort((a,b)=>b.points-a.points).slice(0,4),coldStart:false})}
  ranked.sort((a,b)=>b.affinityPoints-a.affinityPoints||String(a.object.id).localeCompare(String(b.object.id)));
  const recommendations=ranked.slice(0,limit);if(recommendations.length<limit){for(const x of coldStart(objects,new Set([...built.internal.exclude,...recommendations.map(x=>x.object.id)]),limit-recommendations.length))recommendations.push(x)}
