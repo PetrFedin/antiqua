@@ -75,4 +75,14 @@ export async function setCreatorFollow(account,id,enabled=true){const c=await cr
 
 export async function listCreators(account=null){let xs;if(db.kind==='POSTGRES')xs=(await db.pool.query("SELECT * FROM creators WHERE profile_status='PUBLISHED' ORDER BY updated_at DESC,id")).rows.map(mapCreator);else xs=[...creators.values()].filter(x=>x.profileStatus==='PUBLISHED').map(clone);const out=[];for(const c of xs)out.push({...c,representations:await activeRepresentations(c.id),follow:await followState(c.id,account?.id||null),workCount:(await worksForCreator(c)).length});return out}
 
+export async function creatorsForObject(account,objectId){
+ const id=String(objectId||'');if(!id)return[];
+ if(db.kind==='POSTGRES'){
+  const rows=(await db.pool.query(`SELECT l.creator_role,l.attribution_status,l.market_context,c.* FROM creator_object_links l JOIN creators c ON c.id=l.creator_id WHERE l.object_id=$1 AND c.profile_status='PUBLISHED' ORDER BY CASE l.creator_role WHEN 'ARTIST' THEN 0 WHEN 'AUTHOR' THEN 1 WHEN 'MAKER' THEN 2 ELSE 9 END,c.updated_at DESC,c.id`,[id])).rows;
+  const out=[];for(const r of rows){const creator=mapCreator(r);out.push({creator,creatorRole:r.creator_role,attributionStatus:r.attribution_status,marketContext:r.market_context,follow:await followState(creator.id,account?.id||null)})}return out
+ }
+ const out=[];for(const x of links.values()){if(x.objectId!==id)continue;const creator=await creatorById(x.creatorId);if(!creator||creator.profileStatus!=='PUBLISHED')continue;out.push({creator,creatorRole:x.creatorRole,attributionStatus:x.attributionStatus,marketContext:x.marketContext,follow:await followState(creator.id,account?.id||null)})}
+ return out.sort((a,b)=>(a.creatorRole==='ARTIST'?0:1)-(b.creatorRole==='ARTIST'?0:1)||String(a.creator.id).localeCompare(String(b.creator.id)))
+}
+
 export async function getCreatorProfile(account,id){const c=await creatorById(id);if(!c)return null;const canManage=Boolean(account&&(account.id===c.managedByAccountId||account.roles?.includes('ADMIN')||account.roles?.includes('CATALOGUER')));if(c.profileStatus!=='PUBLISHED'&&!canManage)return null;return{creator:c,representations:await activeRepresentations(c.id),works:await worksForCreator(c),follow:await followState(c.id,account?.id||null),capabilities:creatorGraphCapabilities()}}
