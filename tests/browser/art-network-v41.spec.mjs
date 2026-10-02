@@ -7,23 +7,37 @@ test('Art Network creates one privacy-safe cultural profile and keeps profession
  await expect(networkNav).toBeVisible();
 
  const token=Date.now().toString(36);
- await page.locator('#artProfileForm [name="displayName"]').fill('Art Enthusiast '+token);
- await page.locator('#artProfileForm [name="headline"]').fill('Painting, graphics and engraving');
- await page.locator('#artProfileForm [name="visibility"]').selectOption('PUBLIC');
- await page.locator('#artProfileForm button[type="submit"],#artProfileForm button').click();
- await expect(page.locator('.network-profile-ready')).toBeVisible({timeout:10000});
-
- const me=await page.evaluate(async()=>fetch('/api/art-profile/me').then(r=>r.json()));
+ const displayName='Art Enthusiast '+token;
+ let me=await page.evaluate(async()=>fetch('/api/art-profile/me').then(r=>r.json()));
+ if(!me.profile){
+  await page.locator('#artProfileForm [name="displayName"]').fill(displayName);
+  await page.locator('#artProfileForm [name="headline"]').fill('Painting, graphics and engraving');
+  await page.locator('#artProfileForm [name="visibility"]').selectOption('PUBLIC');
+  await page.locator('#artProfileForm button[type="submit"],#artProfileForm button').click();
+  await expect(page.locator('.network-profile-ready')).toBeVisible({timeout:10000});
+ }else{
+  const updated=await page.evaluate(async displayName=>{
+   const csrf=decodeURIComponent(document.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('antiqua_csrf='))?.split('=').slice(1).join('=')||'');
+   const r=await fetch('/api/art-profile/me',{method:'PATCH',headers:{'content-type':'application/json','x-csrf-token':csrf},body:JSON.stringify({displayName,headline:{en:'Painting, graphics and engraving',ru:'Живопись, графика и гравюра'},visibility:'PUBLIC'})});
+   return{status:r.status,body:await r.json()}
+  },displayName);
+  expect(updated.status).toBe(200);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.locator('.network-profile-ready')).toBeVisible({timeout:10000});
+ }
+ me=await page.evaluate(async()=>fetch('/api/art-profile/me').then(r=>r.json()));
  expect(me.profile).toBeTruthy();
  expect(me.profile.visibility).toBe('PUBLIC');
  const slug=me.profile.slug;
 
  const enthusiast=page.locator('[data-art-role="ENTHUSIAST"]');
- await expect(enthusiast).toBeVisible();await enthusiast.click();
+ await expect(enthusiast).toBeVisible();
+ if(!(me.claims?.roles||[]).some(r=>r.role==='ENTHUSIAST'))await enthusiast.click();
  await expect(enthusiast).toContainText(/SELF DECLARED|SELF_DECLARED/i);
 
  const expert=page.locator('[data-art-role="EXPERT"]');
- await expect(expert).toBeVisible();await expert.click();
+ await expect(expert).toBeVisible();
+ if(!(me.claims?.roles||[]).some(r=>r.role==='EXPERT'))await expert.click();
  await expect(expert).toContainText(/SELF DECLARED|SELF_DECLARED/i);
 
  const pub=await page.evaluate(async slug=>fetch('/api/art-profiles/'+encodeURIComponent(slug)).then(async r=>({status:r.status,body:await r.json()})),slug);
@@ -36,7 +50,7 @@ test('Art Network creates one privacy-safe cultural profile and keeps profession
 
  await page.goto('/#profile/'+encodeURIComponent(slug),{waitUntil:'domcontentloaded'});
  await expect(page.locator('.network-profile-page')).toBeVisible();
- await expect(page.locator('.network-profile-page')).toContainText('Art Enthusiast '+token);
+ await expect(page.locator('.network-profile-page')).toContainText(displayName);
  await expect(page.locator('.network-profile-page')).not.toContainText(/buyer@demo\.antiqua/i);
  await expect(page.locator('.network-profile-page')).not.toContainText(/Expert ✓|Эксперт ✓/i);
 
