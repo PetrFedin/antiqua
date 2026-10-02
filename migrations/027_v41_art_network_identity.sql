@@ -1,3 +1,9 @@
+ALTER TABLE organizations ALTER COLUMN seller_id DROP NOT NULL;
+ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_organization_type_check;
+ALTER TABLE organizations ADD CONSTRAINT organizations_organization_type_check CHECK(
+  organization_type IN('DEALER','GALLERY','AUCTION_HOUSE','PRIVATE_SELLER','MUSEUM','FOUNDATION','ARCHIVE','UNIVERSITY','ASSOCIATION','OTHER')
+);
+
 CREATE TABLE IF NOT EXISTS art_profiles (
   id text PRIMARY KEY,
   account_id text UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
