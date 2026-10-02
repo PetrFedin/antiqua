@@ -385,3 +385,106 @@ This prevents free-text provenance claims from losing their exact visual source.
 
 **Dependency note:** Annotorious is currently BSD-licensed upstream; re-check exact version/license before bundling. Linked Art is a modeling/publication reference, not a runtime authority.
 
+## Additional wave — rights statements, controlled access and reproduction requests
+
+This wave makes public/research image delivery clearer and safer once Object Media, IIIF and publication workflows are stable.
+
+### RightsStatements.org vocabulary mapping — ADOPT/ADAPT
+
+Reference:
+
+https://github.com/rightsstatements/data-model
+
+Add a controlled public-rights field to approved media/publication records.
+
+Store:
+
+- Antiqua media/object ID;
+- rights statement URI/code;
+- rights holder where known;
+- copyright/license note;
+- jurisdiction/territory note where relevant;
+- source of rights assertion;
+- effective/review date;
+- reviewer;
+- public-display text.
+
+Use a controlled statement only when its meaning actually fits the known rights position.
+
+Do not infer public-domain status merely from artwork age; image/reproduction rights may differ from underlying-work rights.
+
+### Public / Research / Restricted Media Access — ADOPT
+
+Create explicit access policies for derivatives:
+
+- public;
+- registered research;
+- dealer/owner restricted;
+- internal only;
+- embargoed until date;
+- rights-review required.
+
+The access state belongs to Antiqua. IIIF/viewer services enforce a projection of it.
+
+### IIIF access-control projection — ADAPT
+
+Use IIIF authorization/access patterns from:
+
+https://github.com/IIIF/api
+
+Where restricted high-resolution media is served, the viewer/image service should receive a bounded token/access decision from Antiqua rather than exposing original storage URLs.
+
+Rules:
+
+- thumbnail may be public while full resolution is restricted;
+- public manifest may omit private canvases/annotations;
+- revoked access must stop future retrieval;
+- cached/public derivatives follow their own publication state.
+
+### Reproduction / Image Request Workflow — ADOPT
+
+Create:
+
+request -> object/image -> intended use -> territory/channel -> resolution -> rights review -> fee/permission where applicable -> approved derivative -> delivery -> expiry/usage note
+
+Track:
+
+- requester;
+- requested asset;
+- purpose/publication;
+- rights holder/contact;
+- reviewer;
+- status;
+- approved file/derivative;
+- terms;
+- expiry;
+- delivery evidence.
+
+This is not a full rights-management business unless real demand justifies it; it is a controlled permission trail.
+
+### Public Attribution Block — ADOPT
+
+Generate consistent attribution/credit text from authoritative media metadata:
+
+- object title/creator;
+- collection/dealer/institution where publishable;
+- photographer;
+- rights statement;
+- image credit;
+- canonical object URL.
+
+Never generate a credit line from missing/uncertain data without marking the uncertainty.
+
+### Additional acceptance
+
+- every public media derivative has explicit rights/access state;
+- rights statement choice is reviewable/versioned;
+- IIIF authorization cannot expose original/private storage URLs;
+- reproduction request resolves to the exact derivative/terms delivered;
+- access revocation does not delete historical rights/audit evidence;
+- public credit text derives from canonical metadata.
+
+**Sequencing:** Object Media + IIIF + rights metadata -> controlled public/research access -> reproduction workflow -> public attribution generation.
+
+**Dependency note:** RightsStatements data model is CC0 upstream; IIIF remains a standard/API reference. Institutional/provider rights terms still govern each underlying asset.
+
