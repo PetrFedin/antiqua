@@ -1180,3 +1180,94 @@ Before adopting an external product pattern, record:
 - explicit non-goals.
 
 A benchmark feature may improve user experience but must never silently weaken Antiqua's Artwork, provenance, expertise, rights, auction or privacy authorities.
+
+## Premium innovation wave — condition change intelligence and conservation timeline
+
+This wave makes Antiqua stronger for collectors, dealers, conservators and insurers by showing how an object's documented condition changes over time.
+
+### Standardised Condition Capture — ADOPT
+
+For comparison-eligible media store:
+
+- object;
+- date;
+- camera/device;
+- lens/settings where available;
+- lighting/reference setup;
+- colour target/reference where used;
+- orientation/view;
+- distance/scale reference;
+- source checksum;
+- operator.
+
+Ordinary catalogue images remain useful context but are not automatically calibrated condition evidence.
+
+### Image Registration Worker — ADOPT/ADAPT
+
+Reference:
+
+https://github.com/opencv/opencv
+
+Use CV to align comparable captures:
+
+capture T1 -> registration -> capture T2 -> aligned pair -> reviewed change map
+
+Operations may include perspective correction, feature matching, scale/crop alignment and region correspondence.
+
+Record registration quality/error.
+
+### Colour Change Evidence — ADAPT
+
+Reference:
+
+https://github.com/colour-science/colour
+
+Where capture is calibrated/controlled, calculate bounded Delta-E-like colour-change metrics for selected regions.
+
+Store reference/measurement regions, colour space/illuminant/observer, calibration profile, metric/method, value, processor/version and reviewer.
+
+Never present uncontrolled web-image colour differences as measured conservation truth.
+
+### Condition Change Candidate Map — ADOPT
+
+Machine-detected candidates may include:
+
+- crack/tear change;
+- paint/loss/restoration area change;
+- stain/discolouration candidate;
+- frame/surface change;
+- edge/corner damage change.
+
+All remain machine-detected until reviewed by an authorised expert/conservator.
+
+### Conservation Timeline — ADOPT
+
+condition capture -> observed issue -> treatment/conservation event -> post-treatment capture -> reviewed outcome
+
+Link condition report, image regions/annotations, treatment docs, conservator, dates and visibility.
+
+### Collector / Insurance Dossier — ADOPT
+
+Generate a versioned dossier with:
+
+- passport/identity reference;
+- condition timeline;
+- major reviewed changes;
+- conservation events;
+- image evidence;
+- provenance/rights state;
+- export checksum.
+
+It is evidence packaging, not appraisal/authenticity certification.
+
+### Additional acceptance
+
+- comparisons use exact source checksums;
+- registration/calibration quality is visible;
+- uncontrolled imagery cannot produce calibrated colour claims;
+- machine candidates require expert review;
+- treatment never overwrites pre-treatment evidence;
+- public/private condition details obey ACL.
+
+**Sequencing:** Object Media + Condition Reports + annotations -> standardized capture -> registration -> reviewed change detection -> conservation timeline -> dossier.
+
