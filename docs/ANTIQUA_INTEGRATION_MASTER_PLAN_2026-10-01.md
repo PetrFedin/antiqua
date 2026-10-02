@@ -291,3 +291,97 @@ A withdrawn public manifestation should remain historically auditable internally
 
 **Dependency hygiene:** check current external authority API/licensing terms before automated harvesting or redistribution.
 
+## Additional wave — IIIF region annotation and Linked Art interchange
+
+This wave deepens scholarly/condition research around already admitted images and provenance evidence.
+
+### Annotorious image-region annotation — ADOPT
+
+Reference: https://github.com/annotorious/annotorious
+
+Embed a bounded region-annotation layer on approved object/document imagery.
+
+Use cases:
+
+- condition defect region;
+- signature/mark/label;
+- inscription;
+- restoration/conservation area;
+- provenance-document paragraph/stamp/seal;
+- object-detail feature;
+- OCR source-region review.
+
+Each annotation stores:
+
+- Antiqua object/media/document ID;
+- source media version/checksum;
+- selector/region geometry;
+- annotation type;
+- text/note;
+- creator/reviewer;
+- created/updated timestamps;
+- review/publication status;
+- related observation/provenance claim/condition item.
+
+The annotation UI is not the evidence authority. It creates reviewed Antiqua annotation records linked to immutable media.
+
+### IIIF Web Annotation projection — ADAPT
+
+Where media is exposed through IIIF, publish approved annotations in a standards-compatible annotation-page/list model.
+
+Flow:
+
+Antiqua annotation -> publication filter -> IIIF annotation projection -> Mirador/other viewer
+
+Private dealer/research notes must never appear in public IIIF output unless explicitly published.
+
+A changed source-media version should trigger annotation integrity checks so stale pixel coordinates are not silently displayed on a different derivative.
+
+### Linked Art JSON-LD public/research interchange — ADAPT
+
+Reference: https://github.com/linked-art/linked.art
+
+Refine the existing RDF/CIDOC-oriented export by supporting a documented Linked Art profile for selected public/research objects.
+
+Candidate exports:
+
+- object/work;
+- actor/creator;
+- production;
+- ownership/provenance event;
+- auction/sale;
+- exhibition/viewing;
+- identifier;
+- image/digital object;
+- bibliography/document reference.
+
+Linked Art is a publication/interchange profile over approved Antiqua facts. It does not become a writable database.
+
+### Annotation-to-Claim workflow — ADOPT
+
+Support an explicit bridge:
+
+image/document region -> candidate observation -> reviewed evidence -> provenance/condition claim
+
+Examples:
+
+- OCR finds a label;
+- researcher selects the label region;
+- annotation links the exact visual evidence;
+- human confirms/transcribes;
+- only then may a provenance claim reference it.
+
+This prevents free-text provenance claims from losing their exact visual source.
+
+### Additional acceptance
+
+- every annotation resolves to exact media/document version;
+- stale annotation geometry is detected after media replacement/reprocessing;
+- public IIIF annotations exclude private notes;
+- Linked Art export is reproducible from exact approved source records;
+- annotation cannot directly authenticate an artwork or change provenance without the existing review flow.
+
+**Sequencing:** Object Media + IIIF -> Annotorious region annotation -> annotation review -> IIIF annotation publication -> Linked Art interchange enrichment.
+
+**Dependency note:** Annotorious is currently BSD-licensed upstream; re-check exact version/license before bundling. Linked Art is a modeling/publication reference, not a runtime authority.
+
