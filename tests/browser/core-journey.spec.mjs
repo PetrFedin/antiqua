@@ -23,13 +23,13 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
 
   const response=await page.goto('/',{waitUntil:'domcontentloaded'});expect(response?.ok()).toBeTruthy();
   await expect(page.locator('body')).toContainText('ANTIQUA');
-  await expect(nav(page,'shop')).toBeVisible();
+  await expect(nav(page,'gallery')).toBeVisible();
   await expect(nav(page,'auctions')).toBeVisible();
   await expect(nav(page,'account')).toBeVisible();
 
   await clickNav(page,'auctions');
   await expect(page.locator('body')).toContainText(/Auction|Аукцион/i);
-  await clickNav(page,'shop');
+  await clickNav(page,'gallery');
 
   const catalogResponse=await request.get('/api/catalog');expect(catalogResponse.ok()).toBeTruthy();
   const catalog=await catalogResponse.json(),lot=catalog.lots?.[0];expect(lot).toBeTruthy();
@@ -42,9 +42,9 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
   const closeDossier=page.locator('#dialog[open] [data-close-dialog]').first();await expect(closeDossier).toBeVisible();await closeDossier.click();await expect(page.locator('#dialog[open]')).toHaveCount(0);
 
   const switchedRu=await switchLocale(page,'RU');
-  if(switchedRu)await expect(page.locator('body')).toContainText(/Каталог|Аукцион|Коллекц/i);
+  if(switchedRu)await expect(page.locator('body')).toContainText(/Галерея|Аукцион|Коллекц/i);
   const switchedEn=await switchLocale(page,'EN');
-  if(switchedEn)await expect(page.locator('body')).toContainText(/Catalog|Auction|Collection/i);
+  if(switchedEn)await expect(page.locator('body')).toContainText(/Gallery|Auction|Collection/i);
 
   const login=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return{status:r.status,body:await r.json()}});expect(login.status).toBe(200);expect(login.body.account?.id).toBeTruthy();
   const me=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return{status:r.status,body:await r.json()}});expect(me.status).toBe(200);expect(me.body.account?.id).toBe(login.body.account.id);
@@ -105,7 +105,7 @@ test('collection records and curated Collections are separate workflows',async({
   const mine=await page.evaluate(async()=>{const r=await fetch('/api/collections/mine');return{status:r.status,body:await r.json()}});
   expect(mine.status).toBe(200);const collection=mine.body.collections.find(c=>(c.title?.en||c.title)===title);expect(collection?.id).toBeTruthy();expect(collection.items||[]).toHaveLength(0);
 
-  await clickNav(page,'shop');
+  await clickNav(page,'gallery');
   const catalog=await page.evaluate(async()=>{const r=await fetch('/api/catalog');return r.json()}),lot=catalog.lots?.find(x=>x.id==='lot-108')||catalog.lots?.[0];expect(lot?.id).toBeTruthy();
   const dossierCard=page.locator(`[data-open-passport="${lot.id}"]:visible`).first();await expect(dossierCard).toBeVisible();await dossierCard.locator('h3').click();await expect(page.locator('#dialog[open]')).toBeVisible();
 
@@ -127,7 +127,7 @@ test('collection records and curated Collections are separate workflows',async({
 
 test('purpose-led catalogue exposes next bid, live timer and whole-card dossier navigation',async({page})=>{
   await page.goto('/',{waitUntil:'domcontentloaded'});
-  await clickNav(page,'shop');
+  await clickNav(page,'gallery');
 
   const purposeBar=page.locator('.purpose-bar');await expect(purposeBar).toBeVisible();
   for(const mode of ['ALL','BUY','AUCTION','EXHIBIT','HISTORY'])await expect(purposeBar.locator(`[data-purpose-filter="${mode}"]`)).toBeVisible();
