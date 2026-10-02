@@ -5,6 +5,7 @@ const PROFILE_ROLES=new Set(['ARTIST','GALLERY_REPRESENTATIVE','CURATOR','EXPERT
 const CLAIM_STATES=new Set(['SELF_DECLARED','EVIDENCE_SUBMITTED','REVIEWED','VERIFIED','REJECTED','EXPIRED']);
 const VISIBILITY=new Set(['PRIVATE','PSEUDONYMOUS','PUBLIC']);
 const ORG_REL=new Set(['REPRESENTATIVE','FOUNDER','DIRECTOR','CURATOR','RESEARCHER','STAFF']);
+const CULTURAL_ORG_TYPES=new Set(['GALLERY','MUSEUM','FOUNDATION','ARCHIVE','UNIVERSITY','ASSOCIATION','OTHER']);
 const CREATOR_REL=new Set(['SELF','REPRESENTATIVE','ESTATE','STUDIO_MEMBER']);
 const REVIEWABLE=new Set(['ROLE','EXPERTISE','CREATOR_LINK','GALLERY_PROFILE']);
 const PROFESSIONAL_ROLES=new Set(['ARTIST','GALLERY_REPRESENTATIVE','CURATOR','EXPERT','ART_HISTORIAN','RESEARCHER','INSTITUTION_REPRESENTATIVE']);
@@ -141,6 +142,27 @@ export async function linkProfileOrganization(account,input={}){
  const k=[p.id,organizationId,relationshipType].join('|');memory.orgLinks.set(k,x);return mapOrgLink(x)
 }
 
+export async function createCulturalOrganization(account,input={}){
+ if(!account)fail(401,'AUTH_REQUIRED','Authentication required');
+ const organizationType=String(input.organizationType||'GALLERY').toUpperCase();if(!CULTURAL_ORG_TYPES.has(organizationType))fail(400,'CULTURAL_ORGANIZATION_TYPE_INVALID','Invalid cultural organization type');
+ const name=String(input.name||'').trim().slice(0,180);if(!name)fail(400,'CULTURAL_ORGANIZATION_NAME_REQUIRED','Organization name required');
+ let slug=slugify(input.slug||name);if(slug.length<3)slug='org-'+uid('c').slice(-12);if(!validSlug(slug))fail(400,'CULTURAL_ORGANIZATION_SLUG_INVALID','Invalid organization slug');
+ const id=uid('org'),city=bi(input.city||{}),country=bi(input.country||{}),specialties=arr(input.specialties||[]),about=bi(input.about||{}),nowAt=now();
+ if(db.kind==='POSTGRES'){
+  const client=await db.pool.connect();try{
+   await client.query('BEGIN');
+   await client.query(`INSERT INTO organizations(id,seller_id,organization_type,name,slug,status,verified,city,country,specialties,about,public_policies,created_at,updated_at)
+    VALUES($1,NULL,$2,$3,$4,'ACTIVE',false,$5,$6,$7,$8,'{}'::jsonb,now(),now())`,[id,organizationType,name,slug,city,country,JSON.stringify(specialties),about]);
+   await client.query("INSERT INTO organization_members(organization_id,account_id,role,status,joined_at,updated_at) VALUES($1,$2,'OWNER','ACTIVE',now(),now())",[id,account.id]);
+   await client.query("INSERT INTO organization_cultural_profiles(organization_id,publication_status,review_status,created_at,updated_at) VALUES($1,'DRAFT','SELF_DECLARED',now(),now())",[id]);
+   await client.query('COMMIT')
+  }catch(e){try{await client.query('ROLLBACK')}catch{}if(e.code==='23505')fail(409,'CULTURAL_ORGANIZATION_SLUG_CONFLICT','Organization slug already exists');throw e}finally{client.release()}
+ }else{
+  memory.galleries.set(id,{organizationId:id,id,slug,name,organizationType,city,country,specialties,about,publicationStatus:'DRAFT',reviewStatus:'SELF_DECLARED',culturalMetadata:{},collaborationPreferences:{},ownerAccountId:account.id,updatedAt:nowAt})
+ }
+ return{id,slug,name,organizationType,city,country,specialties,about,publicationStatus:'DRAFT',reviewStatus:'SELF_DECLARED'}
+}
+
 export async function updateCulturalOrganizationProfile(account,organizationId,input={}){
  await requireOrganizationRole(account.id,organizationId,['OWNER','ADMIN']);const publicationStatus=String(input.publicationStatus||'DRAFT').toUpperCase();if(!['DRAFT','PUBLISHED','SUSPENDED'].includes(publicationStatus))fail(400,'CULTURAL_PROFILE_STATUS_INVALID','Invalid publication status');
  const metadata=input.culturalMetadata&&typeof input.culturalMetadata==='object'?input.culturalMetadata:{},prefs=input.collaborationPreferences&&typeof input.collaborationPreferences==='object'?input.collaborationPreferences:{},reviewEvidence=input.reviewEvidence&&typeof input.reviewEvidence==='object'?input.reviewEvidence:{},reviewStatus=Object.keys(reviewEvidence).length?'EVIDENCE_SUBMITTED':'SELF_DECLARED';
@@ -149,7 +171,7 @@ export async function updateCulturalOrganizationProfile(account,organizationId,i
  const x={organizationId,publicationStatus,reviewStatus,culturalMetadata:metadata,collaborationPreferences:prefs,reviewEvidence,updatedAt:now()};memory.galleries.set(organizationId,x);return clone(x)
 }
 export async function listPublicGalleries(){
- if(db.kind!=='POSTGRES')return[];
+ if(db.kind!=='POSTGRES')return[...memory.galleries.values()].filter(x=>x.organizationType==='GALLERY'&&x.publicationStatus==='PUBLISHED').map(x=>({id:x.id,slug:x.slug,name:x.name,organizationType:x.organizationType,city:x.city||{},country:x.country||{},specialties:x.specialties||[],about:x.about||{},legalVerified:false,culturalReviewStatus:x.reviewStatus,culturalMetadata:x.culturalMetadata||{},collaborationPreferences:x.collaborationPreferences||{}}));
  const rows=(await db.pool.query(`SELECT o.id,o.slug,o.name,o.organization_type,o.city,o.country,o.specialties,o.about,o.verified,c.publication_status,c.review_status,c.cultural_metadata,c.collaboration_preferences
  FROM organizations o JOIN organization_cultural_profiles c ON c.organization_id=o.id
  WHERE o.status='ACTIVE' AND o.organization_type='GALLERY' AND c.publication_status='PUBLISHED'
