@@ -1274,6 +1274,111 @@ It is evidence packaging, not appraisal/authenticity certification.
 
 
 
+## Premium commercial wave — Expert Attribution Board and consensus evidence
+
+This wave creates a distinctive expert/research product for works where attribution, dating, authorship or provenance is uncertain.
+
+### Attribution Review Case — ADOPT
+
+Create a case linked to an Antiqua object with one or more specific questions:
+
+- creator/authorship;
+- workshop/school;
+- date/period;
+- material/technique;
+- provenance link;
+- inscription/mark interpretation.
+
+The review case references the existing object, evidence, annotations, provenance graph and media. It does not duplicate them.
+
+### Independent Expert Opinion — ADOPT
+
+Each invited expert can submit a structured opinion:
+
+- conclusion category;
+- confidence band;
+- reasoning;
+- supporting evidence IDs;
+- contradicting/uncertain evidence;
+- requested further examination;
+- disclosure/conflict statement;
+- visibility;
+- signed/submitted time.
+
+An expert opinion is immutable after submission except by explicit superseding revision.
+
+### Blinded Review Mode — ADOPT
+
+Where appropriate, allow experts to submit before seeing other opinions to reduce anchoring/group influence.
+
+After the blind phase closes, authorised participants may see the comparison.
+
+### Consensus / Disagreement Matrix — ADOPT
+
+Show:
+
+expert -> conclusion -> confidence -> evidence -> disagreements
+
+Do not average opinions into false certainty.
+
+Possible board outcome:
+
+- consensus;
+- majority with dissent;
+- unresolved;
+- insufficient evidence;
+- additional examination required.
+
+The final curatorial/market-facing attribution remains an explicit authorised decision separate from the matrix.
+
+### Examination Request — ADOPT
+
+An expert may request:
+
+- higher-resolution image;
+- UV/IR/X-ray or other examination evidence where available;
+- inscription detail;
+- provenance document;
+- material analysis;
+- physical viewing.
+
+The request creates a tracked evidence need rather than a free-text note.
+
+### Expert Credential / Conflict Boundary — ADOPT
+
+Link to existing expert identity/authority records.
+
+Store relevant disclosure/conflict facts, but never infer bias merely from a relationship.
+
+### Attribution Dossier — ADOPT
+
+Generate a controlled dossier:
+
+- question;
+- object identity;
+- evidence set/version;
+- expert opinions;
+- disagreement matrix;
+- board/final decision;
+- unresolved issues;
+- checksum/version.
+
+This is not an authenticity certificate unless the responsible authority explicitly issues one.
+
+### Additional acceptance
+
+- experts cannot overwrite another opinion;
+- blind mode hides peer conclusions until configured reveal;
+- every reasoning claim links to evidence where possible;
+- disagreement remains visible;
+- final attribution is a separate authorised decision;
+- private opinions/disclosures obey ACL;
+- dossier preserves historical states.
+
+**Sequencing:** Expert identity + Provenance/Media/Annotation -> review case -> independent opinions -> blind reveal -> consensus matrix -> final decision/dossier.
+
+**Commercial framing:** Antiqua becomes a collaboration platform for serious attribution/research, not only a marketplace/catalogue.
+
 ## 2026-10-03 implementation checkpoint — Art Network v0.41
 
 Implementation branch:
