@@ -111,7 +111,7 @@ function refineCatalogue(catalogue){
 
 async function decorate(){
  updateBrandShell();if(route()!=='gallery'||q('[data-culture-root]'))return;const catalogue=q('#app > .page.section');if(!catalogue)return;const ticket=++sequence;
- const [catalog,collectionsData,exhibitionsData,client,tasteData,editorialData]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=8'),safe('/api/editorial?limit=3')]);if(ticket!==sequence||route()!=='gallery'||!catalog)return;
+ const [catalog,collectionsData,exhibitionsData,client,tasteData,editorialData]=await Promise.all([safe('/api/catalog?scope=FINE_ART'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=8&scope=FINE_ART'),safe('/api/editorial?limit=3')]);if(ticket!==sequence||route()!=='gallery'||!catalog)return;
  const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{},taste:tasteData||null,editorial:editorialData||null};refineCatalogue(catalogue);
  const root=make('div','culture-discovery-root');root.dataset.cultureRoot='';root.append(hero(data));root.append(taste(data));const e=editorial(data);if(e)root.append(e);const d=drop(data);if(d)root.append(d);const c=collections(data);if(c)root.append(c);catalogue.before(root)
 }
