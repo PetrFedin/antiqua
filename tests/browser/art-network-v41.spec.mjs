@@ -3,17 +3,15 @@ import {test,expect} from '@playwright/test';
 test('Art Network creates one privacy-safe cultural profile and keeps professional claims unverified',async({page})=>{
  await page.goto('/#network',{waitUntil:'domcontentloaded'});
  await expect(page.locator('main')).toContainText(/Сообщество искусства|Art community/i);
- await expect(page.locator('.main-nav [data-nav="network"]')).toBeVisible();
+ const networkNav=await page.locator('.mobile-tabbar').isVisible()?page.locator('.mobile-tabbar [data-nav="network"]'):page.locator('.main-nav [data-nav="network"]');
+ await expect(networkNav).toBeVisible();
 
  const token=Date.now().toString(36);
  await page.locator('#artProfileForm [name="displayName"]').fill('Art Enthusiast '+token);
  await page.locator('#artProfileForm [name="headline"]').fill('Painting, graphics and engraving');
  await page.locator('#artProfileForm [name="visibility"]').selectOption('PUBLIC');
- await Promise.all([
-  page.waitForLoadState('domcontentloaded'),
-  page.locator('#artProfileForm button[type="submit"],#artProfileForm button').click()
- ]);
- await page.goto('/#network',{waitUntil:'domcontentloaded'});
+ await page.locator('#artProfileForm button[type="submit"],#artProfileForm button').click();
+ await expect(page.locator('.network-profile-ready')).toBeVisible({timeout:10000});
 
  const me=await page.evaluate(async()=>fetch('/api/art-profile/me').then(r=>r.json()));
  expect(me.profile).toBeTruthy();
