@@ -1,7 +1,7 @@
 import {send,readBody,requireCsrf,audit} from './runtime-v09.mjs';
 import {
  artNetworkCapabilities,upsertArtProfile,getMyArtProfile,listPublicArtProfiles,getPublicArtProfile,
- setRoleClaim,setExpertiseClaim,linkProfileCreator,linkProfileOrganization,
+ setRoleClaim,setExpertiseClaim,linkProfileCreator,linkProfileOrganization,createCulturalOrganization,
  updateCulturalOrganizationProfile,listPublicGalleries,reviewArtNetworkClaim
 } from './art-network-v41.mjs';
 
@@ -20,6 +20,7 @@ export async function routeArtNetworkV41(req,res,url,ctx){
  if(url.pathname==='/api/art-profile/me/roles'&&req.method==='POST'){requireCsrf(req,ctx);const claim=await setRoleClaim(a,await readBody(req));await audit(req,a,'ART_PROFILE_ROLE_CLAIMED','ART_PROFILE_ROLE',claim.id,null,{role:claim.role,status:claim.status});return send(res,200,{claim})}
  if(url.pathname==='/api/art-profile/me/expertise'&&req.method==='POST'){requireCsrf(req,ctx);const claim=await setExpertiseClaim(a,await readBody(req));await audit(req,a,'ART_EXPERTISE_CLAIMED','ART_EXPERTISE',claim.id,null,{expertiseCode:claim.expertiseCode,status:claim.status});return send(res,200,{claim})}
  if(url.pathname==='/api/art-profile/me/creator-links'&&req.method==='POST'){requireCsrf(req,ctx);const link=await linkProfileCreator(a,await readBody(req));await audit(req,a,'ART_PROFILE_CREATOR_LINK_CLAIMED','ART_PROFILE_CREATOR_LINK',link.id,null,{creatorId:link.creatorId,relationshipType:link.relationshipType,status:link.status});return send(res,200,{link})}
+ if(url.pathname==='/api/art-network/organizations'&&req.method==='POST'){requireCsrf(req,ctx);const organization=await createCulturalOrganization(a,await readBody(req));await audit(req,a,'CULTURAL_ORGANIZATION_CREATED','ORGANIZATION',organization.id,null,organization,{organizationType:organization.organizationType});return send(res,201,{organization})}
  if(url.pathname==='/api/art-profile/me/organization-links'&&req.method==='POST'){requireCsrf(req,ctx);const link=await linkProfileOrganization(a,await readBody(req));await audit(req,a,'ART_PROFILE_ORGANIZATION_LINKED','ART_PROFILE_ORGANIZATION_LINK',link.id,null,{organizationId:link.organizationId,relationshipType:link.relationshipType,public:link.public});return send(res,200,{link})}
  const m=url.pathname.match(/^\/api\/organizations\/([^/]+)\/cultural-profile$/);if(m&&req.method==='PATCH'){requireCsrf(req,ctx);const profile=await updateCulturalOrganizationProfile(a,decodeURIComponent(m[1]),await readBody(req));await audit(req,a,'ORGANIZATION_CULTURAL_PROFILE_UPDATED','ORGANIZATION',decodeURIComponent(m[1]),null,profile,{publicationStatus:profile.publicationStatus,reviewStatus:profile.reviewStatus});return send(res,200,{profile})}
  if(url.pathname==='/api/art-network/review'&&req.method==='POST'){requireCsrf(req,ctx);const result=await reviewArtNetworkClaim(a,await readBody(req));await audit(req,a,'ART_NETWORK_CLAIM_REVIEWED',result.entityType,result.id,null,result,{status:result.status});return send(res,200,{review:result})}
