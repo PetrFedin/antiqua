@@ -16,6 +16,37 @@ const media=(url)=>[
 ];
 const evidence=(source,labelEn,labelRu)=>({id:`ev-${source}-${labelEn.slice(0,5).toLowerCase()}`,source,label:bi(labelEn,labelRu),status:'USER_SUPPLIED'});
 
+const demoArtImage=(kind)=>{
+ const compositions={
+  PAINTING:'<rect width="1200" height="1500" fill="#ddd1bd"/><path d="M0 930 Q250 760 510 890 T1200 770 V1500 H0Z" fill="#766d62"/><circle cx="850" cy="360" r="170" fill="#b7a388"/><path d="M0 1040 Q350 900 760 1020 T1200 940" fill="none" stroke="#423f3a" stroke-width="24"/>',
+  DRAWING:'<rect width="1200" height="1500" fill="#ece8df"/><g fill="none" stroke="#4c4a46" stroke-width="10" opacity=".8"><path d="M180 1180 C260 760 420 470 700 310"/><path d="M260 1210 C510 930 720 720 1000 630"/><path d="M380 1280 C570 1020 690 860 780 510"/><ellipse cx="660" cy="650" rx="280" ry="350"/></g>',
+  ETCHING:'<rect width="1200" height="1500" fill="#e7e1d5"/><g fill="none" stroke="#292927" stroke-width="5"><path d="M120 1210 1040 240M160 1280 1080 310M120 1050 900 270M260 1320 1100 480"/><path d="M130 730 Q420 430 710 700 T1080 670" stroke-width="12"/><path d="M170 900 Q520 650 980 850" stroke-width="8"/></g>',
+  LITHOGRAPH:'<rect width="1200" height="1500" fill="#e5dfd3"/><path d="M220 1150 Q130 650 500 430 Q800 260 990 590 Q1090 820 840 1130Z" fill="#3e3c39"/><path d="M320 920 Q550 600 820 720" fill="none" stroke="#e5dfd3" stroke-width="35"/>',
+  WOODCUT:'<rect width="1200" height="1500" fill="#e2d4bd"/><g fill="#272624"><path d="M0 1200 380 550 540 970 760 350 1200 1240V1500H0Z"/><path d="M70 260h1060v70H70z"/><path d="M180 410h830v38H180z"/></g><g stroke="#e2d4bd" stroke-width="18"><path d="M220 1230 440 690M510 1120 760 500M760 1180 930 760"/></g>',
+  WATERCOLOR:'<rect width="1200" height="1500" fill="#eee9df"/><g opacity=".68"><ellipse cx="430" cy="640" rx="360" ry="430" fill="#7e9b9c"/><ellipse cx="740" cy="720" rx="370" ry="420" fill="#b5a07c"/><ellipse cx="610" cy="980" rx="430" ry="270" fill="#6e7e72"/></g>',
+  PASTEL:'<rect width="1200" height="1500" fill="#d8c8be"/><path d="M160 1230 410 300 570 1180 790 420 1040 1240Z" fill="#705b5e"/><path d="M250 1130 Q560 840 930 960" fill="none" stroke="#c8ad96" stroke-width="65"/><circle cx="770" cy="470" r="150" fill="#94817a"/>'
+ };
+ const art=compositions[kind]||compositions.DRAWING;
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500">'+art+'<rect x="34" y="34" width="1132" height="1432" fill="none" stroke="#222" stroke-opacity=".18" stroke-width="4"/></svg>';
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)
+};
+const demoWork=(id,workType,titleEn,titleRu,techniqueEn,techniqueRu,materialsEn,materialsRu)=>({
+ id:'lot-'+id,objectId:'AQ-DEMO-'+id,lotNumber:Number(id),department:bi('Fine Art','Изобразительное искусство'),
+ maker:bi('ANTIQUA demonstration artist','Демонстрационный художник ANTIQUA'),title:bi(titleEn,titleRu),
+ period:bi('Demonstration study · 2026','Демонстрационный этюд · 2026'),origin:bi('ANTIQUA preview','Демонстрационная среда ANTIQUA'),
+ currency:'EUR',estimateLow:null,estimateHigh:null,image:demoArtImage(workType),materials:bi(materialsEn,materialsRu),dimensions:bi('60 × 45 cm','60 × 45 см'),
+ technique:bi(techniqueEn,techniqueRu),attributionStatus:'DEMONSTRATION',
+ galleryClassification:{status:'PUBLISHED',workType,source:'CURATED_PREVIEW',version:'FINE_ART_V1',reviewed:true,note:bi('Synthetic preview work for product testing; no physical artwork is asserted.','Синтетическая демонстрационная работа для тестирования продукта; существование физического произведения не утверждается.')},
+ marks:bi('Demonstration record — no physical marks asserted','Демонстрационная запись — физические маркировки не утверждаются'),
+ cataloguing:bi('ANTIQUA synthetic demonstration artwork for Gallery UX and data-contract testing. Not a real attribution or authentication record.','Синтетическая демонстрационная работа ANTIQUA для тестирования Gallery UX и контрактов данных. Не является реальной атрибуцией или заключением о подлинности.'),
+ provenance:bi(['Demonstration record only — no ownership claim'],['Только демонстрационная запись — без утверждения о владении']),
+ provenanceTimeline:[{date:'2026',event:bi('Created as an ANTIQUA product demonstration record','Создано как демонстрационная запись продукта ANTIQUA'),evidenceStatus:'PLATFORM_RECORD'}],
+ condition:bi('No physical condition is asserted for this synthetic demonstration work.','Для синтетической демонстрационной работы физическое состояние не утверждается.'),
+ conditionGrade:null,restoration:bi('Not applicable — demonstration record','Не применимо — демонстрационная запись'),
+ literature:bi([],[]),exhibitions:bi([],[]),documents:[],media:media(demoArtImage(workType)),location:'Online',locationLabel:bi('Online demonstration','Онлайн-демонстрация'),
+ exportStatus:'NO_FLAG',culturalPropertyStatus:'NOT_SCREENED',passportHash:'demo-fine-art-'+id,catalogueStatus:'APPROVED',publicationStatus:'PUBLIC',demo:true
+});
+
 const raw=[
  ['101','European Decorative Arts','Европейское декоративное искусство','French, Louis XVI period','Франция, период Людовика XVI','A gilt-bronze mounted mantel clock','Каминные часы с золочёной бронзой','late 18th century','конец XVIII века','France','Франция',18000,26000,'https://images.metmuseum.org/CRDImages/es/web-large/DP340468.jpg','Gilt bronze, enamel','Золочёная бронза, эмаль','42 × 28 × 16 cm','42 × 28 × 16 см'],
  ['102','European Ceramics','Европейская керамика','Delft workshop','Делфтская мастерская','A blue-and-white charger','Большое сине-белое блюдо','18th century','XVIII век','Netherlands','Нидерланды',2800,4200,'https://images.metmuseum.org/CRDImages/es/web-large/DP254624.jpg','Tin-glazed earthenware','Фаянс с оловянной глазурью','Ø 35 cm','Ø 35 см'],
@@ -30,7 +61,7 @@ const raw=[
  ['111','European Ceramics','Европейская керамика','Meissen style','в стиле Мейсена','A porcelain figure group','Фарфоровая скульптурная группа','19th century','XIX век','Germany','Германия',3200,4800,'https://images.metmuseum.org/CRDImages/es/web-large/DP254624.jpg','Porcelain','Фарфор','H 31 cm','В 31 см'],
  ['112','Sculpture','Скульптура','French School','Французская школа','A bronze portrait bust','Бронзовый портретный бюст','circa 1900','около 1900 года','France','Франция',8500,12000,'https://images.metmuseum.org/CRDImages/es/web-large/DP169405.jpg','Patinated bronze','Патинированная бронза','H 46 cm','В 46 см']
 ];
-export const lots=raw.map((x,i)=>({
+const legacyLots=raw.map((x,i)=>({
  id:`lot-${x[0]}`,objectId:`AQ-${x[0]}-2026`,lotNumber:Number(x[0]),department:bi(x[1],x[2]),maker:bi(x[3],x[4]),title:bi(x[5],x[6]),period:bi(x[7],x[8]),origin:bi(x[9],x[10]),currency:'EUR',estimateLow:x[11],estimateHigh:x[12],image:x[13],materials:bi(x[14],x[15]),dimensions:bi(x[16],x[17]),
  attributionStatus:i%3===0?'ATTRIBUTED':'CATALOGUED', marks:bi(i%2?'No marks recorded in preview':'Marks recorded in owner documentation',i%2?'Маркировки в preview не указаны':'Маркировки зафиксированы в документах владельца'),
  cataloguing:bi('Demonstration catalogue record. Real publication requires specialist review of identification, dating, materials, dimensions and marks.','Демонстрационная каталожная запись. Для реальной публикации требуется проверка специалистом идентификации, датировки, материалов, размеров и маркировок.'),
@@ -41,6 +72,16 @@ export const lots=raw.map((x,i)=>({
  literature:bi([],[]),exhibitions:bi([],[]),documents:[evidence('OWNER','Ownership statement','Заявление владельца')],media:media(x[13]),
  location:i%2===0?'Amsterdam':'London',exportStatus:i===7?'REVIEW_REQUIRED':'NO_FLAG',culturalPropertyStatus:'NOT_SCREENED',passportHash:`preview-${x[0]}`,catalogueStatus:'APPROVED'
 }));
+const demoFineArt=[
+ demoWork('201','PAINTING','Demonstration: Quiet Landscape','Демонстрация: Тихий пейзаж','Oil painting','Масляная живопись','Oil on canvas','Холст, масло'),
+ demoWork('202','DRAWING','Demonstration: Figure Study','Демонстрация: Этюд фигуры','Graphite drawing','Рисунок графитом','Graphite on paper','Графит, бумага'),
+ demoWork('203','ETCHING','Demonstration: Architectural Etching','Демонстрация: Архитектурный офорт','Etching','Офорт','Ink on paper','Краска, бумага'),
+ demoWork('204','LITHOGRAPH','Demonstration: Lithographic Form','Демонстрация: Литографическая форма','Lithography','Литография','Lithographic ink on paper','Литографская краска, бумага'),
+ demoWork('205','WOODCUT','Demonstration: Woodcut Rhythm','Демонстрация: Ритм ксилографии','Woodcut','Ксилография','Relief print on paper','Высокая печать, бумага'),
+ demoWork('206','WATERCOLOR','Demonstration: Watercolor Field','Демонстрация: Акварельное поле','Watercolor','Акварель','Watercolor on paper','Акварель, бумага'),
+ demoWork('207','PASTEL','Demonstration: Pastel Composition','Демонстрация: Пастельная композиция','Pastel','Пастель','Pastel on paper','Пастель, бумага')
+];
+export const lots=[...legacyLots,...demoFineArt];
 
 const t0=Date.now();
 const seed=[[101,14500,9,5,16500],[102,2600,4,7,3200],[103,5250,7,9,6500],[104,7200,3,11,8500],[105,6000,5,14,7500],[106,10000,2,17,13000]];
