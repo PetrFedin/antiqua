@@ -23,6 +23,12 @@ const techniques={
 const locations={Amsterdam:bi('Amsterdam','Амстердам'),London:bi('London','Лондон')};
 const purchaseLabels={BUY_NOW:bi('Buy now','Купить сейчас'),MAKE_OFFER:bi('Make offer','Предложить цену'),AUCTION:bi('Auction','Аукцион'),PRIVATE_SALE:bi('Private sale','Частная продажа')};
 const statusLabels={"A-":bi('Very good','Очень хорошее'),B:bi('Good','Хорошее')};
+const workTypeLabels={
+ PAINTING:bi('Painting','Живопись'),DRAWING:bi('Drawing','Рисунок'),ENGRAVING:bi('Engraving','Гравюра'),ETCHING:bi('Etching','Офорт'),
+ LITHOGRAPH:bi('Lithograph','Литография'),WOODCUT:bi('Woodcut','Ксилография'),LINOCUT:bi('Linocut','Линогравюра'),SCREENPRINT:bi('Screenprint','Шелкография'),
+ WATERCOLOR:bi('Watercolor','Акварель'),GOUACHE:bi('Gouache','Гуашь'),PASTEL:bi('Pastel','Пастель'),MIXED_MEDIA:bi('Mixed media','Смешанная техника'),
+ OTHER_PRINT:bi('Other print','Другая печатная графика'),OTHER_WORK_ON_PAPER:bi('Other work on paper','Другая работа на бумаге')
+};
 const unique=(xs,key=x=>JSON.stringify(x))=>{const m=new Map();for(const x of xs){if(x==null)continue;const k=key(x);if(!m.has(k))m.set(k,x)}return[...m.values()]};
 const pairKey=x=>`${x?.en||''}|${x?.ru||''}`;
 function techniqueFor(o){return o.technique||techniques[o.id]||bi('Specialist technique review pending','Техника ожидает проверки специалистом')}
@@ -36,6 +42,7 @@ function publicListingV13(x,auctionByLot=null,sellerById=null){return{...x,purch
 function facetOptions(values){return unique(values,pairKey).sort((a,b)=>String(a.en||'').localeCompare(String(b.en||''))).map(x=>({value:x.en,label:x}))}
 function materialOptions(objects){const all=[];for(const o of objects){const en=String(o.materials?.en||'').split(',').map(x=>x.trim()).filter(Boolean),ru=String(o.materials?.ru||'').split(',').map(x=>x.trim()).filter(Boolean);en.forEach((x,i)=>all.push(bi(x,ru[i]||x)))}return facetOptions(all)}
 function buildFacets(objects,activeListings,publicAuctions,sellerProfiles){const prices=[...activeListings.map(x=>Number(x.price)),...publicAuctions.filter(x=>x.state!=='CLOSED').map(x=>Number(x.currentBid))].filter(Number.isFinite);return{
+ workTypes:unique(objects.map(x=>x.galleryClassification?.workType).filter(Boolean)).sort().map(value=>({value,label:workTypeLabels[value]||bi(value,value)})),
  categories:facetOptions(objects.map(x=>x.department)),
  eras:facetOptions(objects.map(x=>x.period)),
  countries:facetOptions(objects.map(x=>x.origin)),
