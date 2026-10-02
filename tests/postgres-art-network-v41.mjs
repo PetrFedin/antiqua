@@ -28,7 +28,7 @@ try{
  orgId=org.id;assert.equal(org.profileStatus,'DRAFT');
  let raw=(await db.pool.query('SELECT seller_id FROM organizations WHERE id=$1',[orgId])).rows[0];assert.equal(raw.seller_id,null,'cultural organization must not require a seller identity');
  await submitCulturalOrganization(seller,orgId);await reviewCulturalOrganization(operator,orgId,{decision:'APPROVE',note:'postgres proof'});
- const directory=await artNetworkDirectory(),publicOrg=directory.organizations.find(x=>x.id===orgId);assert.ok(publicOrg);assert.equal(publicOrg.commercialVerification,false);
+ const directory=await artNetworkDirectory(),publicOrg=directory.organizations.find(x=>x.id===orgId);assert.ok(publicOrg);assert.equal(publicOrg.commercialVerification,false);assert.equal('collaborationPreferences' in publicOrg,false,'unreviewed collaboration preferences must remain internal');
  const sellerDirectory=await listPublicSellerProfiles();assert.equal(sellerDirectory.some(x=>x.organizationId===orgId),false,'cultural-only organization must not leak into seller directory');
  const row=(await db.pool.query('SELECT profile_status,visibility FROM art_profiles WHERE account_id=$1',[buyer.id])).rows[0];assert.deepEqual(row,{profile_status:'PUBLISHED',visibility:'PSEUDONYMOUS'});
  console.log('ANTIQUA v41 PostgreSQL Art Network: durable reviewed identity + scoped expertise + non-selling cultural organization passed');
