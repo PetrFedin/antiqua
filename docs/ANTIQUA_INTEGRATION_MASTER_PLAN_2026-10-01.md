@@ -616,7 +616,7 @@ Do not re-promote dealer/pilot surfaces into the primary consumer navigation. De
 
 ## 2026-10-01 implementation checkpoint — Artist depth + reusable Related Works
 
-Prepared as stacked PR #81 on top of Gallery-first PR #80.
+Merged through Gallery-first PR #86 and Artist-depth PR #88 after independent CI + Browser E2E green gates.
 
 - Artist profile projection now exposes research context only from explicit creator metadata: evidence status, biography sources and chronology.
 - Public exhibition context is derived only from PUBLIC/SCHEDULED/LIVE/ARCHIVED exhibitions that actually contain a published work linked to the creator.
@@ -626,15 +626,12 @@ Prepared as stacked PR #81 on top of Gallery-first PR #80.
 - No artist research field is inferred from browsing behavior or generated text.
 - Dealer/pilot infrastructure remains preserved but absent from primary consumer navigation.
 
-### Exit gate for this checkpoint
+### Exit gate for this checkpoint — SATISFIED 2026-10-02
 
-Before Collections/Taste work is allowed to merge:
-1. PR #80 must be fully green and merged;
-2. PR #81 must be rebased onto the resulting main;
-3. CI + Browser E2E must be green for the rebased Artist-depth head;
-4. Artwork → Artist → Related Works must remain functional on desktop and mobile.
-
-Only then open the Collections/Taste implementation slice.
+- Gallery-first PR #86 merged green to main as f85af36e8a55e7e819b8d799cb85f55e4f27b4fb.
+- Artist-depth PR #88 merged green to main as 174bc58652cdba9c93c17eaa48fd7463fc596f4d.
+- CI, PostgreSQL durability, object-storage, and desktop/mobile Browser E2E passed.
+- Collections/Taste is now the active next product slice.
 
 ## 2026-10-02 implementation checkpoint — Collections + Taste
 
