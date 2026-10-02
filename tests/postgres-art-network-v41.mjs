@@ -9,7 +9,8 @@ import {
 if(!process.env.DATABASE_URL){console.log('ANTIQUA v41 PostgreSQL Art Network: skipped (DATABASE_URL not set)');process.exit(0)}
 
 const token=crypto.randomUUID().replaceAll('-',''),id=p=>p+'-'+token;
-const ownerId=id('acct'),reviewerId=id('reviewer'),orgId=id('org'),sellerId=id('seller');
+const ownerId=id('acct'),reviewerId=id('reviewer');
+let culturalOrgId=null;
 const owner={id:ownerId,displayName:'Art Network Owner',roles:['BUYER']};
 const reviewer={id:reviewerId,displayName:'Trust Reviewer',roles:['TRUST_REVIEWER']};
 
@@ -34,7 +35,7 @@ try{
  assert.ok(pub.expertise.some(e=>e.expertiseCode==='PRINTS_ENGRAVING'&&e.status==='VERIFIED'));
 
  const createdGallery=await createCulturalOrganization(owner,{organizationType:'GALLERY',name:'Print Gallery '+token.slice(0,6),slug:'print-gallery-'+token.slice(0,12),city:{en:'London',ru:'Лондон'},country:{en:'United Kingdom',ru:'Великобритания'},specialties:['Prints','Engraving'],about:{en:'Works on paper',ru:'Работы на бумаге'}});
- assert.equal(createdGallery.organizationType,'GALLERY');const culturalOrgId=createdGallery.id;
+ assert.equal(createdGallery.organizationType,'GALLERY');culturalOrgId=createdGallery.id;
  const dbGallery=(await db.pool.query('SELECT id,seller_id,organization_type FROM organizations WHERE id=$1',[culturalOrgId])).rows[0];
  assert.equal(dbGallery.seller_id,null,'cultural Gallery must not require seller identity');
  assert.equal(dbGallery.organization_type,'GALLERY');
@@ -62,7 +63,7 @@ try{
 
  console.log('ANTIQUA v41 PostgreSQL Art Network: durable profile + verified expertise + gallery cultural review + privacy passed');
 }finally{
- await db.pool.query('DELETE FROM organizations WHERE id=$1',[culturalOrgId]).catch(()=>{});
+ if(culturalOrgId)await db.pool.query('DELETE FROM organizations WHERE id=$1',[culturalOrgId]).catch(()=>{});
  await db.pool.query('DELETE FROM accounts WHERE id=$1',[ownerId]).catch(()=>{});
  await db.pool.query('DELETE FROM accounts WHERE id=$1',[reviewerId]).catch(()=>{});
  await db.pool.end();
