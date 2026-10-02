@@ -910,7 +910,7 @@ Commercial services must remain visibly distinct from editorial, provenance and 
 The gallery-first delivery sequence is refined as:
 
 1. Gallery + Artwork + Artist + Related Works — **landed**;
-2. Collections + Taste — **current implementation gate**;
+2. Collections + Taste — **landed in #90; CI + Browser E2E green**;
 3. participant/galleries/expertise identity design and trust model;
 4. Books/Courses/Events cultural graph;
 5. collaboration requests + Network discovery;
@@ -924,7 +924,7 @@ The Art Network must never delay core Artwork/Artist quality or create competing
 
 ## 2026-10-02 implementation checkpoint — Collections + Taste
 
-Current branch: `feature/gallery-collections-taste-ecosystem`.
+**Status: LANDED** — PR #90 merged as `af34547f267e06ca721be53560b0375da1726bec`; exact PR head `8aa6a5de98084e4c4fc70c284056fa98aaf3cc41` passed ANTIQUA CI and Browser E2E.
 
 - Gallery discovery is being refocused from legacy “Culture of Objects” wording to painting / works on paper / printmaking.
 - `#gallery` is the canonical personalized discovery surface; legacy `#shop` remains compatibility only.
@@ -935,14 +935,26 @@ Current branch: `feature/gallery-collections-taste-ecosystem`.
 - PRIVATE collections remain absent from the public Collections API;
 - Browser E2E covers PRIVATE Collection → COLLECTED signal → explainable recommendation exclusion → personalized Gallery.
 
-### Exit gate
+### Exit gate — PASSED
 
-Before Books/Courses/Events or Art Network runtime entities may merge:
-1. Collection/Taste branch CI is green;
-2. Browser E2E is green on desktop/mobile;
-3. PRIVATE collection non-leak is proven;
+Evidence from merged #90:
+1. Collection/Taste CI — PASS;
+2. Browser E2E — PASS;
+3. PRIVATE collection non-leak contract remains covered;
 4. v28 explainability/no-AI/no-price-matching assertions remain green;
-5. Gallery copy and canonical routing are painting/graphics/engraving-first.
+5. Gallery routing/copy is painting/graphics/engraving-first.
+
+### Next active product gate
+
+Proceed with:
+1. Art Network identity/trust foundations: unified Art Profiles, Gallery/Institution cultural profiles, scoped expertise claims and collector privacy;
+2. Books/Courses/Events cultural graph + Art Calendar;
+3. structured collaboration requests and Network discovery;
+4. benchmark additions #103–#105 only after their owning authorities are ready.
+
+Do not begin Art Lens image recognition before Media Authority / approved image identity rules are defined.
+Do not begin Private Rooms by copying Artwork metadata into a new mutable store.
+Do not begin Art Week routing before Event/Exhibition/Auction schedule authority is stable.
 
 
 ## 2026-10-02 benchmark refresh — art platforms, gallery tools and museum apps
