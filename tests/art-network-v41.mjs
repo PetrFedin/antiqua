@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {db} from '../runtime-v09.mjs';
-import {artNetworkCapabilities,upsertArtProfile,setRoleClaim,setExpertiseClaim,getPublicArtProfile,listPublicArtProfiles} from '../art-network-v41.mjs';
+import {artNetworkCapabilities,upsertArtProfile,setRoleClaim,setExpertiseClaim,getPublicArtProfile,listPublicArtProfiles,createCulturalOrganization,updateCulturalOrganizationProfile,listPublicGalleries} from '../art-network-v41.mjs';
 
 const buyer=await db.findAccountByEmail('buyer@demo.antiqua');
 assert.ok(buyer);
@@ -31,5 +31,11 @@ x=await upsertArtProfile(buyer,{visibility:'PRIVATE'});
 assert.equal(x.profile.visibility,'PRIVATE');
 pub=await getPublicArtProfile('art-enthusiast-'+token);
 assert.equal(pub,null,'PRIVATE Art Profile must not be publicly resolvable');
+
+const gallery=await createCulturalOrganization(buyer,{organizationType:'GALLERY',name:'Preview Print Gallery '+token,slug:'preview-print-gallery-'+token,specialties:['Prints','Engraving']});
+assert.equal(gallery.organizationType,'GALLERY');
+await updateCulturalOrganizationProfile(buyer,gallery.id,{publicationStatus:'PUBLISHED',culturalMetadata:{focus:['PRINTS','ENGRAVING']}});
+const galleries=await listPublicGalleries();
+assert.ok(galleries.some(g=>g.id===gallery.id&&g.name===gallery.name),'noncommercial preview gallery must publish without seller identity');
 
 console.log('ANTIQUA v41 Art Network: identity/privacy/professional-claim boundaries passed');
