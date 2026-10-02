@@ -13,6 +13,7 @@ assert.equal((await listPublicArtProfiles()).some(x=>x.slug===p.slug),false,'rev
 p=await reviewArtProfile(reviewer,collector.id,{decision:'APPROVE',note:'Identity projection reviewed'});
 assert.equal(p.profileStatus,'PUBLISHED');
 let directory=await listPublicArtProfiles(),publicP=directory.find(x=>x.slug===p.slug);assert.ok(publicP);assert.equal('accountId' in publicP,false,'internal account id must not be public');
+assert.equal('collaborationPreferences' in publicP,false,'internal collaboration preferences must not leak before Collaboration authority');
 assert.deepEqual(publicP.participantRoles,['COLLECTOR','ENTHUSIAST']);
 
 const creator=await createCreator(artistManager,{slug:'network-proof-artist',nameEn:'Network Proof Artist',nameRu:'Тестовый художник сети',creatorType:'ARTIST',salesModel:'INDEPENDENT'});
