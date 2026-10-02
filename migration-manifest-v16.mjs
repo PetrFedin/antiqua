@@ -26,7 +26,8 @@ const files=[
   '023_v37_real_dealer_pilot.sql',
   '024_v38_counterparty_acceptance.sql',
   '025_v39_pilot_governance_verification.sql',
-  '026_v40_real_pilot_launch.sql'
+  '026_v40_real_pilot_launch.sql',
+  '027_v41_art_network_identity.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
