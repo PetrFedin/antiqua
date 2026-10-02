@@ -943,3 +943,228 @@ Before Books/Courses/Events or Art Network runtime entities may merge:
 3. PRIVATE collection non-leak is proven;
 4. v28 explainability/no-AI/no-price-matching assertions remain green;
 5. Gallery copy and canonical routing are painting/graphics/engraving-first.
+
+
+## 2026-10-02 benchmark refresh — art platforms, gallery tools and museum apps
+
+This benchmark is a product-pattern source only. Antiqua must adapt useful mechanics to its existing Artwork / Artist / Organization / Collection / Exhibition / Auction / Evidence authorities instead of copying another product's information architecture or visual language.
+
+### Artsy — discovery, follows, alerts and market continuity
+
+Official references:
+- https://www.artsy.net/about
+- https://www.artsy.net/find-the-art-you-love
+- https://www.artsy.net/auctions
+
+Observed product patterns:
+- save artworks;
+- follow artists;
+- alerts for matching/new works;
+- personalized recommendations;
+- expert/editorial context;
+- auction discovery in the same consumer journey;
+- pricing/auction-result context where available.
+
+**ADOPT/ADAPT for Antiqua**
+- strengthen Artist/Gallery/Theme follow as a durable explicit signal;
+- add bounded alerts for new published works, exhibitions/events and auction lots;
+- preserve explainable Taste recommendations rather than an opaque engagement score;
+- keep historical auction result context adjacent to Artwork without turning every Artwork into a sale object;
+- use Artwork → Artist → Collection → Auction continuity rather than separate marketplace silos.
+
+**DO NOT COPY**
+- do not optimize Gallery ranking primarily for transaction likelihood;
+- do not let market activity become artwork quality/authenticity evidence;
+- do not use raw popularity/follower count as expertise or scholarly authority.
+
+### Ocula — vetted gallery layer, exhibitions, editorial and advisory context
+
+Official references:
+- https://ocula.com/about/
+- https://ocula.com/art-galleries/
+- https://ocula.com/membership/
+- https://ocula.com/faqs/
+
+Observed product patterns:
+- curated/vetted gallery participation;
+- gallery → represented artists → artworks → exhibitions continuity;
+- follow artists/galleries for updates;
+- strong exhibition and fair discovery;
+- editorial/research content adjacent to commercial discovery;
+- enquiry/advisory entry instead of forcing checkout for every work.
+
+**ADOPT/ADAPT for Antiqua**
+- Gallery/Institution cultural profiles must derive from existing Organization authority;
+- introduce reviewed cultural-profile status distinct from legal account/KYB and distinct from artwork authentication;
+- show represented Artists only from explicit creator_representations;
+- Gallery pages surface exhibitions/events, selected artworks, Learn content, private rooms and collaboration entry;
+- support "enquire / collaboration / consignment / expert request" when direct purchase is inappropriate.
+
+**DO NOT COPY**
+- no universal "approved gallery = approved artwork" implication;
+- no hidden pay-to-rank treatment;
+- no gallery membership state may alter provenance/authentication.
+
+### Art Basel app — art-week planning, artwork lens and event continuity
+
+Official reference:
+- https://www.artbasel.com/artbaselapp
+
+Observed product patterns:
+- events, galleries and recommendations in one fair experience;
+- personal schedule/calendar;
+- artwork scan/lens to reach artist/story/gallery context;
+- RSVP and event access;
+- shareable discoveries;
+- trip/fair planning around culture, not just objects.
+
+**ADOPT/ADAPT for Antiqua**
+- build Art Week / Art Day Planner from authoritative Event + Exhibition + Auction schedules;
+- saved events become a private personal itinerary;
+- allow export/sync to external calendar later;
+- create Art Lens only as a discovery resolver to existing Artwork records;
+- Lens match is never attribution/authentication;
+- every recognized Artwork continues into Artist, Gallery, exhibition, Learn and Auction context.
+
+### Smartify — scan-to-context, visitor mode, audio and accessibility
+
+Official references:
+- https://smartify.org/partners/products/web-and-mobile-apps
+- https://smartify.org/partners/features/personalisation
+
+Observed product patterns:
+- artwork/object recognition;
+- rich curatorial context after a scan;
+- audio guides and transcripts;
+- multilingual delivery;
+- self-directed personalized tours based on interests/time;
+- accessibility-first presentation;
+- pre-visit → in-visit → post-visit continuity.
+
+**ADOPT/ADAPT for Antiqua**
+- introduce Visit Mode for exhibitions/galleries/events;
+- optional scan/QR opens the canonical Artwork, never a duplicate scan record;
+- route suggestions use explicit interests + available time + saved must-sees;
+- audio/transcript layer links to reviewed Artwork/Artist/Event content;
+- accessibility requirements belong to core UI contracts, not a separate "accessibility mode";
+- allow post-visit save to Collection/Taste while keeping location/visit disclosure private by default.
+
+**DO NOT COPY**
+- recognition confidence cannot become authorship/authenticity evidence;
+- AI-generated narration cannot silently replace curator/expert authored content.
+
+### Artlogic — Private Views, dynamic presentations and gallery sales collaboration
+
+Official references:
+- https://support.artlogic.net/hc/en-gb/articles/360009948219-An-introduction-to-Private-Views
+- https://support.artlogic.net/hc/en-gb/articles/17337147499036-How-to-create-Private-Views
+- https://support.artlogic.net/hc/en-gb/articles/18702268525596-How-to-enable-and-display-the-Enquiry-button-on-your-Private-Views
+- https://support.artlogic.net/hc/en-gb/articles/360021545340--View-on-a-wall-for-Private-Views-Beta
+- https://support.artlogic.net/hc/en-gb/articles/21575664444700-NEW-How-to-set-up-Dynamic-Private-Views-Beta
+
+Observed product patterns:
+- shareable private artwork presentations;
+- static snapshot versus dynamically updated view;
+- direct enquiry on individual works;
+- "view on a wall" scale visualization;
+- gallery/team use on phone/tablet, including fair scenarios;
+- enquiry continuity into a sales pipeline.
+
+**ADOPT/ADAPT for Antiqua**
+- create **Private Rooms** as permissioned presentations of authoritative Artwork records;
+- support SNAPSHOT and LIVE modes;
+- every room stores exact included Artwork IDs and publication/access policy;
+- enquiry creates an existing structured collaboration/consignment/commercial request rather than email-only state;
+- add optional "View on wall" after dimensions/media quality are present;
+- tablet/desktop curation plus phone viewing must be first-class;
+- room expiry/revocation and access audit are mandatory.
+
+**DO NOT COPY**
+- Private Room must never duplicate Artwork metadata as a new authority;
+- private collector identity, collection records, valuation and ownership data remain outside shared rooms unless explicitly published.
+
+### Sotheby's and Christie's — watch, live auction, alerts and account continuity
+
+Official references:
+- https://www.sothebys.com/en/about/sothebys-apps
+- https://www.christies.com/about-us/get-the-christies-app
+
+Observed product patterns:
+- browse upcoming/sold lots;
+- favorites/watch;
+- alerts/notifications;
+- live auction viewing and bidding;
+- result/history context;
+- account continuity for bids, purchases and registered sales.
+
+**ADOPT/ADAPT for Antiqua**
+- keep one Auction authority;
+- Artwork shows auction state only when an authoritative lot relation exists;
+- Watch/alert belongs to explicit user action;
+- live state uses authoritative server clock;
+- closed result becomes historical market context on Artwork/Artist;
+- account area keeps watch/bid/result continuity without exposing private behavior to the Art Network.
+
+### Product synthesis — what makes Antiqua distinct
+
+Antiqua should not become a clone of Artsy, Ocula, Smartify, Art Basel, Artlogic, Sotheby's or Christie's.
+
+The unique combined proposition is:
+
+**museum-grade Artwork depth + verified Artist/Gallery/Expert relationships + privacy-safe collecting + cultural learning/events + structured collaboration + private gallery rooms + in-person Art Lens/Visit Mode + authoritative auction continuity.**
+
+The differentiating graph is:
+
+`Artwork ↔ Artist ↔ Gallery ↔ Expert/Art Historian/Curator ↔ Collection ↔ Exhibition/Event ↔ Book/Course/Editorial ↔ Auction`
+
+Around this graph Antiqua adds:
+- explainable Taste;
+- scoped expertise/evidence;
+- provenance/research depth;
+- private/public collection boundaries;
+- Private Rooms;
+- Exhibition Studio/Open Calls;
+- Expert Desk;
+- Art Week Planner;
+- Art Lens / Visit Mode;
+- professional collaboration without a generic social-DM-first model.
+
+### New implementation candidates from benchmark
+
+These are gated additions and must not bypass current Gallery/Collections/Taste gates:
+
+1. **ANTIQUA-NET-12 — Private Rooms / Collector Presentations**
+   - Gallery/Artist/Curator creates permissioned Artwork presentation;
+   - SNAPSHOT / LIVE mode;
+   - expiry/revocation;
+   - individual Artwork enquiry;
+   - optional View-on-Wall;
+   - exact audit/access boundary.
+
+2. **ANTIQUA-NET-13 — Art Lens + Visit Mode**
+   - QR/image-recognition candidate resolver;
+   - canonical Artwork open;
+   - audio/text context;
+   - exhibition/gallery route;
+   - save to Collection/Taste;
+   - recognition is discovery only, never attribution/authentication.
+
+3. **ANTIQUA-NET-14 — Art Week / Art Day Planner**
+   - saved Exhibitions, Events, talks, previews, auctions;
+   - personal schedule conflict detection;
+   - travel/time-aware sequence later;
+   - iCal/export later;
+   - private itinerary by default.
+
+### Benchmark implementation rule
+
+Before adopting an external product pattern, record:
+- authoritative Antiqua entity that owns the state;
+- whether the feature is a read model, workflow or new authority;
+- privacy/publication boundary;
+- evidence/security consequence;
+- mobile/tablet/desktop behavior;
+- rebuildability/idempotency expectations;
+- explicit non-goals.
+
+A benchmark feature may improve user experience but must never silently weaken Antiqua's Artwork, provenance, expertise, rights, auction or privacy authorities.
