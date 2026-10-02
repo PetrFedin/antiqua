@@ -947,10 +947,11 @@ Evidence from merged #90:
 ### Next active product gate
 
 Proceed with:
-1. Art Network identity/trust foundations: unified Art Profiles, Gallery/Institution cultural profiles, scoped expertise claims and collector privacy;
+1. complete and merge v0.41 Art Network identity/trust foundations: unified Art Profiles, Gallery/Institution cultural profiles, scoped expertise claims and collector privacy;
 2. Books/Courses/Events cultural graph + Art Calendar;
-3. structured collaboration requests and Network discovery;
-4. benchmark additions #103–#105 only after their owning authorities are ready.
+3. structured collaboration requests, Artist↔Gallery connection/consignment handshake and Network discovery;
+4. bounded artist/gallery/event/auction alerts on existing follow/watch authorities;
+5. benchmark additions #103–#105 only after their owning authorities are ready.
 
 Do not begin Art Lens image recognition before Media Authority / approved image identity rules are defined.
 Do not begin Private Rooms by copying Artwork metadata into a new mutable store.
@@ -1271,3 +1272,275 @@ It is evidence packaging, not appraisal/authenticity certification.
 
 **Sequencing:** Object Media + Condition Reports + annotations -> standardized capture -> registration -> reviewed change detection -> conservation timeline -> dossier.
 
+
+
+## 2026-10-03 implementation checkpoint — Art Network v0.41
+
+Implementation branch:
+
+- `feature/art-network-trust-v41`
+
+The branch implements the first Art Network authority layer rather than a generic social feed.
+
+### Implemented in v0.41
+
+1. **One-account cultural profile projection**
+   - Account remains the identity authority.
+   - `art_profiles` is only a reviewed public projection.
+   - visibility is explicit: `PRIVATE | PSEUDONYMOUS | PUBLIC`.
+   - public APIs never expose internal `account_id`.
+   - a substantive profile edit resets publication state to `DRAFT`.
+
+2. **Scoped expertise claims**
+   - expertise is claimed by a concrete scope such as artist, movement, period, medium, printmaking, conservation, provenance, region or catalogue raisonné;
+   - evidence and review state are stored independently;
+   - only `VERIFIED` claims can appear publicly;
+   - no universal expert score exists;
+   - follower/popularity metrics never change expertise status.
+
+3. **Creator relationship claims**
+   - public-person identity does not duplicate Creator Graph;
+   - a person may claim `SELF | ESTATE_REPRESENTATIVE | STUDIO_REPRESENTATIVE | AUTHORIZED_REPRESENTATIVE`;
+   - a public relationship appears only after review;
+   - Artist publication and primary-market authority remain owned by Creator Graph v30.
+
+4. **Gallery / Institution cultural profiles**
+   - existing `organizations` remains the Organization authority;
+   - non-selling cultural organizations may exist without `seller_id`;
+   - cultural-profile review is explicitly separate from commercial/KYB verification;
+   - represented artists are read from existing `creator_representations` only.
+
+5. **Collector privacy**
+   - collector defaults remain privacy-first;
+   - a collector can publish under a pseudonymous profile;
+   - public profile detail can surface only Collections already public under Collection authority;
+   - PRIVATE Collections are never copied into Network.
+
+6. **Consumer surfaces**
+   - new `#network` desktop/mobile destination;
+   - reviewed people grouped by cultural role;
+   - reviewed Gallery/Institution cards;
+   - public Art Profile and Cultural Organization pages;
+   - `#network-me` self-service profile editor with privacy choice and scoped-expertise submission;
+   - iPhone navigation expanded intentionally rather than hiding Network behind a generic “More” menu.
+
+7. **Release gates**
+   - migration authority extends from 001 through 027;
+   - memory contract test covers reviewed identity, pseudonymity, creator claim and scoped expertise;
+   - PostgreSQL contract test covers durable profile/expertise and a non-selling Gallery organization;
+   - Browser E2E covers pseudonymous collector → review → verified expertise → public Network profile.
+
+### Explicit non-goals for v0.41
+
+- no generic engagement feed;
+- no likes as an authority signal;
+- no follower-derived expertise ranking;
+- no public collector holdings by default;
+- no private messaging rewrite;
+- no duplicate Artist or Gallery master data;
+- no inference that a reviewed Gallery validates an Artwork;
+- no inference that a verified expert claim authenticates an Artwork.
+
+---
+
+## 2026-10-03 benchmark delta — community, gallery operations, art discovery and spatial viewing
+
+This delta adds patterns not fully covered by the 2026-10-02 Artsy / Ocula / Art Basel / Smartify / Artlogic benchmark. Sources are used as product-pattern references only.
+
+### ArtRabbit — city art companion, art weeks and visited history
+
+Official references:
+
+- https://www.artrabbit.com/about/app
+- https://www.artrabbit.com/support/suggested-and-upcoming-events
+
+Observed product patterns:
+
+- city dashboards around what is new, open now and closing soon;
+- exhibitions, openings, festivals and art-week programmes in one interface;
+- save/follow;
+- “I’ve seen this” / visit history;
+- curated neighbourhood routes and self-guided art walks;
+- directions between stops;
+- upcoming events from followed artists/venues;
+- explainable suggested events.
+
+**ADOPT/ADAPT for Antiqua — ANTIQUA-NET-15 Art City / Art Week Companion**
+
+- authoritative entities: Event + Exhibition + Organization + Creator + Auction;
+- add `saved / planned / visited` participation states instead of a generic check-in feed;
+- build “Today / This week / Closing soon / Open now” read models;
+- add Art Week programme and personal day plan after schedule authority is stable;
+- allow curated routes built by verified curators/galleries/institutions;
+- preserve an explainable “why suggested” link back to Taste/follows;
+- later: conflict detection, travel-time sequence and calendar export;
+- visit history is private by default.
+
+**DO NOT COPY**
+
+- public visit history by default;
+- popularity as artistic-quality ranking;
+- location tracking without explicit user action;
+- user-submitted events becoming trusted without Organization/Event review.
+
+### ArtPlacer — real-scale room preview, virtual exhibitions and collector presentation
+
+Official references:
+
+- https://www.artplacer.com/virtual-exhibitions/
+- https://help.artplacer.com/support/solutions/articles/65000190820-how-to-use-the-augmented-reality-widget
+
+Observed product patterns:
+
+- artwork placement at real scale in a collector’s own room;
+- browser/mobile AR handoff;
+- 3D virtual exhibitions;
+- room mock-ups;
+- inquiry/buy actions from a virtual show;
+- reusable gallery spaces and exhibition analytics.
+
+**ADOPT/ADAPT for Antiqua — ANTIQUA-NET-16 View on Wall / Private Viewing Space**
+
+- source image, dimensions, frame/border and rights come from Artwork/Media authority;
+- room preview is a derived visualization, never a copied Artwork record;
+- enforce “real scale” only when physical dimensions are verified enough for display;
+- mobile opens camera/AR directly; desktop can hand off to mobile via QR/deep link;
+- allow a collector to save a private room composition without publishing collection ownership;
+- virtual Exhibition references canonical Artwork IDs and existing Exhibition narrative;
+- inquiry/offer routes reuse existing Inquiry/Offer authority;
+- interaction analytics may inform UX but never provenance, attribution or expertise.
+
+**GATE**
+
+Do not implement production AR until Media Authority defines approved source image identity, image rights, object dimensions confidence and generated-preview retention policy.
+
+### Google Arts & Culture — Art Projector and Pocket Gallery
+
+Official references:
+
+- https://artsandculture.google.com/play
+- https://artsandculture.google.com/project/ar?hl=en-GB
+
+Observed product patterns:
+
+- place artworks at scale in a home;
+- augmented-reality gallery spaces;
+- use spatial presentation as education/discovery, not only commerce.
+
+**ADOPT/ADAPT**
+
+- keep Antiqua View on Wall useful even for NOT_FOR_SALE works;
+- add educational context, technique, artist and provenance entry from the spatial view;
+- later allow curated “Pocket Exhibition” experiences built from canonical Exhibition/Collection entities.
+
+### KUNSTMATRIX — reusable 3D spaces and exhibition archive
+
+Official reference:
+
+- https://www.kunstmatrix.com/en
+
+Observed product patterns:
+
+- predefined/custom 3D rooms;
+- artwork, sculpture, video and audio in one virtual show;
+- share/embed;
+- real-scale preview;
+- virtual exhibition as an archive/presentation layer.
+
+**ADOPT/ADAPT**
+
+- a 3D room is presentation metadata attached to an Antiqua Exhibition;
+- never fork Artwork metadata into the room engine;
+- add optional audio-guide nodes from Editorial/Learn authority;
+- Exhibition remains useful after closing as a versioned cultural archive;
+- support private/unlisted rooms for collector/gallery previews only through ACL.
+
+### ArtCloud — Artist↔Gallery connection, consignment and interest memory
+
+Official references:
+
+- https://help.artcloud.com/knowledge/invite-artists-to-artcloud
+- https://help.artcloud.com/knowledge/receive-and-manage-artist-consignments
+- https://help.artcloud.com/knowledge/tracking-your-contacts-artwork-and-artist-interests
+
+Observed product patterns:
+
+- gallery invites an artist to connect accounts;
+- artist and gallery can share a bounded inventory relationship;
+- consignment is an explicit accept/deny workflow;
+- galleries retain artwork/artist interests for collector relationship management.
+
+**ADOPT/ADAPT for Antiqua — ANTIQUA-NET-17 Artist↔Gallery Collaboration & Consignment**
+
+- do not create duplicate Artist records when a Gallery connects to an Artist;
+- use Creator Graph relationship claim + explicit acceptance;
+- add collaboration request types `REPRESENTATION | EXHIBITION | CONSIGNMENT | RESEARCH | EXPERT_REVIEW | LOAN`;
+- consignment must have scope, objects, term, territory, sale authority, commission, logistics/condition handoff and immutable acceptance history;
+- accepted consignment references canonical Artwork/Object IDs;
+- Gallery relationship memory may use explicit Taste/Inquiry/Offer events, but no private collector data is exposed to another Gallery by default.
+
+**DO NOT COPY**
+
+- automatic transfer/copying of inventory masters between Artist and Gallery stores;
+- silent CRM interest creation from sensitive/private activity;
+- mutable duplicate object records owned separately by each participant.
+
+### MutualArt — cross-context followed-artist alerts
+
+Official reference:
+
+- https://www.mutualart.com/plans
+
+Observed product pattern:
+
+- followed artists can drive alerts spanning auctions, exhibitions, events and market activity.
+
+**ADOPT/ADAPT for Antiqua — ANTIQUA-NET-18 Cultural Watch**
+
+One explicit follow can fan out into bounded notification categories:
+
+- new reviewed Artwork;
+- Exhibition/Event;
+- Auction lot/result;
+- Editorial/Research;
+- representation change.
+
+Users choose categories and frequency. Notification relevance is explainable. Watch state never changes authenticity, provenance or expert authority.
+
+### Artsy My Collection — private collection record plus artist/market context
+
+Official reference:
+
+- https://www.artsy.net/collector-profile/insights
+
+Observed product patterns:
+
+- private artwork record;
+- collection-level market/artist context;
+- artist career/auction context around works already owned.
+
+**ADOPT/ADAPT for Antiqua — ANTIQUA-NET-19 Collection Intelligence**
+
+- extend existing PRIVATE Collection / Collection Records instead of creating “My Collection 2”;
+- connect owned works to Artist updates, exhibitions, auction results and conservation/condition timeline;
+- keep valuation/market intelligence visibly separate from cultural or authentication evidence;
+- support “what changed around my collection?” without making holdings public.
+
+### Resulting unique Antiqua loop
+
+The target loop is not “post → like → follow”. It is:
+
+`Artwork → Artist → Evidence/Research → Gallery/Institution → Exhibition/Event → Save/Visit → Collection → Taste → Alert → Collaboration/Inquiry/Auction → Ownership/Condition → back to cultural context`
+
+This joins discovery, scholarship, professional collaboration, collection memory and commerce while keeping their authorities separate.
+
+### Sequencing after v0.41
+
+1. merge Art Network identity/trust;
+2. Event/Exhibition schedule authority + Art Calendar;
+3. structured Collaboration Request authority;
+4. Artist↔Gallery connection + consignment handshake;
+5. bounded Cultural Watch alerts;
+6. Collection Intelligence read model;
+7. View on Wall after Media/dimensions/rights gate;
+8. 3D/AR exhibition presentation only after canonical media reuse is proven.
