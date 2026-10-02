@@ -4,6 +4,7 @@ import {listSubscriptions} from './domain-e2e-v14.mjs';
 import {listOffers} from './offer-negotiation-v22.mjs';
 import {listViewingRequests} from './viewing-v23.mjs';
 import {listCollectionRecords} from './domain-e2e-v14.mjs';
+import {listMyCollections} from './collection-graph-v10.mjs';
 
 const memoryEvents=new Map();
 const DIMENSIONS=['maker','department','period','origin'];
@@ -29,7 +30,7 @@ async function catalogue({publicOnly=false}={}){
 }
 
 function eventMapKey(accountId,sourceKey){return accountId+'|'+sourceKey}
-export function tasteGraphCapabilities(){return{contractVersion:'v28',explainable:true,aiUsed:false,priceUsedForMatching:false,dimensions:DIMENSIONS,signalWeights:SIGNAL_WEIGHTS,engagedViewThreshold:{minimumDwellSeconds:8,minimumDepth:0.35},authoritativeSources:{ENGAGED_VIEW:'taste_signal_events',DISMISSED:'taste_signal_events',SAVED:'account_object_flags',COLLECTED:'account_object_flags',FOLLOW_MAKER:'discovery_subscriptions',FOLLOW_CATEGORY:'discovery_subscriptions',OFFER:'offers',VIEWING:'viewing_requests',PURCHASE:'collection_records/acquisition'},rawNetworkIdentifiersStored:false}}
+export function tasteGraphCapabilities(){return{contractVersion:'v28',explainable:true,aiUsed:false,priceUsedForMatching:false,dimensions:DIMENSIONS,signalWeights:SIGNAL_WEIGHTS,engagedViewThreshold:{minimumDwellSeconds:8,minimumDepth:0.35},authoritativeSources:{ENGAGED_VIEW:'taste_signal_events',DISMISSED:'taste_signal_events',SAVED:'account_object_flags',COLLECTED:'account_object_flags/collection_graph',FOLLOW_MAKER:'discovery_subscriptions',FOLLOW_CATEGORY:'discovery_subscriptions',OFFER:'offers',VIEWING:'viewing_requests',PURCHASE:'collection_records/acquisition'},rawNetworkIdentifiersStored:false}}
 
 function sanitizeMeta(type,metadata={}){
  if(type==='ENGAGED_VIEW'){const depth=Math.max(0,Math.min(1,Number(metadata.depth)||0)),dwellSeconds=Math.max(0,Math.min(3600,Number(metadata.dwellSeconds)||0));if(depth<0.35||dwellSeconds<8)fail(422,'ENGAGEMENT_THRESHOLD_NOT_MET','Engaged view requires at least 8 seconds and 35% depth');return{depth:Number(depth.toFixed(3)),dwellSeconds:Number(dwellSeconds.toFixed(1)),surface:'PASSPORT'}}
@@ -50,13 +51,14 @@ export async function recordTasteSignal(account,body={}){
 }
 
 async function pgFacts(account){
- const [events,flags,subs,offers,viewings,records]=await Promise.all([
+ const [events,flags,subs,offers,viewings,records,collections]=await Promise.all([
   db.pool.query('SELECT object_id,signal_type,occurred_at FROM taste_signal_events WHERE account_id=$1',[account.id]),
   db.pool.query("SELECT object_id,flag_type,updated_at FROM account_object_flags WHERE account_id=$1 AND flag_type IN('SAVED','COLLECTED')",[account.id]),
   db.pool.query("SELECT subscription_type,criteria,updated_at FROM discovery_subscriptions WHERE account_id=$1 AND status='ACTIVE' AND subscription_type IN('FOLLOW_MAKER','FOLLOW_CATEGORY')",[account.id]),
   db.pool.query('SELECT l.object_id,o.updated_at FROM offers o JOIN listings l ON l.id=o.listing_id WHERE o.buyer_account_id=$1',[account.id]),
   db.pool.query("SELECT object_id,updated_at FROM viewing_requests WHERE buyer_account_id=$1 AND status<>'CANCELLED'",[account.id]),
-  db.pool.query("SELECT object_id,acquisition,updated_at,status FROM collection_records WHERE account_id=$1 AND status IN('OWNED','ON_LOAN','CONSIGNED')",[account.id])
+  db.pool.query("SELECT object_id,acquisition,updated_at,status FROM collection_records WHERE account_id=$1 AND status IN('OWNED','ON_LOAN','CONSIGNED')",[account.id]),
+  listMyCollections(account)
  ]);
  return{
   objectFacts:[
@@ -64,6 +66,7 @@ async function pgFacts(account){
    ...flags.rows.map(r=>({objectId:r.object_id,type:r.flag_type,at:iso(r.updated_at)})),
    ...offers.rows.map(r=>({objectId:r.object_id,type:'OFFER',at:iso(r.updated_at)})),
    ...viewings.rows.map(r=>({objectId:r.object_id,type:'VIEWING',at:iso(r.updated_at)})),
+   ...collections.flatMap(c=>(c.items||[]).map(i=>({objectId:i.objectId,type:'COLLECTED',at:c.updatedAt||c.createdAt||null}))),
    ...records.rows.filter(r=>['ORDER','AUCTION'].includes(String(r.acquisition?.source||'').toUpperCase())).map(r=>({objectId:r.object_id,type:'PURCHASE',at:iso(r.updated_at)}))
   ],
   ownedIds:new Set(records.rows.map(r=>String(r.object_id))),
@@ -72,13 +75,14 @@ async function pgFacts(account){
 }
 
 async function memoryFacts(account){
- const [flags,subs,offers,viewings,records]=await Promise.all([listObjectFlags(db,account.id),listSubscriptions(account),listOffers(account),listViewingRequests(account),listCollectionRecords(account)]);
+ const [flags,subs,offers,viewings,records,collections]=await Promise.all([listObjectFlags(db,account.id),listSubscriptions(account),listOffers(account),listViewingRequests(account),listCollectionRecords(account),listMyCollections(account)]);
  return{
   objectFacts:[
    ...[...memoryEvents.values()].filter(x=>x.accountId===account.id).map(x=>({objectId:x.objectId,type:x.signalType,at:x.occurredAt})),
    ...flags.filter(x=>['SAVED','COLLECTED'].includes(x.flagType)).map(x=>({objectId:x.objectId,type:x.flagType,at:x.updatedAt||x.createdAt})),
    ...offers.map(x=>({objectId:x.objectId,type:'OFFER',at:x.updatedAt||x.createdAt})),
    ...viewings.filter(x=>x.status!=='CANCELLED').map(x=>({objectId:x.objectId,type:'VIEWING',at:x.updatedAt||x.createdAt})),
+   ...collections.flatMap(c=>(c.items||[]).map(i=>({objectId:i.objectId,type:'COLLECTED',at:c.updatedAt||c.createdAt||null}))),
    ...records.filter(x=>['ORDER','AUCTION'].includes(String(x.acquisition?.source||'').toUpperCase())).map(x=>({objectId:x.objectId,type:'PURCHASE',at:x.updatedAt||x.createdAt}))
   ],
   ownedIds:new Set(records.filter(x=>['OWNED','ON_LOAN','CONSIGNED'].includes(x.status)).map(x=>String(x.objectId))),
