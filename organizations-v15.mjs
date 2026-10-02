@@ -76,6 +76,6 @@ export async function getPublicSellerProfile(sellerId){
   return sellers.get(sellerId)||null;
 }
 export async function listPublicSellerProfiles(){
-  const merged=new Map([...sellers.values()].map(s=>[s.id,s]));if(db.kind==='POSTGRES'){const rows=(await db.pool.query(`${orgSelect} WHERE o.status='ACTIVE' ORDER BY o.name`)).rows;for(const row of rows){const p=publicSeller(mapOrg(row));merged.set(p.id,p)}}return[...merged.values()];
+  const merged=new Map([...sellers.values()].map(s=>[s.id,s]));if(db.kind==='POSTGRES'){const rows=(await db.pool.query(`${orgSelect} WHERE o.status='ACTIVE' AND o.seller_id IS NOT NULL ORDER BY o.name`)).rows;for(const row of rows){const p=publicSeller(mapOrg(row));merged.set(p.id,p)}}return[...merged.values()];
 }
 export function organizationCapabilities(){return{durable:db.kind==='POSTGRES',memberships:true,roles:[...ORG_ROLES],dealerProfile:true,locations:true,publicSellerAuthority:db.kind==='POSTGRES'}}
