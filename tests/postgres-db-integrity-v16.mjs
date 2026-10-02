@@ -19,7 +19,7 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 try{
  assert.equal(db.kind,'POSTGRES');
  assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
- assert.equal(migrationManifest.at(-1).version,'026_v40_real_pilot_launch');
+ assert.equal(migrationManifest.at(-1).version,'027_v41_art_network_identity');
 
  const versions=(await db.pool.query('SELECT version FROM schema_migrations ORDER BY version')).rows.map(x=>x.version);
  assert.deepEqual(versions,migrationManifest.map(x=>x.version),'CLI/server migration authority must match the complete registered migration manifest');

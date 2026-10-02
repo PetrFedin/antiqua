@@ -7,6 +7,7 @@ test('Gallery-first navigation keeps consumer journey separate from professional
  await expect(nav.locator('[data-nav="gallery"]')).toHaveText(/Галерея|Gallery/i);
  await expect(nav.locator('[data-nav="creators"]')).toHaveText(/Художники|Artists/i);
  await expect(nav.locator('[data-nav="collections"]')).toBeVisible();
+ await expect(nav.locator('[data-nav="network"]')).toHaveText(/Сообщество|Community/i);
  await expect(nav.locator('[data-nav="learn"]')).toHaveText(/Знания|Learn/i);
  await expect(nav.locator('[data-nav="events"]')).toHaveText(/События|Events/i);
  await expect(nav.locator('[data-nav="auctions"]')).toHaveText(/Аукцион|Auction/i);
@@ -26,8 +27,9 @@ test('Gallery-first mobile tab bar exposes the core art journey',async({page})=>
  await page.setViewportSize({width:390,height:844});
  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
  const tabs=page.locator('.mobile-tabbar');
- for(const key of ['gallery','creators','collections','learn','auctions','account'])await expect(tabs.locator(`[data-nav="${key}"]`)).toBeVisible();
+ for(const key of ['gallery','creators','collections','network','auctions','account'])await expect(tabs.locator(`[data-nav="${key}"]`)).toBeVisible();
  await expect(tabs.locator('[data-nav="dealers"]')).toHaveCount(0);
+ await expect(tabs.locator('[data-nav="learn"]')).toHaveCount(0);
 });
 
 
