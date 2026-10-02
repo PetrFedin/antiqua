@@ -11,7 +11,7 @@ test('Collections and Taste turns save into a private collection and explainable
  const saved=await post(page,'/api/lots/lot-101/save',csrf,{enabled:true});expect(saved.status).toBe(200);
  await page.reload({waitUntil:'domcontentloaded'});
 
- await page.locator('[data-nav="collections"]').first().click();
+ await page.locator('[data-nav="collections"]:visible').first().click();
  await expect(page).toHaveURL(/#collections/);
  const hub=page.locator('.collections-taste-page');await expect(hub).toBeVisible();
  await expect(hub.locator('[data-saved-section] [data-open-passport="lot-101"]')).toBeVisible();
