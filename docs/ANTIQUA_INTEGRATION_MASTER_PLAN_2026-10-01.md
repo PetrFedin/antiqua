@@ -635,3 +635,51 @@ Before Collections/Taste work is allowed to merge:
 4. Artwork → Artist → Related Works must remain functional on desktop and mobile.
 
 Only then open the Collections/Taste implementation slice.
+
+## 2026-10-02 implementation checkpoint — Collections + Taste
+
+**Active issue:** #75.
+
+This layer productizes existing authorities. It does not create a new collection store, recommendation database, or opaque ranking service.
+
+### Authority reuse
+- Saved works: existing account object flags.
+- My Collections: existing Collection Graph and /api/collections/mine.
+- Public collections: only explicitly public Collection Graph records.
+- Personalized discovery: existing v28 /api/taste/recommendations.
+- Negative feedback: existing immutable DISMISSED Taste events.
+- Ownership, storage, insurance, and appraisal remain in private Collection Records.
+
+### Consumer surface
+The #collections route becomes the Gallery-first retention hub:
+
+Saved Works → My Collections → Explainable For You → Public Collections.
+
+Rules:
+- new personal collections default to PRIVATE;
+- PUBLIC is an explicit choice;
+- saved/collected/purchased works are not presented as new discoveries;
+- recommendation reasons are human-readable and raw affinity points are not shown as a quality or authenticity score;
+- price is not a Taste matching input;
+- private notes, storage, insurance, and owner identity are not exposed in public/taste cards;
+- first-time “Add to collection” routes into Collections rather than professional operations UI.
+
+### Current implementation
+- consumer module public/modules/collections-taste.js;
+- image-first Saved Works and collection cards;
+- server-backed explainable recommendations;
+- bounded “Not for me” using the existing Taste Graph;
+- PRIVATE collection creation from the consumer surface;
+- Browser E2E covers Save → Collections → PRIVATE collection → add artwork → recommendation exclusion → dismiss;
+- dealer/pilot remains backstage.
+
+### Exit gate
+Books/Courses/Events (#76) may begin only after:
+1. #75 CI is green;
+2. PostgreSQL durability and object-storage gates remain green;
+3. desktop and mobile Browser E2E pass the Collections/Taste Golden Path;
+4. PRIVATE collection non-disclosure is verified;
+5. saved/collected works are proven excluded from new-discovery recommendations.
+
+Only then advance to the cultural-content graph.
+
