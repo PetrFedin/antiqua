@@ -1756,3 +1756,141 @@ This joins discovery, scholarship, professional collaboration, collection memory
 6. Collection Intelligence read model;
 7. View on Wall after Media/dimensions/rights gate;
 8. 3D/AR exhibition presentation only after canonical media reuse is proven.
+
+
+---
+
+## 2026-10-05 implementation checkpoint — Art Calendar v0.42
+
+Implementation branch:
+
+- `feature/art-calendar-v42`
+
+v0.42 executes the previously approved `ANTIQUA-NET-15 Art City / Art Week Companion` foundation. It does not create a second Exhibition authority.
+
+### Implemented in v0.42
+
+1. **Reviewed discrete Event authority**
+   - `art_events` owns openings, artist talks, lectures, workshops, performances, screenings, art fairs, biennials, gallery weekends, auction previews, auctions, viewings, studio visits, courses and online events;
+   - Event has `DRAFT -> REVIEW_PENDING -> PUBLISHED` review;
+   - `PRIVATE | UNLISTED | PUBLIC` visibility is explicit;
+   - a substantive edit returns a published Event to `DRAFT`;
+   - cancel is an explicit state change.
+
+2. **Exhibition remains canonical**
+   - existing `exhibitions` remains owned by Collection/Exhibition authority;
+   - Calendar reads canonical Exhibition rows and does not copy them into `art_events`;
+   - unified Calendar uses `sourceType=EVENT | EXHIBITION`.
+
+3. **Private cultural participation**
+   - separate private states `SAVED | PLANNED | VISITED | DISMISSED`;
+   - Event participation and Exhibition participation use explicit account-scoped storage;
+   - public APIs expose no participant identity or participation counts;
+   - public Art Profile does not receive visit history.
+
+4. **Calendar discovery read model**
+   - derived `openNow`;
+   - derived `openingSoon`;
+   - derived `closingSoon`;
+   - consumer filters: all / today / 7 days / open now / closing soon / online;
+   - city strip for rapid locality scanning;
+   - coordinates are stored as map-ready structured data, not free text.
+
+5. **Portable planning**
+   - ICS export for reviewed Events and canonical Exhibitions;
+   - private `My Art Day` surface;
+   - event submission form;
+   - iPhone/iPad/desktop responsive Calendar.
+
+6. **Structured context links**
+   - Event -> Creator with bounded roles;
+   - Event -> Organization with bounded roles;
+   - optional Event -> Exhibition link;
+   - arbitrary internal Event metadata is stored but deliberately excluded from the public projection.
+
+7. **Release gates**
+   - migration authority extends through `028_v42_art_calendar`;
+   - memory contract covers review, Exhibition reuse, private participation, ICS and privacy;
+   - PostgreSQL contract covers durable reviewed Event and private participation;
+   - Browser E2E covers buyer submission -> operator review -> public Calendar -> private plan -> Event detail -> ICS;
+   - final CI status remains pending until PR gates complete.
+
+### v0.42 explicit non-goals
+
+- no public check-in feed;
+- no background/geofenced location tracking;
+- no popularity ranking of Events;
+- no copied Exhibition records;
+- no automatic trust for user-submitted events;
+- no route optimisation without reliable venue/opening-hours inputs;
+- no fake “nearby” or travel-time estimate without a map/routing authority;
+- no public collector visit history.
+
+---
+
+## 2026-10-05 benchmark refinement — Art Calendar / day planning
+
+### See Saw — custom gallery map and urgency signals
+
+References:
+
+- https://seesawmap.com/support
+- https://apps.apple.com/us/app/see-saw-gallery-guide/id791643418
+
+Observed patterns:
+
+- custom map built from a visitor's selected shows;
+- all-current-shows map;
+- openings and closing-soon visibility;
+- artist/gallery search and neighbourhood browsing;
+- exhibition imagery / press release context;
+- editor picks;
+- optional gallery appointment action.
+
+**ADOPT/ADAPT after v0.42 foundation**
+
+- personal Art Day map must be built only from explicit `PLANNED` selections;
+- add neighbourhood/district grouping only from reviewed venue geography;
+- distinguish editorial picks from personalised recommendations;
+- viewing/appointment actions must reuse Antiqua Viewing authority rather than mailto-style ad hoc state;
+- opening-hours logic requires a dedicated Venue Hours contract before “open now” is used for venue access claims.
+
+### Smartify — time-budget personalisation and accessible visitor journey
+
+References:
+
+- https://smartify.org/partners/features/personalisation
+- https://smartify.org/partners/features/media-player
+- https://smartify.org/partners/products/web-and-mobile-apps
+
+Observed patterns:
+
+- visitor selects interests and available time;
+- system composes a personalised route/experience;
+- layered audio/image/video context;
+- offline access;
+- multilingual accessibility;
+- wayfinding;
+- object recognition.
+
+**ADOPT/ADAPT for Antiqua**
+
+- next planning layer may accept `availableMinutes`, must-see Events/Exhibitions and Taste interests;
+- AI/ranking chooses among reviewed canonical content only; it does not invent Event facts;
+- itinerary explanation must expose why each stop was selected;
+- route feasibility requires venue opening hours + coordinates + travel-time authority;
+- audio/context attaches to canonical Event/Exhibition/Artwork/Editorial IDs;
+- offline cultural guide is valuable later, but private Collection data must not be cached into public/shared guides by default.
+
+### Next Calendar gates
+
+1. merge v0.42 reviewed Event + unified Calendar foundation;
+2. Venue Hours authority and reviewed venue coordinates;
+3. Art Week / Fair / Festival Programme authority;
+4. private day-plan conflict detection;
+5. route sequencing by available time and selected stops;
+6. explainable recommendations from Creator Follow + Taste;
+7. bounded Calendar/Cultural Watch notifications;
+8. accessible audio/context layer from Editorial/Learn authority.
+
+Travel-time optimisation, map routing and “open now” venue guarantees remain **blocked** until steps 2–3 are authoritative.
