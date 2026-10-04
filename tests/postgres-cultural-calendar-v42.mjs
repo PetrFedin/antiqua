@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {db} from '../runtime-v09.mjs';
 import {listOrganizationsForAccount} from '../organizations-v15.mjs';
-import {createCulturalEvent,submitCulturalEvent,reviewCulturalEvent,setCalendarParticipation,getMyCulturalCalendar,listPublicCalendar,createCalendarExhibition,submitCalendarExhibition,reviewCalendarExhibition} from '../cultural-calendar-v42.mjs';
+import {createCulturalEvent,submitCulturalEvent,reviewCulturalEvent,setCalendarParticipation,getMyCulturalCalendar,listPublicCalendar,createCalendarExhibition,updateCalendarExhibition,submitCalendarExhibition,reviewCalendarExhibition} from '../cultural-calendar-v42.mjs';
 
 if(!process.env.DATABASE_URL){console.log('ANTIQUA v42 PostgreSQL Cultural Calendar: skipped (DATABASE_URL not set)');process.exit(0)}
 assert.equal(db.kind,'POSTGRES');
@@ -19,6 +19,7 @@ try{
 
  const ex=await createCalendarExhibition(seller,{title:{en:'PG Exhibition '+token,ru:'PG выставка '+token},subtitle:{en:'Calendar authority',ru:'Календарная модель'},curatorialStatement:{en:'Canonical exhibition extended for scheduling.',ru:'Каноническая выставка расширена календарными полями.'},organizationId:org.id,timezone:'Europe/Paris',startsAt:new Date(base-864e5).toISOString(),endsAt:new Date(base+10*864e5).toISOString(),visibility:'PUBLIC',publicSourceUrl:'https://example.com/exhibition/'+token});exhibitionIds.push(ex.id);await submitCalendarExhibition(seller,ex.id);const published=await reviewCalendarExhibition(operator,ex.id,{decision:'APPROVE',note:'pg exhibition review'});assert.equal(published.publicationStatus,'PUBLISHED');
  const calendar=await listPublicCalendar({organizationId:org.id});assert.ok(calendar.entries.some(x=>x.id===a.id&&x.entryType==='EVENT'));assert.ok(calendar.entries.some(x=>x.id===ex.id&&x.entryType==='EXHIBITION'));
+ const editedEx=await updateCalendarExhibition(seller,ex.id,{subtitle:{en:'Changed after review',ru:'Изменено после проверки'}});assert.equal(editedEx.publicationStatus,'DRAFT');assert.equal((await listPublicCalendar({organizationId:org.id})).entries.some(x=>x.id===ex.id),false,'edited exhibition must leave public calendar until re-reviewed');await submitCalendarExhibition(seller,ex.id);await reviewCalendarExhibition(operator,ex.id,{decision:'APPROVE'});
  await assert.rejects(()=>db.pool.query("INSERT INTO cultural_calendar_participation(account_id,entity_type,entity_id,state) VALUES($1,'EVENT',$2,'SAVED')",[buyer.id,'missing-'+token]),e=>e.code==='23503');
  console.log('ANTIQUA v42 PostgreSQL Cultural Calendar: durable event/exhibition authority + participation FK guard + conflict detection passed');
 }finally{
