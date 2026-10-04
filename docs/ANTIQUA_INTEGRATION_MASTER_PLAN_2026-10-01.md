@@ -1376,3 +1376,110 @@ This is not an authenticity certificate unless the responsible authority explici
 
 **Commercial framing:** Antiqua becomes a collaboration platform for serious attribution/research, not only a marketplace/catalogue.
 
+## Premium enterprise wave — museum-grade loans, exhibitions and movement chain
+
+This wave extends Antiqua from ownership/provenance/condition into serious exhibition and institutional object movement.
+
+### Domain reference — REFERENCE ONLY
+
+Reference implementation/domain inspiration:
+
+https://github.com/collectionspace/services
+
+Use museum collection-management concepts as reference only. Do not copy/integrate code until the exact license and deployment implications are separately reviewed.
+
+### Loan Authority — ADOPT
+
+Create:
+
+- loan ID/type: outgoing / incoming;
+- lender/borrower;
+- object(s);
+- exhibition/event;
+- loan period;
+- conditions;
+- insurance requirements;
+- transport requirements;
+- rights/reproduction terms;
+- approval state;
+- documents.
+
+Loan does not change ownership/provenance automatically.
+
+### Object Movement Record — ADOPT
+
+Every physical movement can record:
+
+- object;
+- from/to location;
+- date/time;
+- reason;
+- handler/courier;
+- crate/package;
+- transport provider;
+- condition checkpoint;
+- evidence;
+- custody status.
+
+This creates a chain of custody over physical movement.
+
+### Facility / Venue Assessment — ADOPT
+
+For an exhibition/loan venue store reviewed:
+
+- location/contact;
+- environmental/security notes;
+- display requirements;
+- handling restrictions;
+- insurance requirements;
+- facility-report reference;
+- reviewer/date.
+
+Do not pretend a form result is a formal institutional accreditation unless such authority exists.
+
+### Condition-at-Movement Gate — ADOPT
+
+Before dispatch and after arrival/return:
+
+- exact condition-report version;
+- image set;
+- damage/change observations;
+- crate/seal state;
+- reviewer;
+- acceptance/sign-off.
+
+Reuse the existing Condition Change Intelligence and image-region annotations.
+
+### Insurance / Valuation Reference — ADOPT
+
+Store only the necessary loan-specific reference:
+
+- insurer/broker reference;
+- insured value/date/currency;
+- policy/certificate reference;
+- coverage period;
+- private/public visibility.
+
+Antiqua does not become an insurer or appraisal authority.
+
+### Exhibition Timeline — ADOPT
+
+Flow:
+
+loan request -> approval -> packing -> dispatch -> arrival -> installation -> exhibition -> deinstallation -> return -> condition closeout
+
+Every stage has owner/evidence.
+
+### Additional acceptance
+
+- loan/movement never silently changes provenance/ownership;
+- every custody handoff is timestamped/evidenced;
+- dispatch/return condition uses exact report/image versions;
+- private insured values are ACL-controlled;
+- exhibition history can be published separately from private logistics;
+- movement chain remains auditable after return.
+
+**Sequencing:** Object/Condition/Media/Provenance -> Loan -> Movement -> Condition checkpoints -> Exhibition -> Return/closeout.
+
+**Commercial framing:** this makes Antiqua credible for galleries, institutions, collectors and insurers managing real-world loans/exhibitions, not only digital records.
+
