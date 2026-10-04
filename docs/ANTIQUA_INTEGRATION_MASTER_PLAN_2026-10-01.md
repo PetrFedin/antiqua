@@ -1649,3 +1649,190 @@ This joins discovery, scholarship, professional collaboration, collection memory
 6. Collection Intelligence read model;
 7. View on Wall after Media/dimensions/rights gate;
 8. 3D/AR exhibition presentation only after canonical media reuse is proven.
+
+
+## 2026-10-05 implementation checkpoint — Cultural Calendar v0.42
+
+Implementation branch:
+
+- `feature/cultural-calendar-v42`
+
+### Product boundary
+
+v0.42 turns the former “Events = Exhibitions” navigation alias into a real cultural-programme authority.
+
+It does **not** create a second Exhibition master.
+
+Canonical model:
+
+`Organization / Art Profile → Exhibition → Cultural Event → personal Saved / Planned / Visited → ICS`
+
+### Implemented
+
+1. **Cultural Event authority**
+   - event types include opening, artist talk, curator tour, lecture, workshop, auction preview, auction, fair day, private view, book launch, research session, screening and performance;
+   - title/summary/description are bilingual;
+   - physical / online / hybrid venue modes;
+   - explicit IANA timezone;
+   - optional canonical Organization, Organization Location and Exhibition links;
+   - optional Creator/Object relationships;
+   - source URL, booking URL, admission note, accessibility and capacity fields;
+   - substantive edits return the event to `DRAFT`.
+
+2. **Reviewed publication**
+   - `DRAFT → REVIEW_PENDING → PUBLISHED`;
+   - Organization members can author within their authority;
+   - independent authors require a reviewed Art Profile;
+   - public events may not expose a private Organization Location;
+   - cancelled events leave the active public schedule.
+
+3. **Exhibition schedule hardening**
+   - existing `exhibitions` table remains canonical;
+   - adds Organization / public location / timezone / official source / booking URL;
+   - adds separate `publication_status` so lifecycle status and review status are no longer conflated;
+   - open-ended LIVE exhibitions remain open when `ends_at IS NULL`.
+
+4. **Private personal calendar state**
+   - `SAVED | PLANNED | VISITED`;
+   - history belongs to the account;
+   - no public check-in feed;
+   - no background location tracking;
+   - database trigger prevents orphan participation records.
+
+5. **Conflict detection**
+   - overlaps are computed only for exact-time `PLANNED` entries;
+   - Antiqua reports the collision but never auto-removes a user choice.
+
+6. **ICS**
+   - individual public event export;
+   - personal plan export;
+   - direct `text/calendar` response, not JSON-wrapped calendar text.
+
+7. **Consumer surface**
+   - `#events` becomes Art Calendar;
+   - Today / next seven days / exhibitions / later programme;
+   - My Plan rail;
+   - plan-conflict panel;
+   - event detail;
+   - responsive iPhone/tablet/desktop layout.
+
+### Explicit non-goals
+
+- no public live-location history;
+- no “who is here now” mechanic;
+- no engagement-ranking of cultural importance;
+- no duplicate Exhibition or Gallery records;
+- no automatic import of unreviewed third-party events;
+- no inferred attendance;
+- no ticketing/payment authority duplication.
+
+---
+
+## 2026-10-05 benchmark delta — private presentation and collector intent
+
+### Artlogic — Wishlist → grouped enquiry
+
+Official reference:
+
+- https://support.artlogic.net/hc/en-gb/articles/30125406010908-31st-August-2026-Release-Notes
+
+Observed 2026 pattern:
+
+- visitors save multiple artworks;
+- one enquiry can include the complete saved set;
+- the enquiry can feed the gallery’s existing contact workflow rather than generating isolated one-work messages.
+
+**ADOPT/ADAPT — ANTIQUA-NET-20 Interest Set → Structured Inquiry**
+
+Use existing authorities:
+
+`Saved Artwork IDs → temporary Interest Set → one Inquiry with line items → Gallery/Dealer Inbox`
+
+Rules:
+
+- never create duplicate Artwork records;
+- preserve item-level commercial availability at send time;
+- snapshot price/availability context into the inquiry while retaining canonical Artwork IDs;
+- gallery sees why each item is present;
+- collector can remove individual works before submit;
+- no silent CRM profile enrichment from private browsing.
+
+### Artlogic — Private Views / Dynamic Private Views
+
+Official references:
+
+- https://support.artlogic.net/hc/en-gb/articles/17337147499036-How-to-create-Private-Views
+- https://support.artlogic.net/hc/en-gb/articles/21575664444700-NEW-How-to-set-up-Dynamic-Private-Views-Beta
+- https://support.artlogic.net/hc/en-gb/articles/14248526908188-An-introduction-to-Private-Views-and-the-Artlogic-app
+
+Observed patterns:
+
+- unique unguessable presentation links;
+- artwork selections can remain linked to current database information;
+- private presentations are shareable from gallery workflows;
+- iPhone/iPad presentation mode is useful at fairs and can operate offline.
+
+**ADOPT/ADAPT — ANTIQUA-NET-21 Private Viewing Pack**
+
+A Private Viewing Pack is an ACL presentation over canonical records:
+
+- Artwork IDs;
+- optional Exhibition/Collection narrative;
+- recipient/access policy;
+- expiration;
+- selected price visibility;
+- selected provenance/condition visibility;
+- enquiry/offer CTA;
+- immutable send snapshot + live-current-data indicator.
+
+Do not copy the Artwork master into the pack.
+
+Offline mode, when added, must cache only explicitly allowed fields and must support expiry/revocation semantics.
+
+### Artlogic — View on a Wall
+
+Official reference:
+
+- https://support.artlogic.net/hc/en-gb/articles/360021545340--View-on-a-wall-for-Private-Views-Beta
+
+Confirmed prerequisite pattern:
+
+- source image;
+- physical artwork width/dimensions;
+- optional alternate framed/matted image.
+
+This reinforces the existing Antiqua gate:
+
+`Media rights + verified dimensions → derived room preview`
+
+No production View on Wall should be enabled for an object whose display dimensions are unresolved.
+
+### Vortic — virtual exhibition as reusable presentation layer
+
+Official reference:
+
+- https://vortic.art/
+
+Observed pattern:
+
+- galleries/institutions curate and publish exhibitions across web/mobile;
+- AR is a presentation surface;
+- exhibitions can be revisited after the physical moment.
+
+**ADOPT/ADAPT**
+
+- keep the canonical Antiqua Exhibition useful before, during and after the physical show;
+- presentation/AR layers reference the Exhibition and Artwork authorities;
+- archived Exhibition remains a cultural record rather than becoming a dead campaign page.
+
+### Sequencing after v0.42
+
+1. Cultural Calendar merge;
+2. Art Week / Fair Programme grouping + personal day plan;
+3. Collaboration Request authority;
+4. Artist↔Gallery representation / consignment handshake;
+5. Interest Set → Structured Inquiry;
+6. Private Viewing Pack;
+7. Cultural Watch;
+8. Collection Intelligence;
+9. View on Wall only after Media/dimensions/rights gate.
