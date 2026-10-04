@@ -74,4 +74,16 @@ CREATE TABLE IF NOT EXISTS art_event_participation (
 );
 CREATE INDEX IF NOT EXISTS art_event_participation_account_idx ON art_event_participation(account_id,state,updated_at DESC);
 
+CREATE TABLE IF NOT EXISTS art_exhibition_participation (
+  account_id text NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  exhibition_id text NOT NULL REFERENCES exhibitions(id) ON DELETE CASCADE,
+  state text NOT NULL CHECK(state IN('SAVED','PLANNED','VISITED','DISMISSED')),
+  planned_for timestamptz,
+  visited_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(account_id,exhibition_id)
+);
+CREATE INDEX IF NOT EXISTS art_exhibition_participation_account_idx ON art_exhibition_participation(account_id,state,updated_at DESC);
+
 INSERT INTO schema_migrations(version) VALUES('028_v42_art_calendar') ON CONFLICT DO NOTHING;
