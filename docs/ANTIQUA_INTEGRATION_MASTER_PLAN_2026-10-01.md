@@ -1756,3 +1756,133 @@ This joins discovery, scholarship, professional collaboration, collection memory
 6. Collection Intelligence read model;
 7. View on Wall after Media/dimensions/rights gate;
 8. 3D/AR exhibition presentation only after canonical media reuse is proven.
+
+## Moat wave — Catalogue Raisonné and artist-estate platform
+
+This wave opens a premium institutional market for artist estates, foundations, scholars, galleries and catalogue-raisonné committees.
+
+### Canonical Work Registry — ADOPT
+
+Create a scholarly work record distinct from marketplace listing:
+
+- canonical work ID;
+- title(s);
+- creator/attribution state;
+- date/date range;
+- medium/support;
+- dimensions;
+- inscriptions/marks;
+- edition/state where applicable;
+- provenance;
+- exhibition history;
+- bibliography;
+- related works;
+- images;
+- current catalogue status;
+- committee/reviewer state.
+
+A marketplace/dealer listing may reference the canonical work but never becomes the scholarly authority.
+
+### Attribution State — ADOPT
+
+Support controlled states such as:
+
+- accepted;
+- attributed to;
+- workshop/studio;
+- circle/follower;
+- formerly attributed;
+- rejected/not accepted;
+- under review;
+- insufficient evidence.
+
+Every state has:
+
+- decision authority;
+- effective date;
+- supporting evidence;
+- prior state;
+- public/private note.
+
+Do not collapse nuanced scholarly attribution into one authenticity boolean.
+
+### Edition / State / Variant Authority — ADOPT
+
+For prints, multiples and editioned works, support:
+
+- edition;
+- state;
+- plate/block/version;
+- proof type;
+- impression;
+- numbering;
+- known copies;
+- relationship to canonical work.
+
+This is separate from ownership/provenance.
+
+### Submission Portal — ADOPT
+
+Owners/dealers/institutions can submit a candidate work:
+
+submission -> identity/contact -> object facts -> images/docs -> provenance -> requested question -> fee/admin state if applicable -> triage -> expert review -> additional evidence request -> decision
+
+Submission never automatically becomes a public catalogue record.
+
+### Committee / Expert Review — REUSE
+
+Reuse Expert Attribution Board:
+
+- independent opinions;
+- blind phase where appropriate;
+- evidence requests;
+- disagreement matrix;
+- final authorised decision.
+
+### Scholarly Publication Layer — ADOPT
+
+Publish approved catalogue records through:
+
+- public web record;
+- IIIF media;
+- Linked Art JSON-LD projection;
+- stable canonical URL/identifier;
+- citation block;
+- revision/publication date.
+
+Private owner/location/insurance data remains excluded.
+
+### Revision / Supersession History — ADOPT
+
+Catalogue records are living scholarship.
+
+Every material change creates:
+
+- new revision;
+- reason;
+- evidence;
+- reviewer/committee;
+- public change note where appropriate;
+- superseded version preserved.
+
+### Research Corpus Moat — ADOPT
+
+The defensible asset grows from:
+
+canonical works + provenance + exhibition + bibliography + expert decisions + image regions + condition + related works
+
+This corpus can support later research tools while keeping scholarly decisions human-authorised.
+
+### Additional acceptance
+
+- scholarly work identity is separate from sales/listing identity;
+- attribution changes preserve full history;
+- submissions remain private until publication;
+- public record exposes only approved fields;
+- Linked Art/IIIF outputs rebuild from canonical data;
+- committee decision cannot be replaced by similarity/AI score.
+
+**Sequencing:** Object/Provenance/Expert/IIIF/Linked Art -> Work Registry -> Submission Portal -> committee workflow -> scholarly publication -> revision history.
+
+**Commercial framing:** Antiqua can be sold as infrastructure for artist estates, foundations and serious catalogue-raisonné projects, creating a unique long-term research dataset.
+
