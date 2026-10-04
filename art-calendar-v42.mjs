@@ -72,7 +72,7 @@ async function organizationLinksFor(e){
  return clone(eventOrganizations.get(e.id)||[]);
 }
 function publicEventBase(e){
- const x={id:e.id,eventType:e.eventType,title:e.title,summary:e.summary,visibility:e.visibility,status:e.status,attendanceMode:e.attendanceMode,startsAt:e.startsAt,endsAt:e.endsAt,timezone:e.timezone,venueName:e.venueName,address:e.address,city:e.city,country:e.country,latitude:e.latitude,longitude:e.longitude,bookingUrl:e.bookingUrl,ticketUrl:e.ticketUrl,onlineUrl:e.onlineUrl,coverImage:e.coverImage,exhibitionId:e.exhibitionId,metadata:e.metadata||{},reviewState:'PLATFORM_REVIEWED_EVENT',route:'#event/'+encodeURIComponent(e.id)};
+ const x={id:e.id,eventType:e.eventType,title:e.title,summary:e.summary,visibility:e.visibility,status:e.status,attendanceMode:e.attendanceMode,startsAt:e.startsAt,endsAt:e.endsAt,timezone:e.timezone,venueName:e.venueName,address:e.address,city:e.city,country:e.country,latitude:e.latitude,longitude:e.longitude,bookingUrl:e.bookingUrl,ticketUrl:e.ticketUrl,onlineUrl:e.onlineUrl,coverImage:e.coverImage,exhibitionId:e.exhibitionId,reviewState:'PLATFORM_REVIEWED_EVENT',route:'#event/'+encodeURIComponent(e.id)};
  return{...x,...derived({...x,sourceType:'EVENT'})};
 }
 async function publicEvent(e){return{...publicEventBase(e),creators:await creatorLinksFor(e.id),organizations:await organizationLinksFor(e)}}
