@@ -123,6 +123,14 @@ export async function cancelCulturalEvent(account,id,{reason=''}={}){
  e.status='CANCELLED';e.reviewNote=String(reason||'').slice(0,2000);e.updatedAt=now();events.set(id,e);return clone(e)
 }
 
+async function sanitizePublicEvent(e){
+ if(!e||db.kind!=='POSTGRES')return e;
+ if(e.organizationId){const org=(await db.pool.query("SELECT id,name,slug FROM organizations WHERE id=$1 AND status='ACTIVE'",[e.organizationId])).rows[0];if(org)e.organization={id:org.id,name:org.name,slug:org.slug};else{e.organizationId=null;e.organization=null}}
+ if(e.organizationLocationId){const loc=(await db.pool.query('SELECT id,label,city,address_line FROM organization_locations WHERE id=$1 AND public=true',[e.organizationLocationId])).rows[0];if(loc)e.organizationLocation={id:loc.id,label:loc.label,city:loc.city,addressLine:loc.address_line};else{e.organizationLocationId=null;e.organizationLocation=null}}
+ if(e.exhibitionId){const ok=(await db.pool.query("SELECT 1 FROM exhibitions WHERE id=$1 AND publication_status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED')",[e.exhibitionId])).rowCount;if(!ok)e.exhibitionId=null}
+ if(e.coverObjectId){const ok=(await db.pool.query("SELECT 1 FROM objects WHERE id=$1 AND publication_status='PUBLIC'",[e.coverObjectId])).rowCount;if(!ok)e.coverObjectId=null}
+ return e
+}
 async function publicEventRows(filters={}){
  const from=filters.from?instant(filters.from):new Date(Date.now()-30*864e5).toISOString(),to=filters.to?instant(filters.to):new Date(Date.now()+180*864e5).toISOString();
  let xs;
@@ -133,7 +141,7 @@ async function publicEventRows(filters={}){
    LEFT JOIN organization_locations l ON l.id=e.organization_location_id
    WHERE e.status='PUBLISHED' AND e.visibility='PUBLIC' AND e.starts_at<=$2 AND COALESCE(e.ends_at,e.starts_at)>=$1
    ORDER BY e.starts_at,e.id`,[from,to])).rows;
-  xs=[];for(const r of rows){const e=await hydrateEvent(mapEvent(r),{publicOnly:true});e.organization=r.organization_id?{id:r.organization_id,name:r.organization_name,slug:r.organization_slug}:null;e.organizationLocation=r.organization_location_id?{id:r.organization_location_id,label:r.location_label,city:r.location_city,addressLine:r.location_address}:null;xs.push(e)}
+  xs=[];for(const r of rows){const e=await sanitizePublicEvent(await hydrateEvent(mapEvent(r),{publicOnly:true}));xs.push(e)}
  }else xs=[...events.values()].filter(e=>e.status==='PUBLISHED'&&e.visibility==='PUBLIC'&&Date.parse(e.startsAt)<=Date.parse(to)&&Date.parse(e.endsAt||e.startsAt)>=Date.parse(from)).map(clone);
  return xs.filter(e=>!filters.city||[e.city?.en,e.city?.ru,e.organizationLocation?.city].filter(Boolean).some(x=>String(x).toLowerCase().includes(String(filters.city).toLowerCase()))).filter(e=>!filters.eventType||e.eventType===String(filters.eventType).toUpperCase()).filter(e=>!filters.organizationId||e.organizationId===filters.organizationId).filter(e=>!filters.creatorId||e.creators.some(x=>x.creatorId===filters.creatorId)).filter(e=>!filters.q||JSON.stringify([e.title,e.summary,e.description,e.tags]).toLowerCase().includes(String(filters.q).toLowerCase()))
 }
@@ -150,7 +158,7 @@ export async function listPublicCalendar(filters={}){
  return{entries,capabilities:culturalCalendarCapabilities()}
 }
 export async function getPublicCulturalEvent(idOrSlug){
- let e;if(db.kind==='POSTGRES'){const r=(await db.pool.query("SELECT * FROM cultural_events WHERE status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED') AND (id=$1 OR slug=$1)",[idOrSlug])).rows[0];e=r?await hydrateEvent(mapEvent(r),{publicOnly:true}):null}else e=[...events.values()].find(x=>(x.id===idOrSlug||x.slug===idOrSlug)&&x.status==='PUBLISHED'&&['PUBLIC','UNLISTED'].includes(x.visibility));
+ let e;if(db.kind==='POSTGRES'){const r=(await db.pool.query("SELECT * FROM cultural_events WHERE status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED') AND (id=$1 OR slug=$1)",[idOrSlug])).rows[0];e=r?await sanitizePublicEvent(await hydrateEvent(mapEvent(r),{publicOnly:true})):null}else e=[...events.values()].find(x=>(x.id===idOrSlug||x.slug===idOrSlug)&&x.status==='PUBLISHED'&&['PUBLIC','UNLISTED'].includes(x.visibility));
  return e?normalizeEvent(clone(e)):null
 }
 
