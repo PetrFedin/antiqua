@@ -9,7 +9,7 @@ test('Art Calendar publishes reviewed events, detects plan conflicts and exports
  const a=await create('a',0),b=await create('b',30*60000);
  auth=await login(page,'BUYER');expect(auth.status).toBe(200);const buyerCsrf=auth.body.csrf;expect((await post(page,'/api/calendar/participation',buyerCsrf,{entityType:'EVENT',entityId:a,state:'PLANNED'})).status).toBe(200);expect((await post(page,'/api/calendar/participation',buyerCsrf,{entityType:'EVENT',entityId:b,state:'PLANNED'})).status).toBe(200);
  await page.goto('/#events',{waitUntil:'domcontentloaded'});const calendar=page.locator('.cultural-calendar-page');await expect(calendar).toBeVisible();await expect(calendar).toContainText(token);await expect(calendar.locator('.calendar-conflicts')).toBeVisible();await expect(calendar.locator('.calendar-conflicts')).toContainText(/Два события идут одновременно|Two events overlap/i);
- const card=calendar.locator('.calendar-card').filter({hasText:'Browser Calendar a '+token});await expect(card).toBeVisible();await card.locator('.calendar-card-main').click();const detail=page.locator('.calendar-event-page');await expect(detail).toBeVisible();await expect(detail).toContainText(token);await expect(detail.locator('[data-calendar-state="PLANNED"]')).toHaveClass(/active/);
+ const card=calendar.locator('.calendar-card').filter({hasText:token});await expect(card).toBeVisible();await card.locator('.calendar-card-main').click();const detail=page.locator('.calendar-event-page');await expect(detail).toBeVisible();await expect(detail).toContainText(token);await expect(detail.locator('[data-calendar-state="PLANNED"]')).toHaveClass(/active/);
  const ics=await page.evaluate(async id=>{const r=await fetch('/api/calendar/events/'+id+'/ics');return{status:r.status,type:r.headers.get('content-type'),body:await r.text()}},a);expect(ics.status).toBe(200);expect(ics.type).toMatch(/text\/calendar/);expect(ics.body.startsWith('BEGIN:VCALENDAR')).toBe(true);expect(ics.body).toContain('BEGIN:VEVENT');
 });
 
@@ -17,7 +17,7 @@ test('Art Calendar publishes reviewed events, detects plan conflicts and exports
 test('guest calendar action routes to account sign-in instead of leaking an API error',async({page})=>{
  await page.goto('/#events',{waitUntil:'domcontentloaded'});
  const calendar=page.locator('.cultural-calendar-page');await expect(calendar).toBeVisible();
- const save=calendar.locator('[data-calendar-state="SAVED"]').first();await expect(save).toBeVisible();await save.click();
+ const save=calendar.locator('[data-calendar-signin]').first();await expect(save).toBeVisible();await save.click();
  await expect.poll(()=>new URL(page.url()).hash).toBe('#account');
  await expect(page.locator('#app')).toContainText(/Войти|Sign in|Аккаунт|Account/i);
 });
