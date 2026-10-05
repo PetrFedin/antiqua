@@ -14,6 +14,12 @@ try{
  const a=await createCulturalEvent(seller,eventInput('a'));eventIds.push(a.id);await submitCulturalEvent(seller,a.id);await reviewCulturalEvent(operator,a.id,{decision:'APPROVE',note:'pg review'});
  const b=await createCulturalEvent(seller,eventInput('b',45*60000));eventIds.push(b.id);await submitCulturalEvent(seller,b.id);await reviewCulturalEvent(operator,b.id,{decision:'APPROVE'});
  const row=(await db.pool.query('SELECT status,organization_id,timezone FROM cultural_events WHERE id=$1',[a.id])).rows[0];assert.deepEqual(row,{status:'PUBLISHED',organization_id:org.id,timezone:'Europe/Paris'});
+ const draftCreatorId='creator-calendar-private-'+token,privateObjectId='object-calendar-private-'+token;
+ await db.pool.query(`INSERT INTO creators(id,slug,creator_type,display_name,profile_status,evidence_status,metadata) VALUES($1,$2,'ARTIST',$3,'DRAFT','SELF_DECLARED','{}'::jsonb)`,[draftCreatorId,'calendar-private-'+token,{en:'Private Draft Artist '+token,ru:'Черновой художник '+token}]);
+ await db.pool.query(`INSERT INTO objects(id,object_code,passport,catalogue_status,trust_status,publication_status) VALUES($1,$2,$3,'DRAFT','UNVERIFIED','PRIVATE')`,[privateObjectId,'CAL-PRIVATE-'+token,{title:{en:'Private Artwork '+token,ru:'Приватная работа '+token}}]);
+ await db.pool.query(`INSERT INTO cultural_event_creators(event_id,creator_id,role,sort_order) VALUES($1,$2,'FEATURED_ARTIST',0)`,[a.id,draftCreatorId]);
+ await db.pool.query(`INSERT INTO cultural_event_objects(event_id,object_id,role,sort_order) VALUES($1,$2,'FEATURED',0)`,[a.id,privateObjectId]);
+ const privacyCalendar=await listPublicCalendar({organizationId:org.id}),privacyEvent=privacyCalendar.entries.find(x=>x.id===a.id);assert.ok(privacyEvent);assert.equal(privacyEvent.creators.some(x=>x.creatorId===draftCreatorId),false,'draft creator must not leak through public event');assert.equal(privacyEvent.objects.some(x=>x.objectId===privateObjectId),false,'private artwork must not leak through public event');
  await setCalendarParticipation(buyer,{entityType:'EVENT',entityId:a.id,state:'PLANNED'});await setCalendarParticipation(buyer,{entityType:'EVENT',entityId:b.id,state:'PLANNED'});
  const mine=await getMyCulturalCalendar(buyer);assert.ok(mine.conflicts.some(x=>[x.a.id,x.b.id].includes(a.id)&&[x.a.id,x.b.id].includes(b.id)));
 
@@ -24,6 +30,8 @@ try{
  console.log('ANTIQUA v42 PostgreSQL Cultural Calendar: durable event/exhibition authority + participation FK guard + conflict detection passed');
 }finally{
  await db.pool.query('DELETE FROM cultural_calendar_participation WHERE account_id=$1',[buyer.id]).catch(()=>{});
+ await db.pool.query("DELETE FROM creators WHERE id LIKE 'creator-calendar-private-%'").catch(()=>{});
+ await db.pool.query("DELETE FROM objects WHERE id LIKE 'object-calendar-private-%'").catch(()=>{});
  for(const id of eventIds)await db.pool.query('DELETE FROM cultural_events WHERE id=$1',[id]).catch(()=>{});
  for(const id of exhibitionIds)await db.pool.query('DELETE FROM exhibitions WHERE id=$1',[id]).catch(()=>{});
  await db.pool.end();
