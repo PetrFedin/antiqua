@@ -15,11 +15,16 @@ test('Art Calendar publishes reviewed events, detects plan conflicts and exports
 
 
 test('guest calendar action routes to account sign-in instead of leaking an API error',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});
+ const operator=await login(page,'OPERATOR');expect(operator.status).toBe(200);const csrf=operator.body.csrf,token='guest-'+Date.now(),base=Date.now()+2*864e5;
+ const made=await post(page,'/api/calendar/events',csrf,{slug:'browser-calendar-'+token,title:{en:'Guest Calendar '+token,ru:'Гостевой календарь '+token},summary:{en:'Guest CTA proof',ru:'Проверка гостевого CTA'},eventType:'OPENING',venueMode:'PHYSICAL',venueName:{en:'Antiqua Guest Gallery',ru:'Гостевая галерея Antiqua'},city:{en:'Amsterdam',ru:'Амстердам'},country:{en:'Netherlands',ru:'Нидерланды'},timezone:'Europe/Amsterdam',startsAt:new Date(base).toISOString(),endsAt:new Date(base+60*60000).toISOString(),visibility:'PUBLIC'});expect(made.status).toBe(201);
+ const eventId=made.body.event.id;expect((await post(page,'/api/calendar/events/'+eventId+'/submit',csrf,{})).status).toBe(200);expect((await post(page,'/api/calendar/review/events/'+eventId,csrf,{decision:'APPROVE',note:'guest CTA proof'})).status).toBe(200);
  await page.context().clearCookies();
  await page.goto('/#events',{waitUntil:'domcontentloaded'});
  const auth=await page.evaluate(async()=>{const r=await fetch('/api/auth/me');return r.json()});expect(auth.account).toBeNull();
  const calendar=page.locator('.cultural-calendar-page');await expect(calendar).toBeVisible();
- const save=calendar.locator('[data-calendar-signin]').first();await expect(save).toBeVisible();await save.click();
+ const card=calendar.locator('.calendar-card').filter({hasText:token});await expect(card).toBeVisible();
+ const save=card.locator('[data-calendar-signin]').first();await expect(save).toBeVisible();await save.click();
  await expect.poll(()=>new URL(page.url()).hash).toBe('#account');
  await expect(page.locator('#app')).toContainText(/Войти|Sign in|Аккаунт|Account/i);
 });
