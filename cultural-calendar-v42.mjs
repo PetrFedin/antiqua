@@ -59,11 +59,15 @@ async function eventById(id){
  if(db.kind==='POSTGRES'){const r=(await db.pool.query('SELECT * FROM cultural_events WHERE id=$1',[id])).rows[0];if(!r)return null;return hydrateEvent(mapEvent(r))}
  return clone(events.get(id)||null)
 }
-async function hydrateEvent(e){
+async function hydrateEvent(e,{publicOnly=false}={}){
  if(!e)return null;
  if(db.kind==='POSTGRES'){
-  e.creators=(await db.pool.query('SELECT creator_id AS "creatorId",role,sort_order AS "sortOrder" FROM cultural_event_creators WHERE event_id=$1 ORDER BY sort_order,creator_id',[e.id])).rows;
-  e.objects=(await db.pool.query('SELECT object_id AS "objectId",role,sort_order AS "sortOrder" FROM cultural_event_objects WHERE event_id=$1 ORDER BY sort_order,object_id',[e.id])).rows;
+  e.creators=publicOnly
+   ?(await db.pool.query(`SELECT ec.creator_id AS "creatorId",ec.role,ec.sort_order AS "sortOrder" FROM cultural_event_creators ec JOIN creators c ON c.id=ec.creator_id WHERE ec.event_id=$1 AND c.profile_status='PUBLISHED' ORDER BY ec.sort_order,ec.creator_id`,[e.id])).rows
+   :(await db.pool.query('SELECT creator_id AS "creatorId",role,sort_order AS "sortOrder" FROM cultural_event_creators WHERE event_id=$1 ORDER BY sort_order,creator_id',[e.id])).rows;
+  e.objects=publicOnly
+   ?(await db.pool.query(`SELECT eo.object_id AS "objectId",eo.role,eo.sort_order AS "sortOrder" FROM cultural_event_objects eo JOIN objects o ON o.id=eo.object_id WHERE eo.event_id=$1 AND o.publication_status='PUBLIC' ORDER BY eo.sort_order,eo.object_id`,[e.id])).rows
+   :(await db.pool.query('SELECT object_id AS "objectId",role,sort_order AS "sortOrder" FROM cultural_event_objects WHERE event_id=$1 ORDER BY sort_order,object_id',[e.id])).rows;
  }
  return e
 }
@@ -129,7 +133,7 @@ async function publicEventRows(filters={}){
    LEFT JOIN organization_locations l ON l.id=e.organization_location_id
    WHERE e.status='PUBLISHED' AND e.visibility='PUBLIC' AND e.starts_at<=$2 AND COALESCE(e.ends_at,e.starts_at)>=$1
    ORDER BY e.starts_at,e.id`,[from,to])).rows;
-  xs=[];for(const r of rows){const e=await hydrateEvent(mapEvent(r));e.organization=r.organization_id?{id:r.organization_id,name:r.organization_name,slug:r.organization_slug}:null;e.organizationLocation=r.organization_location_id?{id:r.organization_location_id,label:r.location_label,city:r.location_city,addressLine:r.location_address}:null;xs.push(e)}
+  xs=[];for(const r of rows){const e=await hydrateEvent(mapEvent(r),{publicOnly:true});e.organization=r.organization_id?{id:r.organization_id,name:r.organization_name,slug:r.organization_slug}:null;e.organizationLocation=r.organization_location_id?{id:r.organization_location_id,label:r.location_label,city:r.location_city,addressLine:r.location_address}:null;xs.push(e)}
  }else xs=[...events.values()].filter(e=>e.status==='PUBLISHED'&&e.visibility==='PUBLIC'&&Date.parse(e.startsAt)<=Date.parse(to)&&Date.parse(e.endsAt||e.startsAt)>=Date.parse(from)).map(clone);
  return xs.filter(e=>!filters.city||[e.city?.en,e.city?.ru,e.organizationLocation?.city].filter(Boolean).some(x=>String(x).toLowerCase().includes(String(filters.city).toLowerCase()))).filter(e=>!filters.eventType||e.eventType===String(filters.eventType).toUpperCase()).filter(e=>!filters.organizationId||e.organizationId===filters.organizationId).filter(e=>!filters.creatorId||e.creators.some(x=>x.creatorId===filters.creatorId)).filter(e=>!filters.q||JSON.stringify([e.title,e.summary,e.description,e.tags]).toLowerCase().includes(String(filters.q).toLowerCase()))
 }
@@ -146,7 +150,7 @@ export async function listPublicCalendar(filters={}){
  return{entries,capabilities:culturalCalendarCapabilities()}
 }
 export async function getPublicCulturalEvent(idOrSlug){
- let e;if(db.kind==='POSTGRES'){const r=(await db.pool.query("SELECT * FROM cultural_events WHERE status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED') AND (id=$1 OR slug=$1)",[idOrSlug])).rows[0];e=r?await hydrateEvent(mapEvent(r)):null}else e=[...events.values()].find(x=>(x.id===idOrSlug||x.slug===idOrSlug)&&x.status==='PUBLISHED'&&['PUBLIC','UNLISTED'].includes(x.visibility));
+ let e;if(db.kind==='POSTGRES'){const r=(await db.pool.query("SELECT * FROM cultural_events WHERE status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED') AND (id=$1 OR slug=$1)",[idOrSlug])).rows[0];e=r?await hydrateEvent(mapEvent(r),{publicOnly:true}):null}else e=[...events.values()].find(x=>(x.id===idOrSlug||x.slug===idOrSlug)&&x.status==='PUBLISHED'&&['PUBLIC','UNLISTED'].includes(x.visibility));
  return e?normalizeEvent(clone(e)):null
 }
 
