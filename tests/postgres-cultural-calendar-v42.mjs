@@ -20,6 +20,9 @@ try{
  await db.pool.query(`INSERT INTO cultural_event_creators(event_id,creator_id,role,sort_order) VALUES($1,$2,'FEATURED_ARTIST',0)`,[a.id,draftCreatorId]);
  await db.pool.query(`INSERT INTO cultural_event_objects(event_id,object_id,role,sort_order) VALUES($1,$2,'FEATURED',0)`,[a.id,privateObjectId]);
  const privacyCalendar=await listPublicCalendar({organizationId:org.id}),privacyEvent=privacyCalendar.entries.find(x=>x.id===a.id);assert.ok(privacyEvent);assert.equal(privacyEvent.creators.some(x=>x.creatorId===draftCreatorId),false,'draft creator must not leak through public event');assert.equal(privacyEvent.objects.some(x=>x.objectId===privateObjectId),false,'private artwork must not leak through public event');
+ await db.pool.query('UPDATE cultural_events SET exhibition_id=$2,cover_object_id=$3 WHERE id=$1',[a.id,ex.id,privateObjectId]);
+ await db.pool.query("UPDATE exhibitions SET publication_status='DRAFT' WHERE id=$1",[ex.id]);
+ const referencePrivacy=(await listPublicCalendar({organizationId:org.id})).entries.find(x=>x.id===a.id);assert.ok(referencePrivacy);assert.equal(referencePrivacy.exhibitionId,null,'draft exhibition id must not leak through public event');assert.equal(referencePrivacy.coverObjectId,null,'private cover artwork id must not leak through public event');
  await setCalendarParticipation(buyer,{entityType:'EVENT',entityId:a.id,state:'PLANNED'});await setCalendarParticipation(buyer,{entityType:'EVENT',entityId:b.id,state:'PLANNED'});
  const mine=await getMyCulturalCalendar(buyer);assert.ok(mine.conflicts.some(x=>[x.a.id,x.b.id].includes(a.id)&&[x.a.id,x.b.id].includes(b.id)));
 
