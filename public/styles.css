@@ -976,3 +976,85 @@ body{overflow-x:hidden}
 
 .artwork-related-why{display:block;margin-top:8px;font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
 .artwork-related-card small{display:block;margin-top:4px;line-height:1.45}
+
+
+/* ---- Artwork Experience v1 · Artist profile ---- */
+.artist-profile-v1{background:var(--paper)}
+.artist-profile-top{padding-top:34px}
+.artist-profile-hero-v1{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(0,1.1fr);gap:clamp(34px,6vw,92px);align-items:end;padding-top:28px;padding-bottom:44px}
+.artist-profile-media{aspect-ratio:4/5;overflow:hidden;background:#ded7ce;display:grid;place-items:center}
+.artist-profile-media img{width:100%;height:100%;object-fit:cover;display:block}
+.artist-profile-monogram{font:400 clamp(96px,14vw,190px)/1 var(--display);color:#786f64}
+.artist-profile-copy h1{margin:.12em 0 .18em;font:400 clamp(56px,7vw,104px)/.9 var(--display);letter-spacing:-.05em}
+.artist-profile-biography{max-width:760px;margin:0;color:#464039;font:400 clamp(18px,1.8vw,24px)/1.58 var(--display)}
+.artist-profile-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
+.artist-profile-actions>*{min-height:48px}
+.artist-profile-facts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.artist-profile-facts>div{display:grid;gap:5px;min-height:104px;padding:18px 14px}
+.artist-profile-facts>div+div{border-left:1px solid var(--line)}
+.artist-profile-facts strong{font:400 31px/1 var(--display)}
+.artist-profile-facts span{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.artist-follow-fact{background:rgba(255,255,255,.36)}
+.artist-profile-context-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:52px;padding-top:52px;padding-bottom:56px}
+.artist-context-card{border-top:1px solid var(--line);padding-top:17px}
+.artist-context-card h2{max-width:520px;margin:8px 0 18px;font:400 clamp(28px,3vw,40px)/1.05 var(--display)}
+.artist-context-card>p{max-width:620px;color:var(--muted);line-height:1.65}
+.artist-representation-list{display:grid}
+.artist-representation-list article{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(160px,.8fr) 1fr;gap:18px;padding:13px 0;border-top:1px solid var(--line)}
+.artist-representation-list strong{font:400 19px/1.25 var(--display)}
+.artist-representation-list span,.artist-representation-list small{font-size:9px;line-height:1.5;color:var(--muted)}
+.artist-chronology-v1{padding-top:8px;padding-bottom:62px}
+.artist-chronology-v1 .section-head{max-width:760px}
+.artist-chronology{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.artist-chronology li{display:grid;grid-template-columns:150px minmax(0,1fr);gap:26px;padding:16px 0;border-bottom:1px solid var(--line)}
+.artist-chronology>li>span{font:400 18px/1.2 var(--display);color:var(--muted)}
+.artist-chronology strong{font:400 20px/1.25 var(--display)}
+.artist-chronology p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.55}
+.artist-exhibition-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.artist-exhibition-card{display:grid;gap:7px;min-height:180px;padding:16px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}
+.artist-exhibition-card>span{font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.artist-exhibition-card>strong{font:400 27px/1.06 var(--display)}
+.artist-exhibition-card>small{color:var(--muted);font-size:10px;line-height:1.5}
+.artist-exhibition-card>em{margin-top:auto;font-style:normal;font-size:8px;text-transform:uppercase;letter-spacing:.07em}
+.artist-work-wall{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:30px 18px;align-items:start}
+.artist-wall-card{grid-column:span 4}
+.artist-wall-card-1,.artist-wall-card-4{grid-column:span 5}
+.artist-wall-card-2,.artist-wall-card-5{grid-column:span 3}
+.artist-wall-media{overflow:hidden;background:#ded7ce;aspect-ratio:4/5}
+.artist-wall-card-1 .artist-wall-media,.artist-wall-card-4 .artist-wall-media{aspect-ratio:5/6}
+.artist-wall-card-2 .artist-wall-media,.artist-wall-card-5 .artist-wall-media{aspect-ratio:3/4}
+.artist-wall-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.artist-wall-card:hover img{transform:scale(1.012)}
+@media(max-width:1050px){
+ .artist-profile-hero-v1{grid-template-columns:minmax(300px,.82fr) minmax(0,1.18fr);gap:36px}
+ .artist-profile-facts{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .artist-profile-facts>div:nth-child(4){border-left:0;border-top:1px solid var(--line)}
+ .artist-profile-facts>div:nth-child(5){border-top:1px solid var(--line)}
+ .artist-profile-context-grid{gap:32px}
+ .artist-work-wall{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .artist-wall-card,.artist-wall-card-1,.artist-wall-card-4{grid-column:span 3}
+ .artist-wall-card-2,.artist-wall-card-5{grid-column:span 3}
+}
+@media(max-width:760px){
+ .artist-profile-top{padding-top:20px}
+ .artist-profile-hero-v1{display:flex;flex-direction:column;padding-top:18px;padding-bottom:28px;gap:24px}
+ .artist-profile-media{width:calc(100% + 32px);margin-left:-16px;aspect-ratio:4/5}
+ .artist-profile-copy h1{font-size:clamp(48px,15vw,66px)}
+ .artist-profile-biography{font-size:18px;line-height:1.5}
+ .artist-profile-actions{display:grid;grid-template-columns:1fr}
+ .artist-profile-actions>*{width:100%}
+ .artist-profile-facts{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;border-left:0;border-right:0;scroll-snap-type:x mandatory;scrollbar-width:none}
+ .artist-profile-facts::-webkit-scrollbar{display:none}
+ .artist-profile-facts>div{flex:0 0 150px;min-height:96px;border-left:0!important;border-top:0!important;border-right:1px solid var(--line);scroll-snap-align:start}
+ .artist-profile-context-grid{grid-template-columns:1fr;padding-top:38px;padding-bottom:40px}
+ .artist-representation-list article{grid-template-columns:1fr;gap:4px}
+ .artist-chronology li{grid-template-columns:86px minmax(0,1fr);gap:12px}
+ .artist-exhibition-grid{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px 8px;gap:12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+ .artist-exhibition-grid::-webkit-scrollbar{display:none}
+ .artist-exhibition-card{flex:0 0 min(80vw,340px);scroll-snap-align:start}
+ .artist-work-wall{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px 10px;gap:12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+ .artist-work-wall::-webkit-scrollbar{display:none}
+ .artist-wall-card,.artist-wall-card-1,.artist-wall-card-2,.artist-wall-card-4,.artist-wall-card-5{flex:0 0 min(80vw,340px)}
+ .artist-wall-card{scroll-snap-align:start}
+}
+@media(prefers-reduced-motion:reduce){.artist-wall-media img{transition:none}}
