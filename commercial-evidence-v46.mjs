@@ -10,8 +10,6 @@ const TYPES=new Set([
 ]);
 const STREAMS=new Set(['PROFESSIONAL_SAAS','PARTNER_EDITION','CULTURAL_PARTNERSHIP','INSTITUTIONAL_RESEARCH','TRANSACTION_REVENUE','ESTATE_ARCHIVE']);
 const MONEY_TYPES=new Set(['QUOTE_ISSUED','PRICE_VERBAL_ACCEPTED','PRICE_WRITTEN_ACCEPTED','INVOICE_ISSUED','PAYMENT_RECEIVED','REFUND_RECORDED','DIRECT_COST_RECORDED','RENEWAL_PROPOSED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED']);
-const REVENUE_CLASSES=new Set(['RECURRING','ONE_TIME','USAGE','TRANSACTION','SPONSORSHIP','PROJECT']);
-const COST_CLASSES=new Set(['ACQUISITION','ONBOARDING','SUPPORT','PROVIDER','EVENT_DELIVERY','RESEARCH_DELIVERY','OTHER']);
 const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
 const digest=v=>crypto.createHash('sha256').update(canonical(v)).digest('hex');
 const sign=v=>'v1='+crypto.createHmac('sha256',appSecret()).update(canonical(v)).digest('hex');
@@ -28,8 +26,6 @@ export function commercialEvidenceCapabilities(){return{
  signedEvents:true,
  eventTypes:[...TYPES],
  revenueStreams:[...STREAMS],
- revenueClasses:[...REVENUE_CLASSES],
- costClasses:[...COST_CLASSES],
  evidenceLevels:['INTERNAL_HYPOTHESIS','VERBAL_ACCEPTANCE','WRITTEN_ACCEPTANCE','INVOICED','VERIFIED_CASH','RENEWAL','REPEATABLE'],
  accountingBoundary:{
   quoteIsRevenue:false,
@@ -61,20 +57,17 @@ function validateEvent(input={}){
  const evidenceRef=String(input.evidenceRef||'').trim()||null;
  if(['PRICE_WRITTEN_ACCEPTED','INVOICE_ISSUED','PAYMENT_RECEIVED','REFUND_RECORDED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(eventType)&&!evidenceRef)
   throw Object.assign(new Error('evidenceRef required for this event type'),{status:400,code:'COMMERCIAL_EVIDENCE_REQUIRED'});
- const payload=input.payload&&typeof input.payload==='object'?{...input.payload}:{};
- if(payload.revenueClass!=null){payload.revenueClass=String(payload.revenueClass).toUpperCase();if(!REVENUE_CLASSES.has(payload.revenueClass))throw Object.assign(new Error('Invalid revenueClass'),{status:400,code:'REVENUE_CLASS_INVALID'})}
- if(payload.costClass!=null){payload.costClass=String(payload.costClass).toUpperCase();if(!COST_CLASSES.has(payload.costClass))throw Object.assign(new Error('Invalid costClass'),{status:400,code:'COST_CLASS_INVALID'})}
  const occurredAt=iso(input.occurredAt||new Date());
  const sourceKey=String(input.clientActionId||input.sourceKey||'').trim();
  if(!sourceKey)throw Object.assign(new Error('clientActionId required'),{status:400,code:'IDEMPOTENCY_KEY_REQUIRED'});
- return{eventType,revenueStream,amountMinor,currency,evidenceRef,occurredAt,sourceKey,payload}
+ return{eventType,revenueStream,amountMinor,currency,evidenceRef,occurredAt,sourceKey,payload:input.payload&&typeof input.payload==='object'?input.payload:{}}
 }
 
 export async function recordCommercialEvent(account,pilotId,input={}){
  ensureOperator(account);
  if(db.kind!=='POSTGRES')throw Object.assign(new Error('Durable PostgreSQL required for commercial evidence'),{status:503,code:'COMMERCIAL_EVIDENCE_DURABILITY_REQUIRED'});
  const pilot=await pilotRow(pilotId);if(!pilot)throw Object.assign(new Error('Pilot not found'),{status:404,code:'PILOT_NOT_FOUND'});
- const x=validateEvent(input);if(x.eventType==='COMMERCIAL_EVENT_VOIDED'){const targetId=String(x.payload?.voidsEventId||'').trim();if(!targetId)throw Object.assign(new Error('voidsEventId required'),{status:400,code:'VOID_TARGET_REQUIRED'});const target=(await db.pool.query("SELECT id,event_type FROM dealer_pilot_commercial_events WHERE id=$1 AND pilot_id=$2",[targetId,pilot.id])).rows[0];if(!target)throw Object.assign(new Error('Void target not found in pilot'),{status:404,code:'VOID_TARGET_NOT_FOUND'});if(target.event_type==='COMMERCIAL_EVENT_VOIDED')throw Object.assign(new Error('Cannot void a void event'),{status:409,code:'VOID_TARGET_INVALID'})}const body={pilotId:pilot.id,sellerId:pilot.seller_id,eventType:x.eventType,revenueStream:x.revenueStream,amountMinor:x.amountMinor,currency:x.currency,evidenceRef:x.evidenceRef,sourceKey:x.sourceKey,payload:x.payload,occurredAt:x.occurredAt},dg=digest(body),sig=sign(body),id=uid('pce');
+ const replayKey=String(input.clientActionId||input.sourceKey||'').trim();const existingReplay=replayKey?(await db.pool.query('SELECT * FROM dealer_pilot_commercial_events WHERE pilot_id=$1 AND source_key=$2',[pilot.id,replayKey])).rows[0]:null;const x=validateEvent(existingReplay&&!input.occurredAt?{...input,occurredAt:existingReplay.occurred_at}:input);if(x.eventType==='COMMERCIAL_EVENT_VOIDED'){const targetId=String(x.payload?.voidsEventId||'').trim();if(!targetId)throw Object.assign(new Error('voidsEventId required'),{status:400,code:'VOID_TARGET_REQUIRED'});const target=(await db.pool.query("SELECT id,event_type FROM dealer_pilot_commercial_events WHERE id=$1 AND pilot_id=$2",[targetId,pilot.id])).rows[0];if(!target)throw Object.assign(new Error('Void target not found in pilot'),{status:404,code:'VOID_TARGET_NOT_FOUND'});if(target.event_type==='COMMERCIAL_EVENT_VOIDED')throw Object.assign(new Error('Cannot void a void event'),{status:409,code:'VOID_TARGET_INVALID'})}const body={pilotId:pilot.id,sellerId:pilot.seller_id,eventType:x.eventType,revenueStream:x.revenueStream,amountMinor:x.amountMinor,currency:x.currency,evidenceRef:x.evidenceRef,sourceKey:x.sourceKey,payload:x.payload,occurredAt:x.occurredAt},dg=digest(body),sig=sign(body),id=uid('pce');
  const q=await db.pool.query(`INSERT INTO dealer_pilot_commercial_events(id,pilot_id,seller_id,event_type,revenue_stream,amount_minor,currency,evidence_ref,source_key,payload,digest,signature,occurred_at,created_by_account_id)
  VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
  ON CONFLICT(pilot_id,source_key) DO NOTHING RETURNING *`,
@@ -119,17 +112,17 @@ function evidenceLevel(events){
  return'INTERNAL_HYPOTHESIS'
 }
 export function summarizeCommercialEvents(events=[]){
- const active=notVoided(events),quoted={},accepted={},invoiced={},cash={},refunds={},costs={},grossContribution={},cashByRevenueClass={},costByClass={};
+ const active=notVoided(events),quoted={},accepted={},invoiced={},cash={},refunds={},costs={},grossContribution={};
  for(const e of active){
   if(e.eventType==='QUOTE_ISSUED')addMoney(quoted,e);
   if(['PRICE_WRITTEN_ACCEPTED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType))addMoney(accepted,e);
   if(e.eventType==='INVOICE_ISSUED')addMoney(invoiced,e);
-  if(e.eventType==='PAYMENT_RECEIVED'){addMoney(cash,e);const rc=String(e.payload?.revenueClass||'UNCLASSIFIED');cashByRevenueClass[rc]??={};addMoney(cashByRevenueClass[rc],e)}
+  if(e.eventType==='PAYMENT_RECEIVED')addMoney(cash,e);
   if(e.eventType==='REFUND_RECORDED')addMoney(refunds,e);
-  if(e.eventType==='DIRECT_COST_RECORDED'){addMoney(costs,e);const cc=String(e.payload?.costClass||'UNCLASSIFIED');costByClass[cc]??={};addMoney(costByClass[cc],e)}
+  if(e.eventType==='DIRECT_COST_RECORDED')addMoney(costs,e)
  }
  for(const c of new Set([...Object.keys(cash),...Object.keys(refunds),...Object.keys(costs)]))grossContribution[c]=(cash[c]||0)-(refunds[c]||0)-(costs[c]||0);
- const renewals=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType)),paymentEvents=active.filter(e=>e.eventType==='PAYMENT_RECEIVED'),costEvents=active.filter(e=>e.eventType==='DIRECT_COST_RECORDED'),classifiedPayments=paymentEvents.filter(e=>REVENUE_CLASSES.has(String(e.payload?.revenueClass||''))).length,classifiedCosts=costEvents.filter(e=>COST_CLASSES.has(String(e.payload?.costClass||''))).length;
+ const renewals=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType));
  return{
   evidenceLevel:evidenceLevel(active),
   pricingEvidence:pricingEvidence(active),
@@ -141,9 +134,6 @@ export function summarizeCommercialEvents(events=[]){
   refundsMinorByCurrency:refunds,
   directCostMinorByCurrency:costs,
   grossContributionMinorByCurrency:grossContribution,
-  cashByRevenueClass,
-  costByClass,
-  classificationCoverage:{payments:{classified:classifiedPayments,total:paymentEvents.length,ratio:paymentEvents.length?Number((classifiedPayments/paymentEvents.length).toFixed(4)):null},costs:{classified:classifiedCosts,total:costEvents.length,ratio:costEvents.length?Number((classifiedCosts/costEvents.length).toFixed(4)):null}},
   renewalAccepted:renewals.some(e=>e.eventType==='RENEWAL_ACCEPTED'),
   expansionAccepted:renewals.some(e=>e.eventType==='EXPANSION_ACCEPTED'),
   eventCounts:countsBy(active,'eventType'),
