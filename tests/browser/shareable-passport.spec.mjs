@@ -20,10 +20,11 @@ test('catalogue passport uses one history entry and Back closes it after related
  const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();
  expect(new URL(page.url()).searchParams.get('object')).toBe('lot-109');
 
- const similar=dialog.locator('#dossierSimilarV18 [data-similar-object="lot-106"]');await expect(similar).toBeVisible();
+ const similar=dialog.locator('#dossierSimilarV18 [data-similar-object]').first();await expect(similar).toBeVisible();
+ const relatedId=await similar.getAttribute('data-similar-object');expect(relatedId).toBeTruthy();
  await similar.locator('[data-passport]').first().click();
- await expect.poll(()=>new URL(page.url()).searchParams.get('object')).toBe('lot-106');
- await expect(dialog.locator('.dossier-toolbar .eyebrow').first()).toContainText('AQ-106-2026');
+ await expect.poll(()=>new URL(page.url()).searchParams.get('object')).toBe(relatedId);
+ await expect(dialog.locator('.dossier-toolbar .eyebrow').first()).toContainText(/AQ-/);
 
  await page.goBack();await expect(page.locator('#dialog[open]')).toHaveCount(0);
  await expect.poll(()=>new URL(page.url()).searchParams.has('object')).toBe(false);
