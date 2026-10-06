@@ -361,7 +361,68 @@ v0.43 is complete only when:
 - iPhone, tablet and desktop smoke paths remain usable;
 - existing v0.41 Art Network and v0.42 Cultural Calendar routes still work.
 
-## 15. Next implementation order
+## 16. Protected institutional moat — after consumer v0.43
+
+The following capabilities remain strategically valuable but are **not** active v0.43 surface work. They reopen only after the artwork-first public product and provenance/research authority are stable.
+
+### Catalogue Raisonne / Canonical Work Registry — KEEP, DEFER UI EXPANSION
+
+Maintain a scholarly work identity separate from listings:
+
+- canonical work ID and revision;
+- nuanced attribution state;
+- medium/support/dimensions/marks;
+- edition/state/variant for prints;
+- provenance;
+- exhibition history;
+- bibliography;
+- related works;
+- expert/committee review history.
+
+A listing can reference a canonical work but never becomes the scholarly authority.
+
+### Institutional Research & Provenance API — KEEP, DEFER
+
+Future controlled access may expose approved:
+
+- canonical work records;
+- provenance events with source/status;
+- artist/authority mappings;
+- exhibition and bibliography references;
+- IIIF / Linked Art projections;
+- reviewed attribution state.
+
+Private owner, location, insurance and dealer facts remain excluded unless explicitly authorised.
+
+### Provenance Evidence Passport / Scholarly Trust Graph — KEEP, DEFER
+
+A future evidence package may project:
+
+- canonical work revision;
+- attribution state;
+- provenance events and evidence classes;
+- unresolved gaps and competing claims;
+- exhibition/bibliography references;
+- approved image/document evidence;
+- contributor/committee activity.
+
+This is a scholarly evidence package, **not** an authenticity certificate and not a blockchain ownership product.
+
+### Reopening gate
+
+These institutional capabilities may move from backlog into implementation only when:
+
+1. Gallery and Artwork Dossier are stable;
+2. public provenance/research UX is stable;
+3. artwork identity is separate from sale/listing identity;
+4. expert decisions have explicit authority and revision history;
+5. privacy traversal tests pass;
+6. a real museum, estate, foundation, scholar or insurer use case exists.
+
+This keeps the defensibility upside without allowing enterprise infrastructure to dilute the collector-facing product.
+
+
+## 17. Next implementation order
 
 1. scope-language and navigation cleanup;
 2. public artwork taxonomy guard;
