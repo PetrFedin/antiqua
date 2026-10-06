@@ -36,6 +36,9 @@ assert.equal(e.acquisitionCostPerPaidPilotMinorByCurrency.EUR,15000);
 assert.equal(e.renewalOrExpansionEvidencePilots,1);
 assert.equal(e.classificationCoverage.payments.ratio,1);
 assert.equal(e.classificationCoverage.costs.ratio,1);
+assert.equal(e.quality.recurringCashShare.state,'DECISION_GRADE');
+assert.equal(e.quality.costMix.state,'DECISION_GRADE');
+assert.deepEqual(e.metricLineage.grossContribution,['PAYMENT_RECEIVED','REFUND_RECORDED','DIRECT_COST_RECORDED']);
 
 for(const key of ['ARR','GAAP_IFRS_REVENUE','GROSS_MARGIN','CAC','CAC_PAYBACK','LTV','LTV_CAC','NET_REVENUE_RETENTION','PAID_CONVERSION']){
  assert.equal(e.locks[key].state,'LOCKED',key+' must remain locked without source authority');
@@ -45,5 +48,7 @@ const empty=deriveUnitEconomics({aggregate:{paidPilots:0,cashReceivedMinorByCurr
 assert.equal(empty.evidenceState,'MISSING');
 assert.deepEqual(empty.cashReceivedMinorByCurrency,{});
 assert.equal(empty.locks.ARR.state,'LOCKED');
+assert.equal(empty.quality.cash.state,'MISSING');
+assert.equal(empty.quality.recurringCashShare.state,'MISSING');
 
 console.log('ANTIQUA v47 Unit Economics Authority methodology passed');
