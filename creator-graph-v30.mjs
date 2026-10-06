@@ -3,6 +3,7 @@ import {requireOrganizationRole} from './organizations-v15.mjs';
 import {listExhibitions,getExhibition} from './collection-graph-v10.mjs';
 
 const creators=new Map(),representations=new Map(),links=new Map(),follows=new Map();
+const PUBLIC_CREATOR_TYPES=new Set(['ARTIST','ESTATE','COLLECTIVE']);
 const CREATOR_TYPES=new Set(['ARTIST','DESIGNER','MAKER','CRAFTSPERSON','WORKSHOP','COLLECTIVE','ESTATE']);
 const SALES_MODELS=new Set(['UNSPECIFIED','INDEPENDENT','REPRESENTED','ESTATE']);
 const RELATIONSHIPS=new Set(['EXCLUSIVE','NON_EXCLUSIVE','PROJECT','ESTATE','MANAGEMENT']);
@@ -15,6 +16,20 @@ const fail=(status,code,message)=>{const e=new Error(message);e.status=status;e.
 const slugify=s=>String(s||'').trim().toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,100);
 const mapCreator=r=>r?{id:r.id,slug:r.slug,creatorType:r.creator_type??r.creatorType,displayName:(r.display_name??r.displayName)||{},biography:r.biography||{},city:r.city||{},country:r.country||{},disciplines:r.disciplines||[],salesModel:r.sales_model??r.salesModel,profileStatus:r.profile_status??r.profileStatus,evidenceStatus:r.evidence_status??r.evidenceStatus,managedByAccountId:r.managed_by_account_id??r.managedByAccountId??null,metadata:r.metadata||{},createdAt:iso(r.created_at??r.createdAt),updatedAt:iso(r.updated_at??r.updatedAt)}:null;
 const mapRep=r=>r?{id:r.id,creatorId:r.creator_id??r.creatorId,organizationId:r.organization_id??r.organizationId,relationshipType:r.relationship_type??r.relationshipType,primarySalesAuthorized:Boolean(r.primary_sales_authorized??r.primarySalesAuthorized),directSalesAllowed:Boolean(r.direct_sales_allowed??r.directSalesAllowed),territory:r.territory||null,startsAt:iso(r.starts_at??r.startsAt),endsAt:iso(r.ends_at??r.endsAt),status:r.status,evidence:r.evidence||{},createdAt:iso(r.created_at??r.createdAt),updatedAt:iso(r.updated_at??r.updatedAt)}:null;
+function seedPreviewArtists(){
+ if(db.kind==='POSTGRES'||creators.size)return;
+ const ts=now(),defs=[
+  ['creator-demo-a','demo-artist-a','Demo Artist A · fictional','Демо-художник A · вымышленный',['lot-101','lot-104'],['Painting','Oil on canvas']],
+  ['creator-demo-b','demo-artist-b','Demo Artist B · fictional','Демо-художник B · вымышленный',['lot-102','lot-105','lot-109'],['Drawing','Works on paper']],
+  ['creator-demo-c','demo-artist-c','Demo Artist C · fictional','Демо-художник C · вымышленный',['lot-103','lot-106','lot-110'],['Printmaking','Etching','Lithography','Woodcut']],
+  ['creator-demo-d','demo-artist-d','Demo Artist D · fictional','Демо-художник D · вымышленный',['lot-107','lot-108','lot-111','lot-112'],['Works on paper','Gouache','Engraving','Screenprint']]
+ ];
+ for(const [id,slug,en,ru,objectIds,disciplines] of defs){
+  creators.set(id,{id,slug,creatorType:'ARTIST',displayName:{en,ru},biography:{en:'Fictional demonstration artist profile used only to test ANTIQUA artwork, research and collection journeys.',ru:'Вымышленный демонстрационный профиль художника только для проверки сценариев произведений, исследования и коллекционирования ANTIQUA.'},city:{en:'Demo context',ru:'Демо-контекст'},country:{en:'Fictional',ru:'Вымышленный'},disciplines:disciplines.map(x=>({en:x,ru:x})),salesModel:'UNSPECIFIED',profileStatus:'PUBLISHED',evidenceStatus:'DEMO_FICTIONAL',managedByAccountId:null,metadata:{demoFictional:true,biographySources:[],chronology:[]},createdAt:ts,updatedAt:ts});
+  for(const objectId of objectIds)links.set([id,objectId,'ARTIST'].join('|'),{creatorId:id,objectId,creatorRole:'ARTIST',attributionStatus:'CATALOGUED',marketContext:'ARCHIVAL',evidence:{demoFictional:true},createdAt:ts});
+ }
+}
+seedPreviewArtists();
 
 export function creatorGraphCapabilities(){return{contractVersion:'v30',creatorTypes:[...CREATOR_TYPES],salesModels:[...SALES_MODELS],representationTypes:[...RELATIONSHIPS],marketContexts:[...MARKET_CONTEXTS],freeTextMakerPreserved:true,primaryMarketAuthority:'REPRESENTATION_OR_EXPLICIT_INDEPENDENT',secondaryMarketIndependent:true,profilePublication:'PLATFORM_REVIEW_REQUIRED',representedCreatorDirectSaleDefault:false,galleryEntity:'EXISTING_ORGANIZATION'}}
 
@@ -74,7 +89,7 @@ async function followState(creatorId,accountId=null){if(db.kind==='POSTGRES'){co
 
 export async function setCreatorFollow(account,id,enabled=true){const c=await creatorById(id);if(!c||c.profileStatus!=='PUBLISHED')fail(404,'CREATOR_NOT_FOUND','Creator not found');const status=enabled===false?'ARCHIVED':'ACTIVE';if(db.kind==='POSTGRES')await db.pool.query(`INSERT INTO creator_follows(creator_id,account_id,status,created_at,updated_at) VALUES($1,$2,$3,now(),now()) ON CONFLICT(creator_id,account_id) DO UPDATE SET status=excluded.status,updated_at=now()`,[c.id,account.id,status]);else follows.set(c.id+'|'+account.id,{creatorId:c.id,accountId:account.id,status,updatedAt:now()});return{creatorId:c.id,enabled:status==='ACTIVE',follow:await followState(c.id,account.id)}}
 
-export async function listCreators(account=null){let xs;if(db.kind==='POSTGRES')xs=(await db.pool.query("SELECT * FROM creators WHERE profile_status='PUBLISHED' ORDER BY updated_at DESC,id")).rows.map(mapCreator);else xs=[...creators.values()].filter(x=>x.profileStatus==='PUBLISHED').map(clone);const out=[];for(const c of xs)out.push({...c,representations:await activeRepresentations(c.id),follow:await followState(c.id,account?.id||null),workCount:(await worksForCreator(c)).length});return out}
+export async function listCreators(account=null){let xs;if(db.kind==='POSTGRES')xs=(await db.pool.query("SELECT * FROM creators WHERE profile_status='PUBLISHED' ORDER BY updated_at DESC,id")).rows.map(mapCreator);else xs=[...creators.values()].filter(x=>x.profileStatus==='PUBLISHED').map(clone);xs=xs.filter(c=>PUBLIC_CREATOR_TYPES.has(c.creatorType));const out=[];for(const c of xs)out.push({...c,representations:await activeRepresentations(c.id),follow:await followState(c.id,account?.id||null),workCount:(await worksForCreator(c)).length});return out}
 
 export async function creatorsForObject(account,objectId){
  const id=String(objectId||'');if(!id)return[];
