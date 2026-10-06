@@ -4,6 +4,7 @@ import {listSubscriptions} from './domain-e2e-v14.mjs';
 import {listOffers} from './offer-negotiation-v22.mjs';
 import {listViewingRequests} from './viewing-v23.mjs';
 import {listCollectionRecords} from './domain-e2e-v14.mjs';
+import {canonicalArtworkDimension,artworkDepartmentLabel} from './art-taxonomy-v43.mjs';
 
 const memoryEvents=new Map();
 const DIMENSIONS=['maker','department','period','origin'];
@@ -87,8 +88,8 @@ async function memoryFacts(account){
 }
 
 function dedupeFacts(facts){const m=new Map();for(const f of facts){if(!SIGNAL_WEIGHTS[f.type]||!f.objectId)continue;const k=f.type+'|'+f.objectId,p=m.get(k);if(!p||String(f.at||'')>String(p.at||''))m.set(k,f)}return[...m.values()]}
-function dedupeFollows(follows){const m=new Map();for(const f of follows||[]){const value=String(f.value||'').trim();if(!value||!SIGNAL_WEIGHTS[f.type])continue;const k=f.type+'|'+value.toLowerCase(),p=m.get(k);if(!p||String(f.at||'')>String(p.at||''))m.set(k,{...f,value})}return[...m.values()]}
-function addFacet(store,dimension,value,fact){const key=canon(value);if(!key)return;const map=store[dimension],current=map.get(key)||{key,value:bi(value),points:0,signals:new Map()};const weight=SIGNAL_WEIGHTS[fact.type]||0;current.points+=weight;const s=current.signals.get(fact.type)||{type:fact.type,count:0,weight,points:0};s.count++;s.points+=weight;current.signals.set(fact.type,s);map.set(key,current)}
+function dedupeFollows(follows){const m=new Map();for(const f of follows||[]){const value=String(f.value||'').trim();if(!value||!SIGNAL_WEIGHTS[f.type])continue;const normalized=f.type==='FOLLOW_CATEGORY'?canonicalArtworkDimension('department',value):value.toLowerCase(),k=f.type+'|'+normalized,p=m.get(k);if(!p||String(f.at||'')>String(p.at||''))m.set(k,{...f,value})}return[...m.values()]}
+function addFacet(store,dimension,value,fact){const key=canonicalArtworkDimension(dimension,value);if(!key)return;const map=store[dimension],display=dimension==='department'?artworkDepartmentLabel(value):bi(value),current=map.get(key)||{key,value:display,points:0,signals:new Map()};const weight=SIGNAL_WEIGHTS[fact.type]||0;current.points+=weight;const s=current.signals.get(fact.type)||{type:fact.type,count:0,weight,points:0};s.count++;s.points+=weight;current.signals.set(fact.type,s);map.set(key,current)}
 function finalizeFacet(map){return[...map.values()].filter(x=>x.points!==0).map(x=>({...x,signals:[...x.signals.values()].sort((a,b)=>Math.abs(b.points)-Math.abs(a.points)||a.type.localeCompare(b.type))})).sort((a,b)=>b.points-a.points||canon(a.value).localeCompare(canon(b.value)))}
 
 export async function buildTasteProfile(account){
@@ -104,11 +105,11 @@ export async function buildTasteProfile(account){
 }
 
 function preferenceMap(profile){return Object.fromEntries(DIMENSIONS.map(d=>[d,new Map((profile.dimensions[d]||[]).map(x=>[x.key,x]))]))}
-function coldStart(objects,exclude,limit){const seen=new Set(),out=[];for(const o of objects){if(exclude.has(o.id))continue;const k=canon(o.department)||o.id;if(seen.has(k))continue;seen.add(k);out.push({object:o,affinityPoints:0,reasons:[],coldStart:true});if(out.length>=limit)return out}for(const o of objects){if(out.length>=limit)break;if(!exclude.has(o.id)&&!out.some(x=>x.object.id===o.id))out.push({object:o,affinityPoints:0,reasons:[],coldStart:true})}return out}
+function coldStart(objects,exclude,limit){const seen=new Set(),out=[];for(const o of objects){if(exclude.has(o.id))continue;const k=canonicalArtworkDimension('department',o.department)||o.id;if(seen.has(k))continue;seen.add(k);out.push({object:o,affinityPoints:0,reasons:[],coldStart:true});if(out.length>=limit)return out}for(const o of objects){if(out.length>=limit)break;if(!exclude.has(o.id)&&!out.some(x=>x.object.id===o.id))out.push({object:o,affinityPoints:0,reasons:[],coldStart:true})}return out}
 
 export async function tasteRecommendations(account,{limit=8}={}){
  limit=Math.max(1,Math.min(50,Number(limit)||8));const built=await buildTasteProfile(account),objects=await catalogue({publicOnly:true}),prefs=preferenceMap(built.profile);if(!built.profile.signalCount)return{...built,recommendations:coldStart(objects,built.internal.exclude,limit)};
- const ranked=[];for(const o of objects){if(built.internal.exclude.has(o.id))continue;let points=0;const reasons=[];for(const d of DIMENSIONS){const pref=prefs[d].get(canon(o[d]));if(!pref)continue;points+=pref.points;reasons.push({dimension:d,value:pref.value,points:pref.points,signals:pref.signals})}if(points>0)ranked.push({object:o,affinityPoints:points,reasons:reasons.sort((a,b)=>b.points-a.points).slice(0,4),coldStart:false})}
+ const ranked=[];for(const o of objects){if(built.internal.exclude.has(o.id))continue;let points=0;const reasons=[];for(const d of DIMENSIONS){const pref=prefs[d].get(canonicalArtworkDimension(d,o[d]));if(!pref)continue;points+=pref.points;reasons.push({dimension:d,value:pref.value,points:pref.points,signals:pref.signals})}if(points>0)ranked.push({object:o,affinityPoints:points,reasons:reasons.sort((a,b)=>b.points-a.points).slice(0,4),coldStart:false})}
  ranked.sort((a,b)=>b.affinityPoints-a.affinityPoints||String(a.object.id).localeCompare(String(b.object.id)));
  const recommendations=ranked.slice(0,limit);if(recommendations.length<limit){for(const x of coldStart(objects,new Set([...built.internal.exclude,...recommendations.map(x=>x.object.id)]),limit-recommendations.length))recommendations.push(x)}
  return{profile:built.profile,recommendations,capabilities:built.capabilities}
