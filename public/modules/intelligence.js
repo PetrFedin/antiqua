@@ -66,7 +66,7 @@ async function mountCollector(){
 async function mountProfessional(){
  if(q('#professionalIntelligenceV44')||professionalLoading)return;
  const host=q('[data-v14-panel="dealer"]');if(!host)return;
- professionalLoading=true;try{const d=await safe('/api/intelligence/professional?limit=12');if(!d?.intelligence||!host.isConnected)return;const box=document.createElement('div');box.innerHTML=professionalMarkup(d);host.prepend(box.firstElementChild)}catch{}finally{professionalLoading=false}
+ professionalLoading=true;try{const d=await safe('/api/intelligence/professional?limit=12');if(!d?.intelligence||!host.isConnected)return;const box=document.createElement('div');box.innerHTML=professionalMarkup(d);host.append(box.firstElementChild)}catch{}finally{professionalLoading=false}
 }
 async function mountScholarly(id){
  const request=++scholarlySeq;q('#scholarlyIntelligenceV44')?.remove();
