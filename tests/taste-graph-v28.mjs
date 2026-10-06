@@ -18,7 +18,7 @@ assert.equal(built.profile.signalCounts.SAVED,1);
 assert.equal(built.profile.signalCounts.FOLLOW_CATEGORY,1);
 assert.equal(built.profile.signalCounts.ENGAGED_VIEW,1);
 assert.equal(built.profile.signalCounts.DISMISSED,1);
-assert.ok(built.profile.dimensions.department.some(x=>x.key==='printmaking'&&x.points>=SIGNAL_WEIGHTS.FOLLOW_CATEGORY+SIGNAL_WEIGHTS.DISMISSED));
+assert.ok(built.profile.dimensions.department.some(x=>x.key==='print'&&x.points>=SIGNAL_WEIGHTS.FOLLOW_CATEGORY+SIGNAL_WEIGHTS.DISMISSED));
 
 const recs=await tasteRecommendations(account,{limit:8});
 assert.equal(recs.recommendations.some(x=>x.object.id==='lot-101'),false,'saved object must not be rediscovered as a new recommendation');
@@ -28,7 +28,7 @@ await recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-103',so
 const reversed=await tasteRecommendations(account,{limit:20});
 assert.equal(reversed.recommendations.some(x=>x.object.id==='lot-103'),true,'later positive intent must reverse dismiss exclusion');
 const reversedProfile=await buildTasteProfile(account);
-const printFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='printmaking');
+const printFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='print');
 assert.ok(printFacet);
 assert.equal(printFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
 const print=recs.recommendations.find(x=>x.object.id==='lot-112');assert.ok(print,'category follow should surface another printmaking work');
