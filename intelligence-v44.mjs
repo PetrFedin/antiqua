@@ -193,6 +193,38 @@ function researchQuestions(o,creators,market){
  return q
 }
 
+function localizedItems(v){
+ if(!v)return[];
+ if(Array.isArray(v))return v.map(x=>x&&typeof x==='object'&&!Array.isArray(x)?clone(x):bi(x));
+ if(typeof v==='object'&&(Array.isArray(v.ru)||Array.isArray(v.en))){
+  const ru=Array.isArray(v.ru)?v.ru:[],en=Array.isArray(v.en)?v.en:[],n=Math.max(ru.length,en.length);
+  return Array.from({length:n},(_,i)=>({ru:String(ru[i]||''),en:String(en[i]||'')}));
+ }
+ return[bi(v)]
+}
+function storySortKey(v){
+ const raw=String(v||'').trim();if(!raw)return Number.MAX_SAFE_INTEGER;
+ const parsed=Date.parse(raw);if(Number.isFinite(parsed))return parsed;
+ const year=raw.match(/\b(1[0-9]{3}|20[0-9]{2}|21[0-9]{2})\b/);return year?Date.UTC(Number(year[1]),0,1):Number.MAX_SAFE_INTEGER
+}
+function artworkStory(o,revisions=[]){
+ const events=[];let seq=0;
+ const add=(kind,dateLabel,title,{evidenceStatus=null,sourceCount=0}={})=>events.push({
+  id:'story-'+(++seq),kind,dateLabel:String(dateLabel||'').trim()||null,title:clone(title),
+  evidenceStatus:evidenceStatus?String(evidenceStatus):null,sourceCount:Number(sourceCount||0)
+ });
+ for(const e of arr(o?.provenanceTimeline))add('PROVENANCE',e?.date,bi(e?.event||''),{evidenceStatus:e?.evidenceStatus||null});
+ for(const x of localizedItems(o?.exhibitions))add('EXHIBITION',null,x);
+ for(const x of localizedItems(o?.literature))add('PUBLICATION',null,x);
+ for(const r of revisions||[])add('RESEARCH_REVISION',r.createdAt,clone(r.publicSummary)||bi(r.changeKind||'RESEARCH_REVISION'),{evidenceStatus:r.evidence?.count>0?'SOURCE_LINKED':null,sourceCount:r.evidence?.count||0});
+ events.sort((a,b)=>storySortKey(a.dateLabel)-storySortKey(b.dateLabel)||a.id.localeCompare(b.id));
+ return{
+  events,
+  counts:Object.fromEntries(['PROVENANCE','EXHIBITION','PUBLICATION','RESEARCH_REVISION'].map(k=>[k,events.filter(x=>x.kind===k).length])),
+  limitations:{undatedEvents:events.filter(x=>!x.dateLabel).length,guessedDates:false,privateOwnerDataExcluded:true}
+ }
+}
+
 export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}){
  const o=lot(String(objectId||''));if(!o||!publicArtworkEligible(o))return null;
  const [creators,market,revisions]=await Promise.all([
@@ -201,7 +233,7 @@ export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}
   passportRevisionHistory(o.id,{includePrivate:false,limit:50})
  ]);
  const evidence=evidenceSummary(o),revList=revisions?.revisions||[],revisionEvidenceCount=sum(revList,x=>Number(x.evidence?.count||0));
- const literature=arr(o.literature),exhibitions=arr(o.exhibitions),questions=researchQuestions(o,creators,market);
+ const literature=localizedItems(o.literature),exhibitions=localizedItems(o.exhibitions),questions=researchQuestions(o,creators,market),story=artworkStory(o,revList);
  const evidenceCoverage={
   attribution:{state:readinessState(creators.length,{complete:1,partial:1}),count:creators.length},
   provenance:{state:readinessState(evidence.provenanceEvents,{complete:2,partial:1}),count:evidence.provenanceEvents},
@@ -233,6 +265,7 @@ export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}
    items:clone(market?.items||[]),
    interpretation:'CATALOGUE_COMPARABLES_NOT_APPRAISAL'
   },
+  story,
   evidenceCoverage,
   openResearchQuestions:questions,
   boundaries:{
