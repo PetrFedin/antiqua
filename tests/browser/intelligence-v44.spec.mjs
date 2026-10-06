@@ -26,9 +26,12 @@ test('Collector Intelligence remains explainable and private from sellers',async
  expect(api.body.intelligence.interpretation.affinityPointsNotProbability).toBe(true);
  expect(api.body.intelligence.interpretation.purchaseIntentNotInferredFromPassiveSignals).toBe(true);
  expect(api.body.intelligence.privacy.sellerCannotSeePersonalTasteProfile).toBe(true);
+ expect(api.body.intelligence.collectionStrategy.interpretation.noBuyRecommendation).toBe(true);
+ expect(api.body.intelligence.collectionStrategy.interpretation.noPortfolioValueCalculated).toBe(true);
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
  await expect(page.locator('#collectorIntelligenceV44')).toBeVisible();
  await expect(page.locator('#collectorIntelligenceV44')).toContainText(/COLLECTOR INTELLIGENCE/i);
+ await expect(page.locator('#collectorIntelligenceV44')).toContainText(/COLLECTION STRATEGY/i);
 });
 
 test('Professional Intelligence aggregates artists and artworks without passive identity exposure',async({page})=>{
@@ -39,10 +42,13 @@ test('Professional Intelligence aggregates artists and artworks without passive 
  expect(api.body.intelligence.interpretation.passiveSignalsAreNotUniquePeople).toBe(true);
  expect(api.body.intelligence.interpretation.identityOnlyAvailableInsideExplicitLeadWorkflow).toBe(true);
  expect(api.body.intelligence.contentEvidence.causalClaim).toBe(false);
+ expect(api.body.intelligence.portfolio.interpretation.descriptiveNotDemandForecast).toBe(true);
+ expect(api.body.intelligence.portfolio.interpretation.noOpaqueRanking).toBe(true);
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
  const dealerTab=page.locator('[data-v14-tab="dealer"]');await expect(dealerTab).toBeVisible();await dealerTab.click();
  await expect(page.locator('#professionalIntelligenceV44')).toBeVisible();
  await expect(page.locator('#professionalIntelligenceV44')).toContainText(/PROFESSIONAL INTELLIGENCE/i);
+ await expect(page.locator('#professionalIntelligenceV44')).toContainText(/PORTFOLIO INTELLIGENCE/i);
 });
 
 test('Artwork Dossier shows scholarly intelligence without authenticity or appraisal claims',async({page})=>{
@@ -53,8 +59,10 @@ test('Artwork Dossier shows scholarly intelligence without authenticity or appra
  expect(api.body.intelligence.attribution.verdict).toBe('NO_AUTHENTICITY_VERDICT');
  expect(api.body.intelligence.market.interpretation).toBe('CATALOGUE_COMPARABLES_NOT_APPRAISAL');
  expect(api.body.intelligence.boundaries.privateOwnerLocationExcluded).toBe(true);
+ expect(Object.keys(api.body.intelligence.evidenceCoverage)).toEqual(expect.arrayContaining(['attribution','provenance','bibliography','exhibitionHistory','revisions','marketComparables']));
  const scholarly=dialog.locator('#scholarlyIntelligenceV44');await expect(scholarly).toBeVisible();
  await expect(scholarly).toContainText(/MARKET & SCHOLARLY INTELLIGENCE/i);
  await expect(scholarly).toContainText(/NO_AUTHENTICITY_VERDICT/i);
  await expect(scholarly).toContainText(/COMPARABLES ≠ APPRAISAL/i);
+ await expect(scholarly.locator('.v44-evidence-map>div')).toHaveCount(6);
 });
