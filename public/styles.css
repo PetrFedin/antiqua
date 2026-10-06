@@ -647,6 +647,26 @@ body{overflow-x:hidden}
 @media(max-width:700px){.showcase-hero{padding-top:42px;padding-bottom:46px}.showcase-hero h1{font-size:52px}.showcase-hero p{font-size:17px}.showcase-loop{padding-top:48px}.showcase-flow{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;border:0;gap:8px}.showcase-flow>div{flex:0 0 128px;border:1px solid var(--line)!important;min-height:80px}.showcase-role-grid,.showcase-case-grid,.showcase-readiness-grid,.showcase-funding-grid{grid-template-columns:1fr}.showcase-role-card{min-height:210px}.showcase-detail{padding:50px 16px}.showcase-detail-head{display:block}.showcase-detail-head .text-link{display:inline-block;margin-top:18px}.showcase-proof-block{grid-template-columns:1fr}.showcase-investor-cta{grid-template-columns:1fr}.showcase-investor-cta .primary-button{width:100%}}
 
 
+
+/* ---- v0.43 · Investor economics & moat ---- */
+.showcase-economics,.showcase-moat{padding-top:76px;padding-bottom:76px;border-top:1px solid var(--line)}
+.showcase-revenue-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.showcase-revenue-grid article{min-height:300px;padding:18px;border:1px solid var(--line);background:#f5f0e9;display:flex;flex-direction:column}
+.showcase-revenue-grid .showcase-state{align-self:flex-start;padding:5px 7px;border:1px solid var(--line);font-size:8px;letter-spacing:.08em}
+.showcase-revenue-grid h3{margin:36px 0 18px;font:400 26px/1.03 Georgia,serif}
+.showcase-revenue-grid p{margin:0 0 12px;font-size:10px;line-height:1.55;color:#514b45}
+.showcase-revenue-grid p b{font-weight:600}.showcase-revenue-grid small{margin-top:auto;padding-top:20px;color:var(--muted);font-size:9px;line-height:1.55;border-top:1px solid var(--line)}
+.showcase-economics-thesis{display:grid;grid-template-columns:minmax(220px,.55fr) 1.45fr;gap:36px;margin-top:30px;padding:26px 0;border-top:1px solid var(--line)}
+.showcase-economics-thesis strong{font:400 25px/1.12 Georgia,serif}.showcase-economics-thesis p{margin:0;color:var(--muted);font-size:12px;line-height:1.7}
+.showcase-flywheel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:26px 0 28px}
+.showcase-flywheel>div{position:relative;min-height:150px;padding:14px 24px 16px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}.showcase-flywheel>div:last-child{border-right:0}
+.showcase-flywheel b{font-size:8px;color:var(--muted)}.showcase-flywheel p{margin:26px 0 0;font:400 15px/1.25 Georgia,serif}.showcase-flywheel span{position:absolute;right:7px;top:50%;font-size:18px;color:#8c8277}.showcase-flywheel>div:last-child span{display:none}
+.showcase-moat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.showcase-moat-grid article{min-height:190px;padding:18px;background:#e8e0d5;border-top:1px solid var(--line)}
+.showcase-moat-grid h3{margin:26px 0 12px;font:400 24px/1.03 Georgia,serif}.showcase-moat-grid p{font-size:10px;line-height:1.6;color:#5a514a}
+.showcase-case-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1180px){.showcase-revenue-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.showcase-flywheel{grid-template-columns:repeat(3,1fr)}.showcase-flywheel>div:nth-child(3){border-right:0}.showcase-flywheel>div:nth-child(-n+3){border-bottom:1px solid var(--line)}.showcase-moat-grid{grid-template-columns:repeat(2,1fr)}.showcase-case-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.showcase-revenue-grid,.showcase-moat-grid,.showcase-case-grid{grid-template-columns:1fr}.showcase-revenue-grid article{min-height:0}.showcase-economics-thesis{grid-template-columns:1fr;gap:16px}.showcase-flywheel{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;border:0;gap:8px;scroll-snap-type:x mandatory}.showcase-flywheel>div{flex:0 0 190px;min-height:130px;border:1px solid var(--line)!important;scroll-snap-align:start}.showcase-flywheel span{display:none}}
+
 /* ---- v0.32 · Dealer Interest Signals ---- */
 .dealer-interest-v32{border-top:1px solid var(--line);padding-top:38px}
 .dealer-interest-v32 .block-head p{max-width:900px}
