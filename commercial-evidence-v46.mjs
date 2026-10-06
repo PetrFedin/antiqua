@@ -10,6 +10,8 @@ const TYPES=new Set([
 ]);
 const STREAMS=new Set(['PROFESSIONAL_SAAS','PARTNER_EDITION','CULTURAL_PARTNERSHIP','INSTITUTIONAL_RESEARCH','TRANSACTION_REVENUE','ESTATE_ARCHIVE']);
 const MONEY_TYPES=new Set(['QUOTE_ISSUED','PRICE_VERBAL_ACCEPTED','PRICE_WRITTEN_ACCEPTED','INVOICE_ISSUED','PAYMENT_RECEIVED','REFUND_RECORDED','DIRECT_COST_RECORDED','RENEWAL_PROPOSED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED']);
+const REVENUE_CLASSES=new Set(['RECURRING','ONE_TIME','USAGE','TRANSACTION','SPONSORSHIP','PROJECT']);
+const COST_CLASSES=new Set(['ACQUISITION','ONBOARDING','SUPPORT','PROVIDER','EVENT_DELIVERY','RESEARCH_DELIVERY','OTHER']);
 const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
 const digest=v=>crypto.createHash('sha256').update(canonical(v)).digest('hex');
 const sign=v=>'v1='+crypto.createHmac('sha256',appSecret()).update(canonical(v)).digest('hex');
@@ -26,6 +28,8 @@ export function commercialEvidenceCapabilities(){return{
  signedEvents:true,
  eventTypes:[...TYPES],
  revenueStreams:[...STREAMS],
+ revenueClasses:[...REVENUE_CLASSES],
+ costClasses:[...COST_CLASSES],
  evidenceLevels:['INTERNAL_HYPOTHESIS','VERBAL_ACCEPTANCE','WRITTEN_ACCEPTANCE','INVOICED','VERIFIED_CASH','RENEWAL','REPEATABLE'],
  accountingBoundary:{
   quoteIsRevenue:false,
@@ -57,10 +61,13 @@ function validateEvent(input={}){
  const evidenceRef=String(input.evidenceRef||'').trim()||null;
  if(['PRICE_WRITTEN_ACCEPTED','INVOICE_ISSUED','PAYMENT_RECEIVED','REFUND_RECORDED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(eventType)&&!evidenceRef)
   throw Object.assign(new Error('evidenceRef required for this event type'),{status:400,code:'COMMERCIAL_EVIDENCE_REQUIRED'});
+ const payload=input.payload&&typeof input.payload==='object'?{...input.payload}:{};
+ if(payload.revenueClass!=null){payload.revenueClass=String(payload.revenueClass).toUpperCase();if(!REVENUE_CLASSES.has(payload.revenueClass))throw Object.assign(new Error('Invalid revenueClass'),{status:400,code:'REVENUE_CLASS_INVALID'})}
+ if(payload.costClass!=null){payload.costClass=String(payload.costClass).toUpperCase();if(!COST_CLASSES.has(payload.costClass))throw Object.assign(new Error('Invalid costClass'),{status:400,code:'COST_CLASS_INVALID'})}
  const occurredAt=iso(input.occurredAt||new Date());
  const sourceKey=String(input.clientActionId||input.sourceKey||'').trim();
  if(!sourceKey)throw Object.assign(new Error('clientActionId required'),{status:400,code:'IDEMPOTENCY_KEY_REQUIRED'});
- return{eventType,revenueStream,amountMinor,currency,evidenceRef,occurredAt,sourceKey,payload:input.payload&&typeof input.payload==='object'?input.payload:{}}
+ return{eventType,revenueStream,amountMinor,currency,evidenceRef,occurredAt,sourceKey,payload}
 }
 
 export async function recordCommercialEvent(account,pilotId,input={}){
@@ -112,17 +119,17 @@ function evidenceLevel(events){
  return'INTERNAL_HYPOTHESIS'
 }
 export function summarizeCommercialEvents(events=[]){
- const active=notVoided(events),quoted={},accepted={},invoiced={},cash={},refunds={},costs={},grossContribution={};
+ const active=notVoided(events),quoted={},accepted={},invoiced={},cash={},refunds={},costs={},grossContribution={},cashByRevenueClass={},costByClass={};
  for(const e of active){
   if(e.eventType==='QUOTE_ISSUED')addMoney(quoted,e);
   if(['PRICE_WRITTEN_ACCEPTED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType))addMoney(accepted,e);
   if(e.eventType==='INVOICE_ISSUED')addMoney(invoiced,e);
-  if(e.eventType==='PAYMENT_RECEIVED')addMoney(cash,e);
+  if(e.eventType==='PAYMENT_RECEIVED'){addMoney(cash,e);const rc=String(e.payload?.revenueClass||'UNCLASSIFIED');cashByRevenueClass[rc]??={};addMoney(cashByRevenueClass[rc],e)}
   if(e.eventType==='REFUND_RECORDED')addMoney(refunds,e);
-  if(e.eventType==='DIRECT_COST_RECORDED')addMoney(costs,e)
+  if(e.eventType==='DIRECT_COST_RECORDED'){addMoney(costs,e);const cc=String(e.payload?.costClass||'UNCLASSIFIED');costByClass[cc]??={};addMoney(costByClass[cc],e)}
  }
  for(const c of new Set([...Object.keys(cash),...Object.keys(refunds),...Object.keys(costs)]))grossContribution[c]=(cash[c]||0)-(refunds[c]||0)-(costs[c]||0);
- const renewals=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType));
+ const renewals=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType)),paymentEvents=active.filter(e=>e.eventType==='PAYMENT_RECEIVED'),costEvents=active.filter(e=>e.eventType==='DIRECT_COST_RECORDED'),classifiedPayments=paymentEvents.filter(e=>REVENUE_CLASSES.has(String(e.payload?.revenueClass||''))).length,classifiedCosts=costEvents.filter(e=>COST_CLASSES.has(String(e.payload?.costClass||''))).length;
  return{
   evidenceLevel:evidenceLevel(active),
   pricingEvidence:pricingEvidence(active),
@@ -134,6 +141,9 @@ export function summarizeCommercialEvents(events=[]){
   refundsMinorByCurrency:refunds,
   directCostMinorByCurrency:costs,
   grossContributionMinorByCurrency:grossContribution,
+  cashByRevenueClass,
+  costByClass,
+  classificationCoverage:{payments:{classified:classifiedPayments,total:paymentEvents.length,ratio:paymentEvents.length?Number((classifiedPayments/paymentEvents.length).toFixed(4)):null},costs:{classified:classifiedCosts,total:costEvents.length,ratio:costEvents.length?Number((classifiedCosts/costEvents.length).toFixed(4)):null}},
   renewalAccepted:renewals.some(e=>e.eventType==='RENEWAL_ACCEPTED'),
   expansionAccepted:renewals.some(e=>e.eventType==='EXPANSION_ACCEPTED'),
   eventCounts:countsBy(active,'eventType'),
