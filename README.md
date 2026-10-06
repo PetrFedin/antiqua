@@ -30,6 +30,7 @@ The existing technical foundation remains reusable:
 - collections and ownership-related records;
 - provenance, evidence and condition workflows;
 - art-network profiles and relationships;
+- shared Intelligence Authority: collector, professional and scholarly/market projections;
 - exhibitions and Cultural Calendar;
 - inquiry, offer/counteroffer, viewing and auction workflows;
 - durable PostgreSQL contour and existing governance controls.
