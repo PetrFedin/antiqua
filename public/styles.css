@@ -973,3 +973,6 @@ body{overflow-x:hidden}
  .artwork-provenance-summary>div+div{padding-left:0;border-left:0;border-top:1px solid var(--line)}
  .artwork-provenance-classes{grid-template-columns:1fr}
 }
+
+.artwork-related-why{display:block;margin-top:8px;font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.artwork-related-card small{display:block;margin-top:4px;line-height:1.45}
