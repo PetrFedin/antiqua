@@ -20,6 +20,10 @@ test('Partner and Investor Showcase explains stakeholder value, revenue gates an
  await expect(root).toContainText(/структурная модель, не финансовый прогноз|structural model, not a financial forecast/i);
 
  const flywheel=root.locator('.showcase-flywheel>div');await expect(flywheel).toHaveCount(6);
+ await expect(root.locator('.showcase-intelligence-grid article')).toHaveCount(3);
+ await expect(root.locator('.showcase-intelligence')).toContainText(/Collector Intelligence/);
+ await expect(root.locator('.showcase-intelligence')).toContainText(/Professional Intelligence/);
+ await expect(root.locator('.showcase-intelligence')).toContainText(/Market & Scholarly Intelligence/);
  await expect(root.locator('.showcase-moat-grid article')).toHaveCount(4);
  await expect(root.locator('.showcase-moat-grid')).toContainText(/Artwork graph/i);
  await expect(root.locator('.showcase-moat-grid')).toContainText(/Trust graph/i);
