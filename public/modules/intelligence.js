@@ -30,6 +30,23 @@ const storyKindLabel=k=>({
  RESEARCH_REVISION:copy('Редакция исследования','Research revision')
 })[k]||k;
 const storyTarget=k=>({PROVENANCE:'#dossier-provenance',EXHIBITION:'#dossier-provenance',PUBLICATION:'#dossier-provenance',RESEARCH_REVISION:'#dossier-evidence'})[k]||'#dossier-overview';
+const provenanceClassLabel=k=>({
+ PRIMARY_DOCUMENT:copy('Первичный документ','Primary document'),
+ INSTITUTIONAL_RECORD:copy('Институциональная запись','Institutional record'),
+ AUCTION_DEALER_RECORD:copy('Аукционный / дилерский источник','Auction / dealer record'),
+ SCHOLARLY_PUBLICATION:copy('Научная публикация','Scholarly publication'),
+ OWNER_DEALER_STATEMENT:copy('Заявление владельца / дилера','Owner / dealer statement'),
+ EXPERT_INTERPRETATION:copy('Экспертная интерпретация','Expert interpretation'),
+ MACHINE_CANDIDATE:copy('Машинная гипотеза','Machine candidate'),
+ UNSPECIFIED:copy('Класс источника не указан','Unspecified evidence class')
+})[k]||k;
+const provenanceCompletenessLabel=k=>({
+ EMPTY:copy('Нет событий','No events'),
+ INCOMPLETE:copy('Есть нерешённые события','Unresolved events remain'),
+ CONFLICTED:copy('Есть конфликтующие свидетельства','Conflicting evidence present'),
+ EVIDENCED:copy('Все события имеют связанное подтверждение','All events have linked evidence')
+})[k]||k;
+
 
 
 function collectorMarkup(d){
@@ -64,7 +81,7 @@ function professionalMarkup(d){
 }
 
 function scholarlyMarkup(d){
- const x=d.intelligence||{},r=x.researchCoverage||{},m=x.market||{},a=x.attribution||{},questions=x.openResearchQuestions||[],ec=x.evidenceCoverage||{},story=x.story||{events:[]};
+ const x=d.intelligence||{},r=x.researchCoverage||{},m=x.market||{},a=x.attribution||{},questions=x.openResearchQuestions||[],ec=x.evidenceCoverage||{},story=x.story||{events:[]},pe=x.provenanceEvidence||{};
  const storyRows=(story.events||[]).map(e=>`<button type="button" class="artwork-story-event" data-story-target="${esc(storyTarget(e.kind))}" data-story-kind="${esc(e.kind)}"><span class="artwork-story-date">${esc(e.dateLabel||copy('Дата не установлена','Date unknown'))}</span><span class="artwork-story-node" aria-hidden="true"></span><span class="artwork-story-copy"><small>${esc(storyKindLabel(e.kind))}</small><strong>${esc(local(e.title)||'—')}</strong>${e.evidenceStatus?`<em>${esc(evidenceStateLabel(e.evidenceStatus))}</em>`:''}</span></button>`).join('');
  const evidenceRows=Object.entries(ec).map(([key,row])=>`<button type="button" class="artwork-evidence-card" data-evidence-target="${esc(evidenceTarget(key))}" data-evidence-state="${esc(row.state)}"><span>${esc(evidenceLabel(key))}</span><strong>${esc(evidenceStateLabel(row.state))}</strong><small>${Number(row.count||0)} ${copy('записей','records')}</small><em>${copy('Перейти к разделу','Open section')} →</em></button>`).join('');
  const questionRows=questions.map((q,i)=>`<article class="artwork-research-question"><span>${String(i+1).padStart(2,'0')}</span><div><strong>${esc(questionLabel(q))}</strong><small>${copy('Открытый вопрос исследования','Open research question')}</small></div></article>`).join('');
@@ -77,6 +94,17 @@ function scholarlyMarkup(d){
   <section class="artwork-evidence-map-v1">
    <div class="artwork-experience-subhead"><div><span>${copy('КАРТА ДОКАЗАТЕЛЬСТВ','EVIDENCE MAP')}</span><h4>${copy('Где исследование сильное, а где остаются пробелы','Where the research is strong and where gaps remain')}</h4></div><small>${copy('Без общего «процента достоверности»','No aggregate confidence score')}</small></div>
    <div class="artwork-evidence-grid">${evidenceRows}</div>
+  </section>
+  <section class="artwork-provenance-evidence">
+   <div class="artwork-experience-subhead"><div><span>${copy('ДОКАЗАТЕЛЬСТВА ПРОВЕНАНСА','PROVENANCE EVIDENCE')}</span><h4>${copy('Какими источниками подтверждён путь произведения','What supports the artwork’s provenance trail')}</h4></div><small>${esc(provenanceCompletenessLabel(pe.completeness||'EMPTY'))}</small></div>
+   <div class="artwork-provenance-summary">
+    <div><strong>${Number(pe.totalEvents||0)}</strong><span>${copy('событий','events')}</span></div>
+    <div><strong>${(pe.unresolvedEventIds||[]).length}</strong><span>${copy('нерешённых','unresolved')}</span></div>
+    <div><strong>${(pe.conflictEventIds||[]).length}</strong><span>${copy('конфликтующих','conflicting')}</span></div>
+   </div>
+   <div class="artwork-provenance-classes">${Object.entries(pe.byClass||{}).filter(([,count])=>Number(count)>0).map(([key,count])=>`<div><span>${esc(provenanceClassLabel(key))}</span><strong>${Number(count)}</strong></div>`).join('')||`<div class="empty-state">${copy('Классы источников пока не зафиксированы.','Evidence classes have not yet been recorded.')}</div>`}</div>
+   ${(pe.conflictEventIds||[]).length?`<p class="artwork-provenance-warning">${copy('В провенансе есть конфликтующие свидетельства. ANTIQUA сохраняет конфликт явно и не сводит его к автоматическому вердикту.','The provenance contains conflicting evidence. ANTIQUA preserves the conflict explicitly and does not collapse it into an automated verdict.')}</p>`:''}
+   <p class="artwork-provenance-boundary">${copy('Статус провенанса не является сертификатом подлинности и не заменяет экспертную атрибуцию.','Provenance status is not an authenticity certificate and does not replace expert attribution.')}</p>
   </section>
   <section class="artwork-research-questions">
    <div class="artwork-experience-subhead"><div><span>${copy('ОТКРЫТЫЕ ВОПРОСЫ ИССЛЕДОВАНИЯ','RESEARCH QUESTIONS')}</span><h4>${questions.length?copy('Что ещё нужно установить','What still needs to be established'):copy('Ключевых открытых вопросов сейчас нет','No key open questions at present')}</h4></div><small>${questions.length}</small></div>
