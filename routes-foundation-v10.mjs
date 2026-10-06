@@ -12,8 +12,8 @@ export async function routeFoundationPublicV10(req,res,url){
   const em=url.pathname.match(/^\/api\/ensembles\/([^/]+)$/);if(em&&req.method==='GET'){const e=await getEnsemble(em[1]);return e?send(res,200,{ensemble:e}):send(res,404,{error:'Ensemble not found'});}
   if(url.pathname==='/api/exhibitions'&&req.method==='GET')return send(res,200,{exhibitions:await listExhibitions()});
   const xm=url.pathname.match(/^\/api\/exhibitions\/([^/]+)$/);if(xm&&req.method==='GET'){const e=await getExhibition(xm[1]);if(!e)return send(res,404,{error:'Exhibition not found'});const ctx=await authContext(req),accountId=ctx?.account?.id||null,owner=Boolean(accountId&&(e.ownerAccountId===accountId||(e.ownerAccountId==='acct-demo-buyer'&&accountId==='acct-buyer-demo')));return canReadExhibition(e,{owner})?send(res,200,{exhibition:e}):send(res,404,{error:'Exhibition not found'});}
-  const iiif=url.pathname.match(/^\/api\/lots\/([^/]+)\/iiif\/manifest$/);if(iiif&&req.method==='GET'){const m=iiifManifest(iiif[1],origin);return m?send(res,200,m,{'content-type':'application/ld+json; charset=utf-8'}):send(res,404,{error:'Object not found'});}
-  const la=url.pathname.match(/^\/api\/lots\/([^/]+)\/linked-art$/);if(la&&req.method==='GET'){const r=linkedArtRecord(la[1],origin);return r?send(res,200,r,{'content-type':'application/ld+json; charset=utf-8'}):send(res,404,{error:'Object not found'});}
+  const iiif=url.pathname.match(/^\/api\/lots\/([^/]+)\/iiif\/manifest$/);if(iiif&&req.method==='GET'){const m=iiifManifest(iiif[1],origin);return m?send(res,200,m,{'content-type':'application/ld+json; charset=utf-8'}):send(res,404,{error:'Artwork not found'});}
+  const la=url.pathname.match(/^\/api\/lots\/([^/]+)\/linked-art$/);if(la&&req.method==='GET'){const r=linkedArtRecord(la[1],origin);return r?send(res,200,r,{'content-type':'application/ld+json; charset=utf-8'}):send(res,404,{error:'Artwork not found'});}
   return false;
 }
 
