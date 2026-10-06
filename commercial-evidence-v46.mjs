@@ -152,6 +152,15 @@ export async function sellerCommercialSummary(account,pilotId){
 export async function operatorCommercialSummary(account,pilotId){
  ensureOperator(account);return summaryForPilotInternal(pilotId)
 }
+
+export async function listOperatorCommercialPilots(account){
+ ensureOperator(account);
+ if(db.kind!=='POSTGRES')return{persistence:'MEMORY_FALLBACK',pilots:[]};
+ const rows=(await db.pool.query('SELECT id,seller_id,name,status,starts_at,ends_at,contract_digest FROM dealer_pilot_engagements ORDER BY starts_at DESC,id DESC')).rows,out=[];
+ for(const p of rows){const summary=summarizeCommercialEvents(await eventsFor(p.id));out.push({id:p.id,sellerId:p.seller_id,name:p.name,status:p.status,startsAt:iso(p.starts_at),endsAt:iso(p.ends_at),contractDigest:p.contract_digest||null,summary})}
+ return{persistence:'POSTGRES',pilots:out}
+}
+
 export async function investorCommercialAggregate(account){
  ensureOperator(account);
  if(db.kind!=='POSTGRES')return{persistence:'MEMORY_FALLBACK',pilots:0,paidPilots:0,cashReceivedMinorByCurrency:{},grossContributionMinorByCurrency:{},renewedPilots:0,evidenceState:'MISSING'};
