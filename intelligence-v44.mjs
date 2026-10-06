@@ -8,6 +8,7 @@ import {creatorsForObject,creatorGraphCapabilities} from './creator-graph-v30.mj
 import {marketIntelligenceFor,marketIntelligenceCapabilities} from './market-intelligence-v25.mjs';
 import {passportRevisionHistory,passportRevisionCapabilities} from './passport-revisions-v16.mjs';
 import {listMyCollections} from './collection-graph-v10.mjs';
+import {provenanceEvidencePassport} from './provenance-evidence-passport-v43.mjs';
 
 const STAGES=['NO_SIGNAL','DISCOVERED','ENGAGED','INQUIRY','VIEWING','NEGOTIATING','TRANSACTING'];
 const RANK=Object.fromEntries(STAGES.map((x,i)=>[x,i]));
@@ -227,10 +228,11 @@ function artworkStory(o,revisions=[]){
 
 export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}){
  const o=lot(String(objectId||''));if(!o||!publicArtworkEligible(o))return null;
- const [creators,market,revisions]=await Promise.all([
+ const [creators,market,revisions,provenancePassport]=await Promise.all([
   creatorsForObject(null,o.id),
   marketIntelligenceFor(o.id,{limit:marketLimit}),
-  passportRevisionHistory(o.id,{includePrivate:false,limit:50})
+  passportRevisionHistory(o.id,{includePrivate:false,limit:50}),
+  provenanceEvidencePassport(o.id,{publicOnly:true})
  ]);
  const evidence=evidenceSummary(o),revList=revisions?.revisions||[],revisionEvidenceCount=sum(revList,x=>Number(x.evidence?.count||0));
  const literature=localizedItems(o.literature),exhibitions=localizedItems(o.exhibitions),questions=researchQuestions(o,creators,market),story=artworkStory(o,revList);
@@ -266,6 +268,16 @@ export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}
    interpretation:'CATALOGUE_COMPARABLES_NOT_APPRAISAL'
   },
   story,
+  provenanceEvidence:{
+   schemaVersion:provenancePassport?.schemaVersion||null,
+   packageSha256:provenancePassport?.evidencePackageSha256||null,
+   completeness:provenancePassport?.evidenceSummary?.completeness||'EMPTY',
+   totalEvents:Number(provenancePassport?.evidenceSummary?.totalEvents||0),
+   byClass:clone(provenancePassport?.evidenceSummary?.byClass||{}),
+   unresolvedEventIds:clone(provenancePassport?.evidenceSummary?.unresolvedEventIds||[]),
+   conflictEventIds:clone(provenancePassport?.evidenceSummary?.conflictEventIds||[]),
+   assertions:clone(provenancePassport?.assertions||{})
+  },
   evidenceCoverage,
   openResearchQuestions:questions,
   boundaries:{
