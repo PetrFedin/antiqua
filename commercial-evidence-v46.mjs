@@ -94,6 +94,15 @@ function notVoided(events){
 function addMoney(map,e,signum=1){if(e.amountMinor==null)return;const k=moneyKey(e);map[k]=(map[k]||0)+signum*e.amountMinor}
 function countsBy(events,field){const out={};for(const e of events){const k=e[field]||'UNSPECIFIED';out[k]=(out[k]||0)+1}return out}
 
+function pricingEvidence(events){
+ const active=notVoided(events),quotes=active.filter(e=>e.eventType==='QUOTE_ISSUED'&&e.amountMinor!=null),accepted=active.filter(e=>['PRICE_WRITTEN_ACCEPTED','RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType)&&e.amountMinor!=null),paid=active.filter(e=>e.eventType==='PAYMENT_RECEIVED'&&e.amountMinor!=null),renewed=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType));
+ const latestQuote=quotes.at(-1)||null,latestAccepted=accepted.at(-1)||null;
+ const realizedPriceRatio=latestQuote&&latestAccepted&&latestQuote.currency===latestAccepted.currency&&latestQuote.amountMinor>0?Number((latestAccepted.amountMinor/latestQuote.amountMinor).toFixed(4)):null;
+ const discountRate=realizedPriceRatio==null?null:Number((1-realizedPriceRatio).toFixed(4));
+ const confidence=renewed.length?'HIGH':paid.length?'MEDIUM':accepted.length?'LOW':'UNPROVEN';
+ return{confidence,latestQuotedMinor:latestQuote?.amountMinor??null,latestAcceptedMinor:latestAccepted?.amountMinor??null,currency:latestAccepted?.currency||latestQuote?.currency||null,realizedPriceRatio,discountRate,boundary:'Price confidence is evidence maturity, not a forecast of future pricing.'}
+}
+
 function evidenceLevel(events){
  const types=new Set(events.map(e=>e.eventType));
  if(types.has('RENEWAL_ACCEPTED')||types.has('EXPANSION_ACCEPTED'))return'RENEWAL';
@@ -117,6 +126,7 @@ export function summarizeCommercialEvents(events=[]){
  const renewals=active.filter(e=>['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED'].includes(e.eventType));
  return{
   evidenceLevel:evidenceLevel(active),
+  pricingEvidence:pricingEvidence(active),
   eventCount:active.length,
   quotedMinorByCurrency:quoted,
   acceptedMinorByCurrency:accepted,
@@ -146,7 +156,7 @@ export async function operatorCommercialSummary(account,pilotId){
 export async function investorCommercialAggregate(account){
  ensureOperator(account);
  if(db.kind!=='POSTGRES')return{persistence:'MEMORY_FALLBACK',pilots:0,paidPilots:0,cashReceivedMinorByCurrency:{},grossContributionMinorByCurrency:{},renewedPilots:0,evidenceState:'MISSING'};
- const pilots=(await db.pool.query('SELECT id FROM dealer_pilot_engagements ORDER BY starts_at,id')).rows,aggregate={pilots:pilots.length,paidPilots:0,cashReceivedMinorByCurrency:{},grossContributionMinorByCurrency:{},renewedPilots:0};
- for(const p of pilots){const s=summarizeCommercialEvents(await eventsFor(p.id));if(Object.values(s.cashReceivedMinorByCurrency).some(v=>v>0))aggregate.paidPilots++;if(s.renewalAccepted||s.expansionAccepted)aggregate.renewedPilots++;for(const [c,v] of Object.entries(s.cashReceivedMinorByCurrency))aggregate.cashReceivedMinorByCurrency[c]=(aggregate.cashReceivedMinorByCurrency[c]||0)+v;for(const [c,v] of Object.entries(s.grossContributionMinorByCurrency))aggregate.grossContributionMinorByCurrency[c]=(aggregate.grossContributionMinorByCurrency[c]||0)+v}
- return{persistence:'POSTGRES',...aggregate,evidenceState:aggregate.paidPilots>0?'VERIFIED_CASH':'MISSING'}
+ const pilots=(await db.pool.query('SELECT id,status FROM dealer_pilot_engagements ORDER BY starts_at,id')).rows,aggregate={pilots:pilots.length,activePilots:pilots.filter(p=>p.status==='ACTIVE').length,completedPilots:pilots.filter(p=>p.status==='COMPLETED').length,paidPilots:0,cashReceivedMinorByCurrency:{},grossContributionMinorByCurrency:{},renewedPilots:0,pricingConfidence:{HIGH:0,MEDIUM:0,LOW:0,UNPROVEN:0}};
+ for(const p of pilots){const s=summarizeCommercialEvents(await eventsFor(p.id));aggregate.pricingConfidence[s.pricingEvidence.confidence]=(aggregate.pricingConfidence[s.pricingEvidence.confidence]||0)+1;if(Object.values(s.cashReceivedMinorByCurrency).some(v=>v>0))aggregate.paidPilots++;if(s.renewalAccepted||s.expansionAccepted)aggregate.renewedPilots++;for(const [c,v] of Object.entries(s.cashReceivedMinorByCurrency))aggregate.cashReceivedMinorByCurrency[c]=(aggregate.cashReceivedMinorByCurrency[c]||0)+v;for(const [c,v] of Object.entries(s.grossContributionMinorByCurrency))aggregate.grossContributionMinorByCurrency[c]=(aggregate.grossContributionMinorByCurrency[c]||0)+v}
+ return{persistence:'POSTGRES',...aggregate,evidenceState:aggregate.paidPilots>0?'VERIFIED_CASH':'MISSING',accountingBoundary:commercialEvidenceCapabilities().accountingBoundary}
 }
