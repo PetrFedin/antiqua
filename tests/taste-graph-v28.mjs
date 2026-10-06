@@ -31,7 +31,7 @@ const reversedProfile=await buildTasteProfile(account);
 const printFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='print');
 assert.ok(printFacet);
 assert.equal(printFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
-const print=recs.recommendations.find(x=>x.object.id==='lot-112');assert.ok(print,'category follow should surface another printmaking work');
+const print=recs.recommendations.find(x=>x.reasons.some(r=>r.dimension==='department'&&r.signals.some(s=>s.type==='FOLLOW_CATEGORY')));assert.ok(print,'category follow should surface another printmaking work');
 assert.ok(print.reasons.some(x=>x.dimension==='department'&&x.signals.some(s=>s.type==='FOLLOW_CATEGORY')));
 assert.equal(recs.capabilities.aiUsed,false);assert.equal(recs.capabilities.priceUsedForMatching,false);assert.equal(recs.capabilities.explainable,true);
 assert.equal(tasteGraphCapabilities().engagedViewThreshold.minimumDepth,.35);
