@@ -37,8 +37,10 @@ test.describe('Artwork Experience v1',()=>{
    expect(text).not.toMatch(/CREATOR_PROFILE_NOT_LINKED|PROVENANCE_TIMELINE_NOT_RECORDED|BIBLIOGRAPHY_NOT_LINKED|EXHIBITION_HISTORY_NOT_LINKED|NO_PLATFORM_MARKET_COMPARABLES|PROVENANCE_EVIDENCE_REVIEW_OPEN|OWNER_DEALER_STATEMENT|SCHOLARLY_PUBLICATION|INSTITUTIONAL_RECORD|MACHINE_CANDIDATE/);
 
    const evidence=experience.locator('.artwork-evidence-card').first();
+   const target=await evidence.getAttribute('data-evidence-target');
+   expect(target).toBeTruthy();
    await evidence.click();
-   await expect(dialog.locator(evidence.getAttribute? '#dossier-overview':'#dossier-overview')).toBeAttached();
+   await expect(dialog.locator(target)).toBeAttached();
 
    await page.locator('[data-lang="en"]').click();
    await expect.poll(()=>page.evaluate(()=>document.documentElement.lang)).toBe('en');
