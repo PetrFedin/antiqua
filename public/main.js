@@ -15,4 +15,4 @@ import './modules/inquiry.js';
 
 import './modules/services.js';
 
-import './modules/intelligence-v44.js';
+import './modules/intelligence.js';
