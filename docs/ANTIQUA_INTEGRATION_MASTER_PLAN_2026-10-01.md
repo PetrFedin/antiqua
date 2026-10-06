@@ -2072,3 +2072,124 @@ Observed pattern:
 7. Cultural Watch;
 8. Collection Intelligence;
 9. View on Wall only after Media/dimensions/rights gate.
+
+## Platform economics wave — Institutional Research and Provenance API
+
+This wave turns Antiqua's provenance, attribution, IIIF, Linked Art and catalogue-raisonné corpus into controlled research infrastructure for museums, foundations, estates, scholars and insurers.
+
+### Research API — ADOPT
+
+Expose only public or explicitly shared resources:
+
+- canonical work record;
+- creator/authority links;
+- provenance events;
+- exhibition history;
+- bibliography;
+- published attribution state;
+- approved condition/public media;
+- IIIF manifests;
+- Linked Art projection;
+- rights/access state.
+
+Private owner/location/insurance/dealer information remains excluded unless explicitly authorised.
+
+### Provenance Query API — ADOPT
+
+Support questions such as:
+
+- works connected to a person/institution;
+- provenance gaps;
+- auction/sale events;
+- date/place ranges;
+- source-backed event chains;
+- related works/versions;
+- disputed provenance events.
+
+Every result exposes evidence/provenance status rather than a flattened unqualified assertion.
+
+### Institutional Federation — ADOPT
+
+Allow partner institutions to map identifiers:
+
+external institution ID -> Antiqua canonical object/person/place -> reviewed mapping
+
+No automatic merge based only on name similarity.
+
+### Institutional Submission API — ADOPT
+
+Approved partner systems can submit candidate:
+
+- identifier mappings;
+- provenance source;
+- exhibition reference;
+- bibliography;
+- IIIF manifest;
+- correction proposal.
+
+All submissions enter staging/review. They never directly rewrite canonical scholarly state.
+
+### Change / Publication Feed — ADOPT
+
+Provide signed/versioned events for:
+
+- work revision;
+- attribution change;
+- provenance event correction/addition;
+- IIIF update;
+- rights/access change;
+- catalogue record superseded.
+
+This allows museums/estates to keep local systems synchronized incrementally.
+
+### Research Access Tiers — ADOPT
+
+Scopes:
+
+- Public API;
+- Registered Research;
+- Institutional Partner;
+- Estate/Foundation;
+- Private Shared Collection.
+
+Each maps to explicit fields/resources.
+
+### Citation / Data License Contract — ADOPT
+
+Define:
+
+- permitted use;
+- attribution/citation;
+- redistribution;
+- media-right constraints;
+- quota;
+- correction/withdrawal handling;
+- version citation.
+
+Antiqua never licenses rights it does not own.
+
+### Institution Connector SDK — ADOPT
+
+Provide contract-first helpers for:
+
+- IIIF ingestion;
+- Linked Art exchange;
+- CSV/JSON identifier mapping;
+- change-feed consumption;
+- source/citation upload.
+
+The SDK cannot bypass staging/review.
+
+### Additional acceptance
+
+- every assertion carries source/status where applicable;
+- private facts cannot leak through graph traversal;
+- identifier mapping is reviewed;
+- change feed preserves revision identity;
+- media rights remain separate from metadata access;
+- partner access can be revoked without corrupting public history.
+
+**Sequencing:** Catalogue Raisonné + Linked Art/IIIF + Rights -> Research API -> federation -> submissions -> change feed -> SDK/licensing.
+
+**Commercial framing:** Antiqua becomes reusable cultural-heritage research infrastructure and a licensable provenance knowledge layer.
+
