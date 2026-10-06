@@ -667,7 +667,30 @@ Core rules:
 
 Commercial Evidence is the authority that may populate the cash/pricing/gross-contribution cells of the Investor Traction Dashboard. No manual dashboard override is allowed.
 
-## 22. Next implementation order
+## 22. First Paid Gallery Growth Pilot
+
+The next commercial milestone after v0.46/v0.47 is not another product module. It is one bounded external Gallery Growth pilot executed under:
+
+- `docs/ANTIQUA_GALLERY_GROWTH_PAID_PILOT_PROTOCOL.md`
+
+The pilot must create source evidence for:
+
+`scope -> baseline -> counterparty acceptance -> launch -> quote -> accepted price -> invoice -> payment -> direct cost -> gross contribution -> final review -> renewal / expansion decision`
+
+Rules:
+
+- no invented fee or KPI target;
+- no retroactive baseline reconstruction;
+- no recurring label without a recurring commercial instrument;
+- no revenue claim from quote / LOI / invoice;
+- no finance-ready CAC / ARR / NRR from one pilot;
+- direct costs are classified at source;
+- missing evidence remains MISSING;
+- the final evidence pack distinguishes telemetry, commercial ledger facts and counterparty acknowledgement.
+
+The first successful paid pilot may establish **commercial feasibility**. Repeatability requires multiple independent counterparties.
+
+## 23. Next implementation order
 
 1. finish CI + Browser E2E on the current artwork-first/intelligence/commercial-evidence head and merge only on green;
 2. expose an operator Commercial Evidence Console over v0.46 with CSRF, audit and evidence-reference requirements;
