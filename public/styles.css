@@ -1058,3 +1058,56 @@ body{overflow-x:hidden}
  .artist-wall-card{scroll-snap-align:start}
 }
 @media(prefers-reduced-motion:reduce){.artist-wall-media img{transition:none}}
+
+
+/* ---- Artwork Experience v1 · Collection wall ---- */
+.collection-detail-v1{background:var(--paper)}
+.collection-detail-top{padding-top:34px}
+.collection-hero-v1{display:grid;grid-template-columns:minmax(360px,1.05fr) minmax(0,.95fr);gap:clamp(34px,6vw,88px);align-items:end;padding-top:28px;padding-bottom:48px}
+.collection-hero-media{aspect-ratio:5/4;overflow:hidden;background:#ddd5ca;display:grid;place-items:center}
+.collection-hero-media img{width:100%;height:100%;object-fit:cover;display:block}
+.collection-hero-empty{font:400 clamp(64px,10vw,140px)/1 var(--display);letter-spacing:.08em;color:#80766b}
+.collection-hero-copy h1{margin:.12em 0 .2em;font:400 clamp(54px,7vw,98px)/.92 var(--display);letter-spacing:-.05em}
+.collection-hero-copy .lead{max-width:720px;font:400 clamp(19px,2vw,26px)/1.48 var(--display)}
+.collection-statement{max-width:720px;margin:22px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
+.collection-hero-stats{display:flex;gap:28px;margin-top:30px;padding-top:17px;border-top:1px solid var(--line)}
+.collection-hero-stats>div{display:grid;gap:3px}
+.collection-hero-stats strong{font:400 34px/1 var(--display)}
+.collection-hero-stats span{font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.collection-section-rail{display:flex;gap:8px;overflow-x:auto;padding-top:4px;padding-bottom:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);scrollbar-width:none}
+.collection-section-rail::-webkit-scrollbar{display:none}
+.collection-section-chip{display:flex;gap:12px;align-items:center;flex:0 0 auto;min-height:42px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);cursor:pointer}
+.collection-section-chip span{font-size:9px}
+.collection-section-chip strong{font:400 16px/1 var(--display)}
+.collection-wall-section{padding-top:54px}
+.collection-wall{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:36px 18px;align-items:start}
+.collection-wall-item{grid-column:span 4}
+.collection-wall-item-1,.collection-wall-item-5{grid-column:span 5}
+.collection-wall-item-2,.collection-wall-item-6{grid-column:span 3}
+.collection-wall-media{overflow:hidden;background:#ded7ce;aspect-ratio:4/5}
+.collection-wall-item-1 .collection-wall-media,.collection-wall-item-5 .collection-wall-media{aspect-ratio:5/6}
+.collection-wall-item-2 .collection-wall-media,.collection-wall-item-6 .collection-wall-media{aspect-ratio:3/4}
+.collection-wall-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .42s ease}
+.collection-wall-item:hover img{transform:scale(1.012)}
+.collection-wall-copy{padding:12px 1px 0}
+.collection-wall-copy>span{font-size:8px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.collection-wall-copy h2{margin:7px 0 5px;font:400 24px/1.06 var(--display)}
+.collection-wall-copy p{margin:0 0 10px;color:var(--muted);font-size:10px;line-height:1.45}
+.collection-wall-copy .text-link{font-size:9px;background:none;border:0;border-bottom:1px solid currentColor;padding:0;cursor:pointer}
+@media(max-width:1050px){
+ .collection-hero-v1{grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr);gap:34px}
+ .collection-wall{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .collection-wall-item,.collection-wall-item-1,.collection-wall-item-2,.collection-wall-item-5,.collection-wall-item-6{grid-column:span 3}
+}
+@media(max-width:760px){
+ .collection-detail-top{padding-top:20px}
+ .collection-hero-v1{display:flex;flex-direction:column;padding-top:18px;padding-bottom:28px;gap:24px}
+ .collection-hero-media{width:calc(100% + 32px);margin-left:-16px;aspect-ratio:4/4.6}
+ .collection-hero-copy h1{font-size:clamp(48px,15vw,66px)}
+ .collection-hero-copy .lead{font-size:19px}
+ .collection-section-rail{margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px}
+ .collection-wall{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px 10px;gap:12px;scroll-snap-type:x mandatory;scrollbar-width:none}
+ .collection-wall::-webkit-scrollbar{display:none}
+ .collection-wall-item,.collection-wall-item-1,.collection-wall-item-2,.collection-wall-item-5,.collection-wall-item-6{flex:0 0 min(82vw,350px);scroll-snap-align:start}
+}
+@media(prefers-reduced-motion:reduce){.collection-wall-media img{transition:none}}
