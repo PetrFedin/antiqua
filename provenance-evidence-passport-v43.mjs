@@ -186,6 +186,39 @@ function mapEntry(row){
   };
 }
 
+export function buildPortableProvenanceBundle(passport){
+  if(!passport?.work?.objectId)throw Object.assign(new Error('Passport required'),{code:'PROVENANCE_BUNDLE_PASSPORT_REQUIRED'});
+  const canonical={
+    schemaVersion:'antiqua-provenance-partner-bundle-v1',
+    work:{
+      objectId:passport.work.objectId,
+      objectCode:passport.work.objectCode,
+      title:passport.work.title,
+      maker:passport.work.maker,
+      attributionStatus:passport.work.attributionStatus
+    },
+    passportRevision:passport.passportRevision,
+    evidenceSummary:passport.evidenceSummary,
+    provenanceEvents:passport.provenanceEvents,
+    lineage:passport.lineage,
+    sourcePassportSha256:passport.evidencePackageSha256,
+    disclosureBoundary:{
+      ownerIdentityIncluded:false,
+      accountDataIncluded:false,
+      commercialTermsIncluded:false,
+      authenticityCertified:false,
+      attributionCertified:false
+    },
+    signature:{status:'unsigned',issuer:null}
+  };
+  return {...canonical,bundleSha256:sha(canonical)};
+}
+
+export async function portableProvenanceBundle(objectId,{publicOnly=true}={}){
+  const passport=await provenanceEvidencePassport(objectId,{publicOnly});
+  return passport?buildPortableProvenanceBundle(passport):null;
+}
+
 export async function provenanceEvidencePassport(objectId,{publicOnly=true}={}){
   if(db.kind==='POSTGRES'){
     const objectRow=(await db.pool.query(
