@@ -14,7 +14,7 @@ export async function routeIntelligencePublicV44(req,res,url){
 export async function routeIntelligenceV44(req,res,url,ctx){
  if(!ctx)return false;
  if(url.pathname==='/api/intelligence/collector'&&req.method==='GET'){
-  requirePermission(ctx.account,'buyer.collections.read');
+  requirePermission(ctx.account,'collection.manage');
   return send(res,200,{intelligence:await collectorIntelligenceFor(ctx.account,{limit:url.searchParams.get('limit')||12})})
  }
  if(url.pathname==='/api/intelligence/professional'&&req.method==='GET'){
