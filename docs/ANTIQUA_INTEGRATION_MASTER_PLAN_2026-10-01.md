@@ -581,7 +581,17 @@ The hypothesis to validate is that every new verified artwork and professional p
 Only measured evidence should be used to claim that this flywheel is working.
 
 
-## 18. Next implementation order
+## 18. Commercial validation artifacts
+
+The following files are now part of the canonical commercialization path:
+
+- `docs/ANTIQUA_PAID_PILOT_PACKAGE_v1.md` — bounded paid pilot design and evidence gate;
+- `docs/ANTIQUA_PRICING_EVIDENCE_MODEL_v1.md` — willingness-to-pay evidence ladder and pricing confidence;
+- `docs/ANTIQUA_INVESTOR_TRACTION_DASHBOARD_SPEC_v1.md` — source-labelled traction, pricing, retention and unit-economics dashboard specification.
+
+These artifacts are intentionally evidence-first. They must not be populated with invented ARR, GMV, CAC, LTV, pricing or retention.
+
+## 19. Next implementation order
 
 1. scope-language and navigation cleanup;
 2. public artwork taxonomy guard;
