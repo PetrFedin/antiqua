@@ -667,6 +667,32 @@ body{overflow-x:hidden}
 @media(max-width:1180px){.showcase-revenue-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.showcase-flywheel{grid-template-columns:repeat(3,1fr)}.showcase-flywheel>div:nth-child(3){border-right:0}.showcase-flywheel>div:nth-child(-n+3){border-bottom:1px solid var(--line)}.showcase-moat-grid{grid-template-columns:repeat(2,1fr)}.showcase-case-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.showcase-revenue-grid,.showcase-moat-grid,.showcase-case-grid{grid-template-columns:1fr}.showcase-revenue-grid article{min-height:0}.showcase-economics-thesis{grid-template-columns:1fr;gap:16px}.showcase-flywheel{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;border:0;gap:8px;scroll-snap-type:x mandatory}.showcase-flywheel>div{flex:0 0 190px;min-height:130px;border:1px solid var(--line)!important;scroll-snap-align:start}.showcase-flywheel span{display:none}}
 
+
+/* ---- v0.43 · Investor Traction Dashboard ---- */
+.showcase-investor-actions{display:flex;gap:10px;flex-wrap:wrap}
+.traction-page{max-width:1440px}
+.traction-hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.45fr);gap:56px;align-items:end;padding:58px 0 52px;border-bottom:1px solid var(--line)}
+.traction-hero h1{max-width:920px;margin:10px 0 18px;font:400 clamp(52px,6vw,84px)/.94 Georgia,serif;letter-spacing:-.04em}
+.traction-hero p{max-width:850px;margin:0;color:var(--muted);font:400 18px/1.6 Georgia,serif}
+.traction-hero aside{border-left:1px solid var(--line);padding-left:26px;display:grid;gap:8px}.traction-hero aside strong{font:400 54px/1 Georgia,serif}.traction-hero aside span{font-size:10px;line-height:1.5;color:var(--muted)}
+.traction-block{padding:58px 0;border-bottom:1px solid var(--line)}
+.traction-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.traction-metric{min-height:185px;padding:16px;border:1px solid var(--line);background:#f6f2ec;display:grid;align-content:space-between}
+.traction-metric>div{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.traction-metric>div>span:last-child{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right}
+.traction-metric>strong{font:400 30px/1 Georgia,serif;overflow-wrap:anywhere}.traction-metric>small{font-size:9px;line-height:1.5;color:var(--muted)}
+.traction-badge{display:inline-flex;width:max-content;padding:4px 6px;border:1px solid var(--line);font-size:7px;letter-spacing:.06em;white-space:nowrap}
+.traction-product-capability{background:#e5eee5}.traction-missing{background:#efe1dc}.traction-assumption{background:#eee8dc}.traction-contracted,.traction-invoiced{background:#e5e7ef}.traction-verified-cash{background:#dcebdd}
+.traction-funnel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.traction-funnel>div{min-height:150px;padding:14px;border-right:1px solid var(--line);display:grid;gap:10px;align-content:space-between}.traction-funnel>div:last-child{border-right:0}
+.traction-funnel b{font-size:8px;color:var(--muted)}.traction-funnel strong{font:400 18px/1.15 Georgia,serif}.traction-funnel small{font:400 24px/1 Georgia,serif}
+.traction-evidence-table{border-top:1px solid var(--line)}.traction-evidence-table>div{display:grid;grid-template-columns:.8fr .45fr 1.75fr;gap:20px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.traction-evidence-table .head{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.traction-evidence-table p{margin:0;font-size:11px;line-height:1.55;color:var(--muted)}
+.traction-gate-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.traction-gate-grid article{min-height:190px;padding:18px;background:#e8e0d5;border-top:1px solid var(--line)}
+.traction-gate-grid b{font:400 28px/1 Georgia,serif}.traction-gate-grid h3{margin:28px 0 10px;font:400 24px/1 Georgia,serif}.traction-gate-grid p{font-size:10px;line-height:1.6;color:var(--muted)}
+.traction-next{display:grid;grid-template-columns:1fr auto;gap:36px;align-items:end}.traction-next>div{max-width:900px}.traction-next h2{margin:10px 0 12px;font:400 38px/1.02 Georgia,serif}.traction-next p{font-size:12px;line-height:1.7;color:var(--muted)}
+@media(max-width:980px){.traction-hero{grid-template-columns:1fr}.traction-hero aside{border-left:0;border-top:1px solid var(--line);padding:18px 0 0}.traction-metric-grid{grid-template-columns:repeat(2,1fr)}.traction-funnel{grid-template-columns:repeat(3,1fr)}.traction-funnel>div:nth-child(3){border-right:0}.traction-funnel>div:nth-child(-n+3){border-bottom:1px solid var(--line)}.traction-gate-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.showcase-investor-actions{display:grid}.traction-hero{padding-top:36px}.traction-hero h1{font-size:48px}.traction-metric-grid,.traction-gate-grid{grid-template-columns:1fr}.traction-metric{min-height:150px}.traction-funnel{display:flex;overflow-x:auto;margin-left:-16px;margin-right:-16px;padding:0 16px;border:0;gap:8px}.traction-funnel>div{flex:0 0 170px;border:1px solid var(--line)!important}.traction-evidence-table .head{display:none}.traction-evidence-table>div{grid-template-columns:1fr;gap:8px}.traction-next{grid-template-columns:1fr}.traction-next .primary-button{width:100%}}
+
 /* ---- v0.32 · Dealer Interest Signals ---- */
 .dealer-interest-v32{border-top:1px solid var(--line);padding-top:38px}
 .dealer-interest-v32 .block-head p{max-width:900px}
