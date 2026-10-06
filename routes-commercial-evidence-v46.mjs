@@ -1,5 +1,5 @@
 import {send,readBody,requireCsrf,audit} from './runtime-v09.mjs';
-import {commercialEvidenceCapabilities,recordCommercialEvent,sellerCommercialSummary,operatorCommercialSummary,investorCommercialAggregate} from './commercial-evidence-v46.mjs';
+import {commercialEvidenceCapabilities,recordCommercialEvent,sellerCommercialSummary,operatorCommercialSummary,listOperatorCommercialPilots,investorCommercialAggregate} from './commercial-evidence-v46.mjs';
 
 export async function routeCommercialEvidencePublicV46(req,res,url){
  if(url.pathname==='/api/commercial-evidence/capabilities'&&req.method==='GET')return send(res,200,{capabilities:commercialEvidenceCapabilities()});
@@ -22,6 +22,7 @@ export async function routeCommercialEvidenceV46(req,res,url,ctx){
    return x?send(res,200,{commercial:x}):send(res,404,{error:'Pilot not found',code:'PILOT_NOT_FOUND'})
   }
  }
+ if(url.pathname==='/api/operator/commercial-evidence/pilots'&&req.method==='GET')return send(res,200,{commercial:await listOperatorCommercialPilots(ctx.account)});
  if(url.pathname==='/api/operator/investor-commercial-aggregate'&&req.method==='GET')return send(res,200,{commercial:await investorCommercialAggregate(ctx.account)});
  return false
 }
