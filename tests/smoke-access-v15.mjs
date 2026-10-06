@@ -48,6 +48,6 @@ try{
   assert.equal((await fetch(`${base}/api/collections/${publicId}`)).status,200);
   list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),true);
 
-  assert.equal((await fetch(base+'/api/exhibitions/ex-objects-in-dialogue')).status,200);
+  assert.equal((await fetch(base+'/api/exhibitions/ex-lines-and-surfaces')).status,200);
   console.log('ANTIQUA 0.16 access smoke: public collections + owner-scoped /mine + private/unlisted isolation passed');
 }finally{child.kill('SIGTERM')}
