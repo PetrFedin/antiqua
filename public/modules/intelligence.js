@@ -86,6 +86,13 @@ function scholarlyMarkup(d){
  const evidenceRows=Object.entries(ec).map(([key,row])=>`<button type="button" class="artwork-evidence-card" data-evidence-target="${esc(evidenceTarget(key))}" data-evidence-state="${esc(row.state)}"><span>${esc(evidenceLabel(key))}</span><strong>${esc(evidenceStateLabel(row.state))}</strong><small>${Number(row.count||0)} ${copy('записей','records')}</small><em>${copy('Перейти к разделу','Open section')} →</em></button>`).join('');
  const questionRows=questions.map((q,i)=>`<article class="artwork-research-question"><span>${String(i+1).padStart(2,'0')}</span><div><strong>${esc(questionLabel(q))}</strong><small>${copy('Открытый вопрос исследования','Open research question')}</small></div></article>`).join('');
  return `<section id="scholarlyIntelligenceV44" class="dossier-intelligence-v44 artwork-experience-v1">
+  <nav class="artwork-research-nav" aria-label="${copy('Навигация по исследованию','Research navigation')}">
+   <button type="button" data-evidence-target="#dossier-overview">${copy('Обзор','Overview')}</button>
+   <button type="button" data-evidence-target="#dossier-provenance">${copy('Провенанс','Provenance')}</button>
+   <button type="button" data-evidence-target=".artwork-story-map">${copy('История','Story')}</button>
+   <button type="button" data-evidence-target=".artwork-evidence-map-v1">${copy('Доказательства','Evidence')}</button>
+   <button type="button" data-evidence-target=".artwork-research-questions">${copy('Вопросы','Questions')}</button>
+  </nav>
   <div class="artwork-experience-head"><div><div class="eyebrow">${copy('ИССЛЕДОВАНИЕ ПРОИЗВЕДЕНИЯ','ARTWORK RESEARCH')}</div><h3>${copy('История, доказательства и открытые вопросы','Story, evidence and open questions')}</h3><p>${copy('Все элементы ниже построены из уже связанных источников и версий Досье. Неизвестные даты и пробелы остаются видимыми — ANTIQUA их не угадывает.','Everything below is derived from linked sources and Dossier revisions. Unknown dates and gaps remain visible — ANTIQUA does not guess them.')}</p></div><span>${a.linkedCreatorCount||0} ${copy('профилей художника','artist profiles')}</span></div>
   <section class="artwork-story-map">
    <div class="artwork-experience-subhead"><div><span>${copy('ИСТОРИЯ ПРОИЗВЕДЕНИЯ','ARTWORK STORY')}</span><h4>${copy('Что известно о пути этой работы','What is known about this artwork’s journey')}</h4></div><small>${story.limitations?.undatedEvents||0} ${copy('событий без даты','undated events')}</small></div>
@@ -136,11 +143,15 @@ async function mountProfessional(){
  professionalLoading=true;try{const d=await safe('/api/intelligence/professional?limit=12');if(!d?.intelligence||!host.isConnected)return;const box=document.createElement('div');box.innerHTML=professionalMarkup(d);host.append(box.firstElementChild)}catch{}finally{professionalLoading=false}
 }
 async function mountScholarly(id){
- const request=++scholarlySeq;q('#scholarlyIntelligenceV44')?.remove();
- const d=await safe('/api/lots/'+encodeURIComponent(id)+'/intelligence?limit=6');if(request!==scholarlySeq||!d?.intelligence)return;
- const body=q('#dialog[open] .dossier-body');if(!body)return;const box=document.createElement('div');box.innerHTML=scholarlyMarkup(d);
- const market=q('#dossierMarketIntelligenceV25',body),similar=q('#dossierSimilarV18',body),disclaimer=q('.dossier-disclaimer',body);
- if(market)market.before(box.firstElementChild);else if(similar)similar.before(box.firstElementChild);else if(disclaimer)disclaimer.before(box.firstElementChild);else body.append(box.firstElementChild)
+ const request=++scholarlySeq;q('#scholarlyIntelligenceV44')?.remove();q('#scholarlyIntelligencePlaceholder')?.remove();
+ const body=q('#dialog[open] .dossier-body');if(!body)return;
+ const market=q('#dossierMarketIntelligenceV25',body),similar=q('#dossierSimilarV18',body),disclaimer=q('.dossier-disclaimer',body),anchor=market||similar||disclaimer;
+ const placeholder=document.createElement('section');placeholder.id='scholarlyIntelligencePlaceholder';placeholder.className='artwork-experience-placeholder';placeholder.innerHTML='<div></div><div></div><div></div>';
+ if(anchor)anchor.before(placeholder);else body.append(placeholder);
+ const d=await safe('/api/lots/'+encodeURIComponent(id)+'/intelligence?limit=6');
+ if(request!==scholarlySeq){placeholder.remove();return}
+ if(!d?.intelligence){placeholder.remove();return}
+ const box=document.createElement('div');box.innerHTML=scholarlyMarkup(d);placeholder.replaceWith(box.firstElementChild)
 }
 
 window.addEventListener('antiqua:passport',e=>{const id=String(e.detail?.id||'');if(id)mountScholarly(id).catch(console.error)});
