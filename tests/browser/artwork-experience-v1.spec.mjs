@@ -64,3 +64,68 @@ test('Russian locale does not silently fall back to English localized data',asyn
  await expect(page.locator('#footerDossier strong')).toHaveText('Досье произведения');
  await expect(page.locator('.main-nav')).toHaveAttribute('aria-label','Основная навигация');
 });
+
+
+test.describe('Artist and Collection responsive surfaces',()=>{
+ for(const viewport of [
+  {name:'mobile',width:390,height:844},
+  {name:'tablet',width:834,height:1112},
+  {name:'desktop',width:1440,height:1000}
+ ]){
+  test(viewport.name+' keeps artist research and collection wall usable',async({page})=>{
+   await page.setViewportSize({width:viewport.width,height:viewport.height});
+   await page.addInitScript(()=>localStorage.removeItem('antiqua_lang'));
+
+   await page.goto('/#creators',{waitUntil:'domcontentloaded'});
+   const creator=page.locator('.creator-card').first();await expect(creator).toBeVisible();
+   await creator.click();
+   const profile=page.locator('.artist-profile-v1');await expect(profile).toBeVisible();
+   await expect(profile.locator('.artist-profile-hero-v1')).toBeVisible();
+   await expect(profile.locator('.artist-profile-facts')).toBeVisible();
+   await expect(profile.locator('.artist-profile-context-grid')).toBeVisible();
+   await expect(profile.locator('.artist-works-v1')).toBeAttached();
+   const artistText=await profile.innerText();
+   expect(artistText).not.toMatch(/COLLECTOR INTELLIGENCE|ARTIST PERFORMANCE|RESEARCH STATUS/);
+
+   await page.goto('/#collections',{waitUntil:'domcontentloaded'});
+   const collection=page.locator('.collection-card').first();await expect(collection).toBeVisible();
+   await collection.click();
+   const detail=page.locator('.collection-detail-v1');await expect(detail).toBeVisible();
+   await expect(detail.locator('.collection-hero-v1')).toBeVisible();
+   await expect(detail.locator('.collection-wall')).toBeVisible();
+   await expect(detail).toContainText('Визуальная коллекция');
+   await expect(detail).not.toContainText(/страхован|место хранения|владелец:/i);
+  });
+ }
+});
+
+test('Research slot reserves layout while intelligence loads',async({page})=>{
+ await page.addInitScript(()=>localStorage.removeItem('antiqua_lang'));
+ let delayed=false;
+ await page.route('**/api/lots/lot-101/intelligence?limit=6',async route=>{
+  delayed=true;
+  await new Promise(r=>setTimeout(r,700));
+  await route.continue();
+ });
+ await page.goto('/?object=lot-101#gallery',{waitUntil:'domcontentloaded'});
+ const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();
+ const placeholder=dialog.locator('#scholarlyIntelligencePlaceholder');
+ await expect(placeholder).toBeVisible();
+ const box=await placeholder.boundingBox();
+ expect(box?.height||0).toBeGreaterThan(500);
+ await expect(dialog.locator('.artwork-experience-v1')).toBeVisible();
+ expect(delayed).toBe(true);
+});
+
+test('Mobile research navigation stays touchable and scrolls to real dossier sections',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.addInitScript(()=>localStorage.removeItem('antiqua_lang'));
+ await page.goto('/?object=lot-101#gallery',{waitUntil:'domcontentloaded'});
+ const nav=page.locator('#dialog[open] .artwork-research-nav');await expect(nav).toBeVisible();
+ await expect(nav.locator('button')).toHaveCount(5);
+ const provenance=nav.getByRole('button',{name:'Провенанс'});
+ await provenance.click();
+ await expect(page.locator('#dialog[open] #dossier-provenance')).toBeAttached();
+ const box=await provenance.boundingBox();
+ expect(box?.height||0).toBeGreaterThanOrEqual(38);
+});
