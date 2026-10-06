@@ -681,3 +681,126 @@ Commercial Evidence is the authority that may populate the cash/pricing/gross-co
 10. expose finance-ready ARR / CAC / payback / eligible GMV / gross-margin views only when their source authorities exist.
 
 Anything outside this order must justify itself against the artwork-first product thesis.
+
+## Institutional adoption wave — Federated Art Research and Provenance Infrastructure
+
+This wave turns Antiqua's provenance passport, catalogue-raisonné structures and scholarly trust graph into infrastructure that museums, archives, artist estates, galleries, scholars and collections can contribute to and verify.
+
+### Antiqua Research Interchange Profile — ADOPT
+
+Define a versioned implementation-neutral profile for exchange of:
+
+- canonical work identity;
+- artist/attribution state;
+- provenance event;
+- source/evidence class;
+- exhibition/bibliography reference;
+- institutional identifier;
+- media/IIIF reference;
+- rights/publication state;
+- revision/supersession state;
+- unresolved conflict/gap.
+
+The profile must preserve uncertainty rather than flattening scholarly disagreement.
+
+### Synthetic Reference Catalogue — ADOPT
+
+Publish a synthetic/public-domain reference implementation demonstrating:
+
+`work -> artist -> provenance event -> source -> exhibition -> bibliography -> review -> revision -> provenance passport`
+
+No private owner/dealer identity is included.
+
+### Institutional Contributor Programme — ADOPT
+
+Create explicit contribution roles for:
+
+- museum;
+- archive;
+- artist estate/foundation;
+- catalogue-raisonné committee;
+- university/research institute;
+- gallery/dealer;
+- auction/archive source partner.
+
+Each contribution keeps institution, contributor, source class, licence/rights and review state.
+
+### Federated Publishing — ADOPT
+
+Approved institutions may publish or synchronize scoped records:
+
+- institutional object ID;
+- exhibition;
+- bibliography;
+- public provenance event;
+- archival document reference;
+- image/IIIF manifest;
+- attribution/review update.
+
+External publication enters Antiqua as source-attributed evidence, not unquestioned canonical truth.
+
+### Cross-institution Identity Resolution — ADOPT
+
+Maintain reviewed mappings between:
+
+- Antiqua work ID;
+- museum/accession ID;
+- artist authority ID;
+- catalogue-raisonné ID;
+- archive record;
+- auction/dealer record.
+
+Conflicts remain explicit and reversible.
+
+### Research Consortium Workspace — CONDITIONAL
+
+Support bounded consortium projects around:
+
+- an artist;
+- collection;
+- provenance period;
+- exhibition history;
+- displaced/lost art research;
+- catalogue-raisonné initiative.
+
+Consortium membership does not grant unilateral authority over the canonical work record.
+
+### Institutional API / Data Licensing — ADOPT
+
+Potential products:
+
+- Research API;
+- Provenance Verification API;
+- IIIF/Linked Art feed;
+- change feed;
+- catalogue-raisonné workspace;
+- institution/private-collection research workspace;
+- licensed evidence dataset.
+
+### Legitimate Switching Cost — ADOPT
+
+Compounding value:
+
+- reviewed identity mappings;
+- provenance-event graph;
+- revision history;
+- source/evidence lineage;
+- institutional contributions;
+- scholarly review decisions;
+- image/document links;
+- cross-collection relationships.
+
+Export and citation remain first-class; lock-in comes from the compound research graph, not blocked data access.
+
+### Additional acceptance
+
+- institutional contribution never overwrites conflicting scholarship silently;
+- every assertion preserves source and status;
+- private owner/dealer data remains segregated;
+- rights for metadata and media remain independent;
+- identity mappings are reviewable and reversible;
+- public APIs distinguish canonical, contested and unverified assertions.
+
+**Sequencing:** Provenance Passport -> interchange profile -> reference catalogue -> institutional contributors -> federated publishing -> identity resolution -> consortium/API licensing.
+
+**Moat:** Antiqua becomes shared provenance/research infrastructure whose value increases with every institutionally sourced and scholarly reviewed relationship.
