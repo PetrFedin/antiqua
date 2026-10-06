@@ -1111,3 +1111,19 @@ body{overflow-x:hidden}
  .collection-wall-item,.collection-wall-item-1,.collection-wall-item-2,.collection-wall-item-5,.collection-wall-item-6{flex:0 0 min(82vw,350px);scroll-snap-align:start}
 }
 @media(prefers-reduced-motion:reduce){.collection-wall-media img{transition:none}}
+
+
+/* ---- Artwork Experience v1 · Research navigation & async stability ---- */
+.artwork-research-nav{display:flex;gap:7px;overflow-x:auto;position:sticky;top:0;z-index:18;margin:-4px 0 26px;padding:8px 0 10px;background:linear-gradient(var(--paper) 72%,rgba(245,242,237,0));scrollbar-width:none}
+.artwork-research-nav::-webkit-scrollbar{display:none}
+.artwork-research-nav button{flex:0 0 auto;min-height:38px;padding:0 11px;border:1px solid var(--line);border-radius:999px;background:rgba(250,248,244,.9);color:var(--ink);font-size:9px;letter-spacing:.04em;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.artwork-research-nav button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.artwork-experience-placeholder{min-height:760px;margin-top:36px;padding-top:30px;border-top:1px solid var(--line);display:grid;gap:18px;contain:layout paint}
+.artwork-experience-placeholder>div{min-height:180px;background:linear-gradient(90deg,rgba(30,25,21,.035),rgba(255,255,255,.5),rgba(30,25,21,.035));background-size:220% 100%;animation:antiqua-skeleton 1.5s ease-in-out infinite;border:1px solid var(--line)}
+@keyframes antiqua-skeleton{0%{background-position:100% 0}100%{background-position:-120% 0}}
+@media(max-width:800px){
+ .artwork-research-nav{top:0;margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px;background:rgba(245,242,237,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+ .artwork-research-nav button{min-height:42px}
+ .artwork-experience-placeholder{min-height:920px;margin-top:24px;padding-top:24px}
+}
+@media(prefers-reduced-motion:reduce){.artwork-experience-placeholder>div{animation:none}}
