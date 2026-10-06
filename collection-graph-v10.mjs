@@ -32,7 +32,7 @@ async function readExhibitionsFromDb(){if(db.kind!=='POSTGRES')return null;const
 
 const withPublicArtworkItems=c=>({...c,items:(c.items||[]).map(i=>({...i,object:publicObject(i.objectId,i)})).filter(i=>i.object)});
 export async function listCollections(){const pg=await readCollectionsFromDb();return(pg??[...collections.values()].filter(isPublicCollection)).map(withPublicArtworkItems).filter(c=>c.items.length)}
-export async function getCollection(id){if(db.kind==='POSTGRES'){const c=await readCollectionFromDb(id);if(c){const scoped=withPublicArtworkItems(c);return scoped.items.length?scoped:null}}const c=collections.get(id);if(!c)return null;const scoped=withPublicArtworkItems(clone(c));return scoped.items.length?scoped:null}
+export async function getCollection(id){if(db.kind==='POSTGRES'){const c=await readCollectionFromDb(id);if(c)return withPublicArtworkItems(c)}const c=collections.get(id);if(!c)return null;return withPublicArtworkItems(clone(c))}
 export async function getReadableCollection(id,accountId=null){const c=await getCollection(id);return canReadCollection(c,accountId)?c:null}
 export async function listMyCollections(account){const accountId=String(account?.id||account||'');if(!accountId)return[];const source=(await readMyCollectionsFromDb(accountId))??[...collections.values()].filter(c=>c.ownerAccountId===accountId||(c.ownerAccountId==='acct-demo-buyer'&&accountId==='acct-buyer-demo')).map(c=>({...clone(c),accessRole:'OWNER'}));return source.map(withPublicArtworkItems)}
 const withScopedEnsemble=e=>{const slots=(e.slots||[]).map(s=>({...s,object:s.objectId?publicObject(s.objectId,s):null})).filter(s=>!s.objectId||s.object);const scoped={...e,slots};return{...scoped,completeness:completeness(scoped)}};
