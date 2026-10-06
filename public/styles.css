@@ -1127,3 +1127,29 @@ body{overflow-x:hidden}
  .artwork-experience-placeholder{min-height:920px;margin-top:24px;padding-top:24px}
 }
 @media(prefers-reduced-motion:reduce){.artwork-experience-placeholder>div{animation:none}}
+
+/* Mobile Dealer Inbox: actionable workflow must dominate non-actionable chrome */
+@media(max-width:640px){
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v14-infra{display:none!important}
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v14-tabs{
+   position:relative!important;z-index:1!important;background:var(--paper);margin-bottom:10px
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) [data-v14-panel="dealer"]{
+   position:relative!important;z-index:10!important;isolation:isolate;background:var(--paper)
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v24-summary{
+   position:relative;z-index:0
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v24-lead-grid{
+   position:relative;z-index:20
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v24-lead-card{
+   position:relative;z-index:21;background:var(--paper)
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v24-lead-card .v14-actions{
+   position:relative;z-index:22;background:var(--paper);padding-top:4px
+ }
+ #v14Operations:has([data-v14-panel="dealer"]:not([hidden])) .v24-lead-card [data-v24-route]{
+   position:relative;z-index:23;pointer-events:auto
+ }
+}
