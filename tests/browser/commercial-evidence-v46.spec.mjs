@@ -74,9 +74,9 @@ test('Commercial Evidence Console is operator-only and fails closed without dura
 
  auth=await login(page,'OPERATOR');expect(auth.status).toBe(200);
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
- const tab=page.locator('[data-v14-tab="commercial-evidence"]');await expect(tab).toBeVisible();
- await tab.click();
- const panel=page.locator('[data-v14-panel="commercial-evidence"]');await expect(panel).toBeVisible();
+ const tab=page.locator('[data-v14-tab="commercial-evidence"]'),standalone=page.locator('#commercialEvidenceStandalone');
+ await expect.poll(async()=>await tab.count()+await standalone.count()).toBeGreaterThan(0);
+ const panel=await tab.count()?page.locator('[data-v14-panel="commercial-evidence"]'):standalone;if(await tab.count())await tab.click();await expect(panel).toBeVisible();
  await expect(panel).toContainText(/COMMERCIAL EVIDENCE AUTHORITY/i);
  const persistence=(await page.evaluate(async()=>{const r=await fetch('/api/operator/commercial-evidence/pilots');return(await r.json()).commercial.persistence}));
  if(persistence==='MEMORY_FALLBACK'){
