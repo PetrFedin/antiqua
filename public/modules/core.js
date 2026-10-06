@@ -1,7 +1,7 @@
 export const lang=()=>localStorage.getItem('antiqua_lang')==='en'?'en':'ru';
 export const copy=(ru,en)=>lang()==='ru'?ru:en;
 export const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const local=v=>typeof v==='string'?v:(v?.[lang()]??v?.en??v?.ru??'');
+export const local=v=>typeof v==='string'?v:(v?.[lang()]??'');
 export const moneyMinor=(v,c='EUR')=>new Intl.NumberFormat(lang()==='ru'?'ru-RU':'en-GB',{style:'currency',currency:c,maximumFractionDigits:0}).format((Number(v)||0)/100);
 export const date=d=>d?new Intl.DateTimeFormat(lang()==='ru'?'ru-RU':'en-GB',{dateStyle:'medium'}).format(new Date(d)):'—';
 export const status=x=>String(x||'—').replaceAll('_',' ');

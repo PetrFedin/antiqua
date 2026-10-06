@@ -41,6 +41,8 @@ function pilotCard(p){
     option('INSTITUTIONAL_RESEARCH','Institutional Research')+
     option('TRANSACTION_REVENUE','Transaction Revenue')+
    '</select></label>'+
+   '<label><span>Revenue class</span><select name="revenueClass"><option value="">—</option>'+option('RECURRING','Recurring')+option('ONE_TIME','One-time')+option('USAGE','Usage')+option('TRANSACTION','Transaction')+option('SPONSORSHIP','Sponsorship')+option('PROJECT','Project')+'</select></label>'+
+   '<label><span>Cost class</span><select name="costClass"><option value="">—</option>'+option('ACQUISITION','Acquisition')+option('ONBOARDING','Onboarding')+option('SUPPORT','Support')+option('PROVIDER','Provider')+option('EVENT_DELIVERY','Event delivery')+option('RESEARCH_DELIVERY','Research delivery')+option('OTHER','Other')+'</select></label>'+
    '<label><span>'+copy('Сумма','Amount')+'</span><input name="amount" type="number" min="0" step="0.01" placeholder="0.00"></label>'+
    '<label><span>'+copy('Валюта','Currency')+'</span><input name="currency" value="EUR" maxlength="3" pattern="[A-Za-z]{3}"></label>'+
    '<label class="wide"><span>Evidence reference</span><input name="evidenceRef" placeholder="proposal:, invoice:, bank:, cost:"></label>'+
@@ -91,7 +93,7 @@ document.addEventListener('submit',async e=>{
  try{
   const d=Object.fromEntries(new FormData(f).entries()),amount=String(d.amount||'').trim();
   const key='commercial-ui-'+Date.now()+'-'+(crypto.randomUUID?crypto.randomUUID():Math.random().toString(16).slice(2));
-  const body={eventType:d.eventType,revenueStream:d.revenueStream||null,currency:String(d.currency||'').toUpperCase()||null,evidenceRef:String(d.evidenceRef||'').trim()||null,clientActionId:key,payload:{note:String(d.note||'').trim()}};
+  const payload={note:String(d.note||'').trim()};if(d.revenueClass)payload.revenueClass=d.revenueClass;if(d.costClass)payload.costClass=d.costClass;const body={eventType:d.eventType,revenueStream:d.revenueStream||null,currency:String(d.currency||'').toUpperCase()||null,evidenceRef:String(d.evidenceRef||'').trim()||null,clientActionId:key,payload};
   if(amount!=='')body.amountMinor=Math.round(Number(amount)*100);
   await api('/api/operator/pilots/'+encodeURIComponent(f.dataset.commercialEvidenceForm)+'/commercial-evidence/events',{method:'POST',body:JSON.stringify(body)});
   toast(copy('Коммерческое событие зафиксировано','Commercial event recorded'));await refresh();

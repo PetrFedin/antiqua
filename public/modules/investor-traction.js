@@ -32,16 +32,18 @@ const evidenceRows=[
 ];
 
 export async function investorTractionView(){
- const [health,pilotCaps,partnerCaps,creatorCaps,commercialCaps,commercialAggregate]=await Promise.all([
+ const [health,pilotCaps,partnerCaps,creatorCaps,commercialCaps,commercialAggregate,unitCaps,unitData]=await Promise.all([
   safe('/api/health'),
   safe('/api/pilot/commercial-proof/capabilities'),
   safe('/api/partner/pilot-analytics/capabilities'),
   safe('/api/creators/capabilities'),
   safe('/api/commercial-evidence/capabilities'),
-  safe('/api/operator/investor-commercial-aggregate')
+  safe('/api/operator/investor-commercial-aggregate'),
+  safe('/api/unit-economics/capabilities'),
+  safe('/api/operator/unit-economics')
  ]);
- const commercial=commercialAggregate?.commercial||null,metrics=structuralMetrics(health||{},commercial);
- const capabilityCount=[pilotCaps?.capabilities,partnerCaps?.capabilities,creatorCaps?.capabilities,commercialCaps?.capabilities].filter(Boolean).length;
+ const commercial=commercialAggregate?.commercial||null,unit=unitData?.unitEconomics?.economics||null,metrics=structuralMetrics(health||{},commercial);
+ const capabilityCount=[pilotCaps?.capabilities,partnerCaps?.capabilities,creatorCaps?.capabilities,commercialCaps?.capabilities,unitCaps?.capabilities].filter(Boolean).length;
  return `<main class="traction-page page section">
  <section class="traction-hero">
   <div><div class="eyebrow">INVESTOR TRACTION CONTROL</div><h1>${copy('Только доказанные цифры','Only evidence-backed numbers')}</h1><p>${copy('Этот экран специально не заполняется “красивыми” прогнозами. Пока нет факта — стоит MISSING. Когда появятся real pilots, pricing, retention и cash, те же ячейки станут доказательной историей компании.','This surface deliberately avoids decorative forecasts. If a fact does not exist, it stays MISSING. Once real pilots, pricing, retention and cash exist, the same cells become the company evidence trail.')}</p></div>
@@ -55,6 +57,17 @@ export async function investorTractionView(){
  <section class="traction-block"><div class="section-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE AUTHORITY · v0.46</div><h2>${copy('Что считается деньгами — и что ими не является','What counts as money — and what does not')}</h2><p>${copy('Quote → written acceptance → invoice → cash → direct cost → renewal фиксируются отдельными подписанными событиями. Только payment формирует cash.','Quote → written acceptance → invoice → cash → direct cost → renewal are separate signed events. Only payment creates cash.')}</p></div></div><div class="traction-evidence-table"><div class="head"><span>Event</span><span>${copy('Экономический статус','Economic status')}</span><span>${copy('Правило','Rule')}</span></div><div><strong>QUOTE / LOI</strong><span>${badge('NOT REVENUE')}</span><p>${copy('Коммерческая гипотеза или намерение.','Commercial hypothesis or intent.')}</p></div><div><strong>INVOICE</strong><span>${badge('NOT CASH')}</span><p>${copy('Создаёт требование к оплате, но не cash.','Creates a receivable, not cash.')}</p></div><div><strong>PAYMENT_RECEIVED</strong><span>${badge('VERIFIED CASH')}</span><p>${copy('Единственное событие, увеличивающее подтверждённый cash.','The only event that increases verified cash.')}</p></div><div><strong>REFUND / DIRECT COST</strong><span>${badge('ECONOMIC ADJUSTMENT')}</span><p>${copy('Уменьшают gross contribution.','Reduce gross contribution.')}</p></div><div><strong>RENEWAL / EXPANSION</strong><span>${badge('RETENTION EVIDENCE')}</span><p>${copy('Повышает pricing confidence и подтверждает повторяемость.','Raises pricing confidence and supports repeatability.')}</p></div></div></section>
 
  <section class="traction-block"><div class="section-head"><div><div class="eyebrow">PRICING EVIDENCE</div><h2>${copy('Каждый revenue stream имеет собственный уровень доказательства','Every revenue stream has its own evidence level')}</h2></div></div><div class="traction-evidence-table"><div class="head"><span>${copy('Поток','Stream')}</span><span>${copy('Статус','Status')}</span><span>${copy('Что доказано','Evidence')}</span></div>${evidenceRows.map(x=>`<div><strong>${esc(x.stream)}</strong><span>${badge(x.status)}</span><p>${esc(x.proof)}</p></div>`).join('')}</div></section>
+
+
+ <section class="traction-block"><div class="section-head"><div><div class="eyebrow">UNIT ECONOMICS AUTHORITY · v0.47</div><h2>\${copy('Наблюдаемая экономика отдельно от заблокированных KPI','Observed economics separated from locked KPIs')}</h2><p>\${copy('ANTIQUA показывает только те показатели, для которых уже существует первичный источник. Остальные не заполняются нулями — они остаются LOCKED с причиной.','ANTIQUA shows only metrics backed by a source authority. Everything else is not filled with zeros — it remains LOCKED with an explicit reason.')}</p></div></div>
+ <div class="traction-metric-grid">
+  \${metric(copy('Direct contribution ratio','Direct contribution ratio'),unit?Object.entries(unit.directContributionRatioByCurrency||{}).map(([c,v])=>v==null?'—':c+' '+Math.round(v*100)+'%').join(' · ')||'—':'—',unit?.evidenceState==='OBSERVED'?'OBSERVED':'MISSING',copy('Gross contribution / verified cash. Это не gross margin.','Gross contribution / verified cash. This is not gross margin.'))}
+  \${metric(copy('Recurring cash share','Recurring cash share'),unit?Object.entries(unit.recurringCashShareByCurrency||{}).map(([c,v])=>v==null?'—':c+' '+Math.round(v*100)+'%').join(' · ')||'—':'—',unit?.evidenceState==='OBSERVED'?'OBSERVED':'MISSING',copy('Доля классифицированного recurring cash. Это не ARR.','Share of classified recurring cash. This is not ARR.'))}
+  \${metric(copy('Renewal / expansion evidence','Renewal / expansion evidence'),unit?.renewalOrExpansionEvidencePilots??null,unit?.evidenceState==='OBSERVED'?'OBSERVED':'MISSING',copy('Число пилотов с подтверждённым renewal/expansion; не retention rate без denominator.','Pilots with verified renewal/expansion; not a retention rate without a denominator.'))}
+  \${metric(copy('Payment classification coverage','Payment classification coverage'),unit?.classificationCoverage?.payments?.ratio==null?'—':Math.round(unit.classificationCoverage.payments.ratio*100)+'%',unit?.classificationCoverage?.payments?.ratio===1?'OBSERVED':'MISSING',copy('Нужно 100%, прежде чем доверять revenue-mix метрикам.','Must reach 100% before revenue-mix metrics are decision-grade.'))}
+ </div>
+ <div class="traction-evidence-table"><div class="head"><span>KPI</span><span>Status</span><span>\${copy('Почему закрыт','Why locked')}</span></div>\${Object.entries(unit?.locks||{ARR:{state:'LOCKED',reason:'Source authority missing.'},CAC:{state:'LOCKED',reason:'Source authority missing.'},CAC_PAYBACK:{state:'LOCKED',reason:'Source authority missing.'},GROSS_MARGIN:{state:'LOCKED',reason:'Source authority missing.'}}).slice(0,9).map(([k,v])=>\`<div><strong>\${esc(k.replaceAll('_',' '))}</strong><span>\${badge(v.state||'LOCKED')}</span><p>\${esc(v.reason||'')}</p></div>\`).join('')}</div>
+ </section>
 
  <section class="traction-block traction-gates"><div class="section-head"><div><div class="eyebrow">SCALE GATES</div><h2>${copy('Когда можно переходить к следующему уровню','When the company can move to the next level')}</h2></div></div><div class="traction-gate-grid">
   <article><b>A</b><h3>Working product</h3><p>${copy('Consumer + professional golden paths проходят CI/E2E и production persistence.','Consumer + professional golden paths pass CI/E2E and production persistence.')}</p></article>

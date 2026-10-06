@@ -62,6 +62,28 @@ function ledger(proof,lang){
 }
 
 
+
+function paidPilotReadiness(engagement,board,commercial,bilateral,lang){
+ const r=board?.readiness||{},op=board?.operation||{},summary=commercial?.summary||{},counts=summary.eventCounts||{},contractAcceptance=(r.checks||[]).find(x=>x.code==='CONTRACT_ACCEPTANCE');
+ const checks=[
+  {code:'SCOPE_FROZEN',ok:Boolean(engagement?.contractDigest),detail:engagement?.contractDigest?String(engagement.contractDigest).slice(0,12):'MISSING'},
+  {code:'COUNTERPARTY_ACCEPTED',ok:Boolean(contractAcceptance?.ok),detail:contractAcceptance?.ok?'ACCEPTED':'PENDING'},
+  {code:'LAUNCH_READY',ok:Boolean(r.ready),detail:r.ready?'READY':'BLOCKED'},
+  {code:'LAUNCHED',ok:op.launch_status==='LAUNCHED',detail:op.launch_status||'PREPARING'},
+  {code:'PRICE_ACCEPTED',ok:Number(counts.PRICE_WRITTEN_ACCEPTED||0)>0,detail:Number(counts.PRICE_WRITTEN_ACCEPTED||0)>0?'WRITTEN':'MISSING'},
+  {code:'INVOICE',ok:Number(counts.INVOICE_ISSUED||0)>0,detail:Number(counts.INVOICE_ISSUED||0)>0?'ISSUED':'MISSING'},
+  {code:'VERIFIED_CASH',ok:Number(counts.PAYMENT_RECEIVED||0)>0,detail:Number(counts.PAYMENT_RECEIVED||0)>0?'PAID':'MISSING'},
+  {code:'DIRECT_COST_CAPTURE',ok:Number(counts.DIRECT_COST_RECORDED||0)>0&&summary.classificationCoverage?.costs?.ratio===1,detail:Number(counts.DIRECT_COST_RECORDED||0)>0?(summary.classificationCoverage?.costs?.ratio===1?'COMPLETE':'PARTIAL'):'MISSING'},
+  {code:'FINAL_REVIEW',ok:bilateral?.bilateralFinalStatus&&bilateral.bilateralFinalStatus!=='PENDING',detail:bilateral?.bilateralFinalStatus||'PENDING'},
+  {code:'RENEWAL_DECISION',ok:Number(counts.RENEWAL_ACCEPTED||0)+Number(counts.RENEWAL_REJECTED||0)+Number(counts.EXPANSION_ACCEPTED||0)>0,detail:counts.EXPANSION_ACCEPTED?'EXPAND':counts.RENEWAL_ACCEPTED?'RENEW':counts.RENEWAL_REJECTED?'STOP':'PENDING'}
+ ];
+ const paid=checks.find(x=>x.code==='VERIFIED_CASH')?.ok,economic=paid&&checks.find(x=>x.code==='DIRECT_COST_CAPTURE')?.ok,renewal=checks.find(x=>x.code==='RENEWAL_DECISION')?.ok;
+ const level=renewal?'RENEWAL DECIDED':economic?'ECONOMICALLY OBSERVED':paid?'PAID':checks.find(x=>x.code==='PRICE_ACCEPTED')?.ok?'PRICE ACCEPTED':checks.find(x=>x.code==='LAUNCHED')?.ok?'LAUNCHED':'PREPARING';
+ return`<section class="pilot-card paid-pilot-readiness"><div class="pilot-card-head"><div><div class="eyebrow">PAID PILOT EVIDENCE LADDER</div><h2>${copy(lang,'Где пилот находится по уровню доказательства','Where the pilot sits on the evidence ladder')}</h2><p>${copy(lang,'Каждый статус вычисляется из существующих pilot / governance / commercial authorities. Ручных галочек нет.','Each status is derived from existing pilot, governance and commercial authorities. There are no manual checkboxes.')}</p></div><span class="pilot-period">${esc(level)}</span></div>
+ <div class="launch-checks">${checks.map(x=>`<article><b>${x.ok?'✓':'×'}</b><span>${esc(x.code.replaceAll('_',' '))}<small>${esc(x.detail)}</small></span></article>`).join('')}</div>
+ <p class="pilot-boundary">${copy(lang,'PAID требует PAYMENT_RECEIVED. Economically observed дополнительно требует зафиксированные и классифицированные direct costs. Renewal evidence требует явного письменного решения, а не устного оптимизма.','PAID requires PAYMENT_RECEIVED. Economically observed additionally requires recorded and classified direct costs. Renewal evidence requires an explicit written decision, not verbal optimism.')}</p></section>`
+}
+
 function commercialEvidencePanel(commercial,lang){
  if(!commercial?.summary)return`<section class="pilot-card pilot-commercial-evidence"><div class="pilot-card-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE · v0.46</div><h2>${copy(lang,'Доказательство денег','Proof of money')}</h2></div><span class="pilot-period">MISSING / DURABLE DB REQUIRED</span></div><p class="pilot-boundary">${copy(lang,'Коммерческий ledger появляется только после durable PostgreSQL и операторской фиксации quote / accepted price / invoice / payment / direct cost / renewal.','The commercial ledger appears only with durable PostgreSQL and operator-recorded quote / accepted price / invoice / payment / direct cost / renewal evidence.')}</p></section>`;
  const s=commercial.summary,p=s.pricingEvidence||{};
@@ -98,8 +120,14 @@ export async function dealerPilotWorkspace(lang='ru'){
   api('/api/dealer/pilots')
  ]);
  const proof=proofRes.proof||{},performance=performanceRes.performance||{},pilot=pilotRes.analytics||{},engagement=(authorityRes.pilots||[]).find(x=>x.status==='ACTIVE')||(authorityRes.pilots||[])[0]||null;
- const [launch,commercial]=engagement?await Promise.all([pilotLaunchBoard(engagement.id),api('/api/dealer/pilots/'+encodeURIComponent(engagement.id)+'/commercial-evidence').catch(()=>null)]):['',null];return`<main class="pilot-workspace page section">${engagement?`<section class="pilot-engagement-banner"><div><span>REAL PILOT · ${esc(engagement.status)}</span><strong>${esc(engagement.name)}</strong><small>${esc((engagement.startsAt||'').slice(0,10))} → ${esc((engagement.endsAt||'').slice(0,10))}</small></div><div><span>CONTRACT</span><code>${esc(engagement.contractDigest||'DRAFT · NOT FROZEN')}</code></div></section>`:`<section class="pilot-engagement-banner draft"><div><span>REAL PILOT AUTHORITY</span><strong>${copy(lang,'Engagement ещё не создан','No engagement created yet')}</strong><small>${copy(lang,'Метрики ниже остаются техническим evidence workspace до фиксации реального пилота.','Metrics below remain a technical evidence workspace until a real pilot is contracted.')}</small></div></section>`}<section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
+ const [launch,boardRes,commercial,bilateralRes]=engagement?await Promise.all([
+  pilotLaunchBoard(engagement.id),
+  api('/api/dealer/pilots/'+encodeURIComponent(engagement.id)+'/operating-board').catch(()=>null),
+  api('/api/dealer/pilots/'+encodeURIComponent(engagement.id)+'/commercial-evidence').catch(()=>null),
+  api('/api/dealer/pilots/'+encodeURIComponent(engagement.id)+'/bilateral-status').catch(()=>null)
+ ]):['',null,null,null];const board=boardRes?.board||null,bilateral=bilateralRes?.status||null;return`<main class="pilot-workspace page section">${engagement?`<section class="pilot-engagement-banner"><div><span>REAL PILOT · ${esc(engagement.status)}</span><strong>${esc(engagement.name)}</strong><small>${esc((engagement.startsAt||'').slice(0,10))} → ${esc((engagement.endsAt||'').slice(0,10))}</small></div><div><span>CONTRACT</span><code>${esc(engagement.contractDigest||'DRAFT · NOT FROZEN')}</code></div></section>`:`<section class="pilot-engagement-banner draft"><div><span>REAL PILOT AUTHORITY</span><strong>${copy(lang,'Engagement ещё не создан','No engagement created yet')}</strong><small>${copy(lang,'Метрики ниже остаются техническим evidence workspace до фиксации реального пилота.','Metrics below remain a technical evidence workspace until a real pilot is contracted.')}</small></div></section>`}<section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
  ${scorecard(proof,lang)}
+ ${paidPilotReadiness(engagement,board,commercial?.commercial||null,bilateral,lang)}
  ${commercialEvidencePanel(commercial?.commercial||null,lang)}
  <div class="pilot-two-col">${comparison(proof,lang)}${rolling(proof,lang)}</div>
  ${inventory(proof,performance,lang)}
