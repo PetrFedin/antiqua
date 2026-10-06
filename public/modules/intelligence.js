@@ -5,6 +5,32 @@ const q=(s,r=document)=>r?.querySelector?.(s)||null;
 
 const labelDimension=d=>({maker:copy('Художники / атрибуции','Artists / attributions'),department:copy('Направления','Departments'),period:copy('Периоды','Periods'),origin:copy('География','Origins')})[d]||d;
 const stageLabel=s=>({NO_SIGNAL:copy('Нет сигнала','No signal'),DISCOVERED:copy('Просмотр','Discovered'),ENGAGED:copy('Интерес','Engaged'),INQUIRY:copy('Запрос','Inquiry'),VIEWING:copy('Просмотр работы','Viewing'),NEGOTIATING:copy('Переговоры','Negotiating'),TRANSACTING:copy('Сделка','Transacting')})[s]||String(s||'');
+const evidenceLabel=k=>({
+ attribution:copy('Атрибуция','Attribution'),
+ provenance:copy('Провенанс','Provenance'),
+ bibliography:copy('Библиография','Bibliography'),
+ exhibitionHistory:copy('Выставочная история','Exhibition history'),
+ revisions:copy('Редакции исследования','Research revisions'),
+ marketComparables:copy('Рыночные аналоги','Market comparables')
+})[k]||k;
+const evidenceStateLabel=s=>({PRESENT:copy('Есть','Present'),PARTIAL:copy('Частично','Partial'),MISSING:copy('Нет данных','Missing')})[s]||s;
+const evidenceTarget=k=>({attribution:'#dossier-overview',provenance:'#dossier-provenance',bibliography:'#dossier-provenance',exhibitionHistory:'#dossier-provenance',revisions:'#dossier-evidence',marketComparables:'#dossierMarketIntelligenceV25'})[k]||'#dossier-evidence';
+const questionLabel=q=>({
+ CREATOR_PROFILE_NOT_LINKED:copy('Художник пока не связан с проверенным профилем.','The artist is not yet linked to a reviewed profile.'),
+ PROVENANCE_TIMELINE_NOT_RECORDED:copy('Хронология провенанса пока не зафиксирована.','The provenance timeline has not yet been recorded.'),
+ BIBLIOGRAPHY_NOT_LINKED:copy('Проверенная библиография пока не связана с произведением.','Reviewed bibliography is not yet linked to the artwork.'),
+ EXHIBITION_HISTORY_NOT_LINKED:copy('Выставочная история пока не подтверждена связанными записями.','Exhibition history is not yet supported by linked records.'),
+ NO_PLATFORM_MARKET_COMPARABLES:copy('В ANTIQUA пока недостаточно подтверждённых рыночных аналогов.','ANTIQUA does not yet have enough confirmed market comparables.'),
+ PROVENANCE_EVIDENCE_REVIEW_OPEN:copy('Часть доказательств провенанса ещё требует проверки.','Some provenance evidence still requires review.')
+})[q]||String(q||'').replaceAll('_',' ');
+const storyKindLabel=k=>({
+ PROVENANCE:copy('Провенанс','Provenance'),
+ EXHIBITION:copy('Выставка','Exhibition'),
+ PUBLICATION:copy('Публикация','Publication'),
+ RESEARCH_REVISION:copy('Редакция исследования','Research revision')
+})[k]||k;
+const storyTarget=k=>({PROVENANCE:'#dossier-provenance',EXHIBITION:'#dossier-provenance',PUBLICATION:'#dossier-provenance',RESEARCH_REVISION:'#dossier-evidence'})[k]||'#dossier-overview';
+
 
 function collectorMarkup(d){
  const x=d.intelligence||{},directions=x.directions||[],recs=(x.recommendations||[]).slice(0,6),m=x.collector?.maturity||{},cs=x.collectionStrategy||{};
@@ -38,25 +64,38 @@ function professionalMarkup(d){
 }
 
 function scholarlyMarkup(d){
- const x=d.intelligence||{},r=x.researchCoverage||{},m=x.market||{},a=x.attribution||{},questions=x.openResearchQuestions||[],ec=x.evidenceCoverage||{};
- const coverage=[
-  [copy('Провенанс','Provenance'),r.provenance?.provenanceEvents||0],
-  [copy('Литература','Bibliography'),r.bibliography?.count||0],
-  [copy('Выставки','Exhibitions'),r.exhibitionHistory?.count||0],
-  [copy('Версии досье','Dossier revisions'),r.passportRevisions?.count||0],
-  [copy('Market comparables','Market comparables'),m.comparables||0]
- ];
- return `<section id="scholarlyIntelligenceV44" class="dossier-intelligence-v44">
-  <div class="v44-scholar-head"><div><div class="eyebrow">MARKET & SCHOLARLY INTELLIGENCE · v0.44</div><h3>${copy('Что известно, что связано и что ещё требует исследования','What is known, connected and still unresolved')}</h3><p>${copy('Один слой объединяет research coverage, attribution links, revisions и рыночные аналоги — без оценки подлинности и без автоматической оценки стоимости.','One layer combines research coverage, attribution links, revisions and market comparables — without an authenticity score or automated valuation.')}</p></div><span>${a.linkedCreatorCount||0} ${copy('связанных профиля художника','linked artist profiles')}</span></div>
-  <div class="v44-coverage">${coverage.map(([label,value])=>`<div><strong>${value}</strong><span>${esc(label)}</span></div>`).join('')}</div>
-  <div class="v44-evidence-map">${Object.entries(ec).map(([key,row])=>`<div data-evidence-state="${esc(row.state)}"><span>${esc(key.replaceAll(/([A-Z])/g,' $1'))}</span><strong>${esc(row.state)}</strong><small>${Number(row.count||0)} refs</small></div>`).join('')}</div>
-  <div class="v44-scholar-grid">
-   <article><span>ATTRIBUTION</span><h4>${esc(local(x.artwork?.artistAttribution)||'—')}</h4><p>${(a.linkedCreators||[]).map(y=>esc(local(y.creator.displayName))+' · '+esc(y.attributionStatus)).join('<br>')||copy('Проверенный профиль художника пока не связан.','No reviewed artist profile linked yet.')}</p><small>NO_AUTHENTICITY_VERDICT</small></article>
-   <article><span>OPEN RESEARCH</span><h4>${questions.length}</h4><p>${questions.length?questions.map(y=>esc(y.replaceAll('_',' '))).join('<br>'):copy('Ключевые gaps в текущей проекции не обнаружены.','No key gaps detected in the current projection.')}</p></article>
-   <article><span>MARKET CONTEXT</span><h4>${m.comparables||0} ${copy('аналогов','comparables')}</h4><p>${Object.entries(m.realizedByCurrency||{}).map(([ccy,v])=>esc(ccy)+' · '+v.count+' sold · median '+esc(moneyMinor(v.medianMinor,ccy))).join('<br>')||copy('Подтверждённых реализованных аналогов в данных ANTIQUA пока нет.','No confirmed realized comparables in ANTIQUA data yet.')}</p><small>COMPARABLES ≠ APPRAISAL</small></article>
-  </div>
+ const x=d.intelligence||{},r=x.researchCoverage||{},m=x.market||{},a=x.attribution||{},questions=x.openResearchQuestions||[],ec=x.evidenceCoverage||{},story=x.story||{events:[]};
+ const storyRows=(story.events||[]).map(e=>`<button type="button" class="artwork-story-event" data-story-target="${esc(storyTarget(e.kind))}" data-story-kind="${esc(e.kind)}"><span class="artwork-story-date">${esc(e.dateLabel||copy('Дата не установлена','Date unknown'))}</span><span class="artwork-story-node" aria-hidden="true"></span><span class="artwork-story-copy"><small>${esc(storyKindLabel(e.kind))}</small><strong>${esc(local(e.title)||'—')}</strong>${e.evidenceStatus?`<em>${esc(evidenceStateLabel(e.evidenceStatus))}</em>`:''}</span></button>`).join('');
+ const evidenceRows=Object.entries(ec).map(([key,row])=>`<button type="button" class="artwork-evidence-card" data-evidence-target="${esc(evidenceTarget(key))}" data-evidence-state="${esc(row.state)}"><span>${esc(evidenceLabel(key))}</span><strong>${esc(evidenceStateLabel(row.state))}</strong><small>${Number(row.count||0)} ${copy('записей','records')}</small><em>${copy('Перейти к разделу','Open section')} →</em></button>`).join('');
+ const questionRows=questions.map((q,i)=>`<article class="artwork-research-question"><span>${String(i+1).padStart(2,'0')}</span><div><strong>${esc(questionLabel(q))}</strong><small>${copy('Открытый вопрос исследования','Open research question')}</small></div></article>`).join('');
+ return `<section id="scholarlyIntelligenceV44" class="dossier-intelligence-v44 artwork-experience-v1">
+  <div class="artwork-experience-head"><div><div class="eyebrow">${copy('ИССЛЕДОВАНИЕ ПРОИЗВЕДЕНИЯ','ARTWORK RESEARCH')}</div><h3>${copy('История, доказательства и открытые вопросы','Story, evidence and open questions')}</h3><p>${copy('Все элементы ниже построены из уже связанных источников и версий Досье. Неизвестные даты и пробелы остаются видимыми — ANTIQUA их не угадывает.','Everything below is derived from linked sources and Dossier revisions. Unknown dates and gaps remain visible — ANTIQUA does not guess them.')}</p></div><span>${a.linkedCreatorCount||0} ${copy('профилей художника','artist profiles')}</span></div>
+  <section class="artwork-story-map">
+   <div class="artwork-experience-subhead"><div><span>${copy('ИСТОРИЯ ПРОИЗВЕДЕНИЯ','ARTWORK STORY')}</span><h4>${copy('Что известно о пути этой работы','What is known about this artwork’s journey')}</h4></div><small>${story.limitations?.undatedEvents||0} ${copy('событий без даты','undated events')}</small></div>
+   <div class="artwork-story-list">${storyRows||`<div class="empty-state">${copy('История пока не собрана из связанных источников.','No source-linked story is available yet.')}</div>`}</div>
+  </section>
+  <section class="artwork-evidence-map-v1">
+   <div class="artwork-experience-subhead"><div><span>${copy('КАРТА ДОКАЗАТЕЛЬСТВ','EVIDENCE MAP')}</span><h4>${copy('Где исследование сильное, а где остаются пробелы','Where the research is strong and where gaps remain')}</h4></div><small>${copy('Без общего «процента достоверности»','No aggregate confidence score')}</small></div>
+   <div class="artwork-evidence-grid">${evidenceRows}</div>
+  </section>
+  <section class="artwork-research-questions">
+   <div class="artwork-experience-subhead"><div><span>${copy('ОТКРЫТЫЕ ВОПРОСЫ ИССЛЕДОВАНИЯ','RESEARCH QUESTIONS')}</span><h4>${questions.length?copy('Что ещё нужно установить','What still needs to be established'):copy('Ключевых открытых вопросов сейчас нет','No key open questions at present')}</h4></div><small>${questions.length}</small></div>
+   <div class="artwork-question-list">${questionRows||`<div class="empty-state">${copy('Текущая проекция не выявила ключевых пробелов.','The current projection has not identified key gaps.')}</div>`}</div>
+  </section>
+  <section class="artwork-market-boundary">
+   <div><span>${copy('Атрибуция','Attribution')}</span><strong>${esc(local(x.artwork?.artistAttribution)||'—')}</strong><small>${copy('Нет автоматического вердикта о подлинности','No automated authenticity verdict')}</small></div>
+   <div><span>${copy('Рыночный контекст','Market context')}</span><strong>${m.comparables||0} ${copy('аналогов','comparables')}</strong><small>${copy('Рыночные аналоги не являются оценкой стоимости','Comparables are not an appraisal')}</small></div>
+  </section>
  </section>`
 }
+
+document.addEventListener('click',e=>{
+ const story=e.target.closest('[data-story-target]'),evidence=e.target.closest('[data-evidence-target]'),target=story?.dataset.storyTarget||evidence?.dataset.evidenceTarget;
+ if(!target)return;
+ const el=q(target);if(!el)return;
+ el.scrollIntoView({behavior:'smooth',block:'start'});
+ el.classList.add('artwork-section-focus');setTimeout(()=>el.classList.remove('artwork-section-focus'),1200)
+});
 
 async function mountCollector(){
  if(q('#collectorIntelligenceV44')||collectorLoading)return;
