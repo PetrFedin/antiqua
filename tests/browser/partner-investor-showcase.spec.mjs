@@ -27,7 +27,7 @@ test('Partner and Investor Showcase explains stakeholder value, revenue gates an
 
  const readiness=root.locator('.showcase-readiness-grid article');await expect(readiness).toHaveCount(6);
  await expect(root.locator('.showcase-readiness-grid')).toContainText(/Paid demand proof/i);
- await expect(root.locator('.showcase-readiness-grid article.blocked')).toContainText(/PostgreSQL live|Paid demand proof/i);
+ const blocked=root.locator('.showcase-readiness-grid article.blocked');await expect(blocked).toHaveCount(2);await expect(blocked.filter({hasText:'PostgreSQL live'})).toBeVisible();await expect(blocked.filter({hasText:'Paid demand proof'})).toBeVisible();
 
  await page.locator('a[href="#partners/fair"]').first().click();
  const fair=page.locator('.showcase-detail');await expect(fair).toBeVisible();
