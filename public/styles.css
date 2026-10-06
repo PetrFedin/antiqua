@@ -753,3 +753,28 @@ body{overflow-x:hidden}
 .calendar-event-page{padding-top:42px;padding-bottom:90px}.calendar-event-hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.45fr);gap:50px;align-items:end;padding:42px 0;border-bottom:1px solid var(--line)}.calendar-event-hero p{max-width:820px;color:#49433c;font:400 18px/1.65 var(--display)}.calendar-event-hero aside{display:grid;gap:8px;padding-left:24px;border-left:1px solid var(--line)}.calendar-event-hero aside strong{font:400 22px/1.18 var(--display)}.calendar-event-hero aside span{color:var(--muted);font-size:10px;line-height:1.5}.calendar-event-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:22px 0;border-bottom:1px solid var(--line)}.calendar-event-actions .calendar-state-actions{flex:1}.calendar-event-grid{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:0;padding:38px 0;border-bottom:1px solid var(--line)}.calendar-event-grid article{padding:0 24px;border-left:1px solid var(--line)}.calendar-event-grid article:first-child{padding-left:0;border-left:0}.calendar-event-grid p{color:#4d463f;font:400 16px/1.6 var(--display)}.calendar-event-grid small{color:var(--muted);font-size:9px}.calendar-linked-exhibition{display:flex;align-items:end;justify-content:space-between;gap:30px;padding:38px 0;border-bottom:1px solid var(--line)}.calendar-linked-exhibition h2{margin:5px 0 0;font:400 30px/1.08 var(--display)}
 @media(max-width:900px){.calendar-hero,.calendar-event-hero{grid-template-columns:1fr;gap:26px}.calendar-hero aside,.calendar-event-hero aside{padding:20px 0 0;border-left:0;border-top:1px solid var(--line)}.calendar-plan-strip{grid-template-columns:1fr}.calendar-event-grid{grid-template-columns:1fr}.calendar-event-grid article{padding:22px 0;border-left:0;border-top:1px solid var(--line)}.calendar-event-grid article:first-child{border-top:0}.calendar-principles{grid-template-columns:1fr}.calendar-principles>div{padding:18px 0;border-left:0;border-top:1px solid var(--line)}.calendar-principles>div:first-child{border-top:0}}
 @media(max-width:620px){.cultural-calendar-page{padding-top:25px}.calendar-hero h1,.calendar-event-hero h1{font-size:48px}.calendar-card-main{grid-template-columns:52px minmax(0,1fr);gap:12px;padding:13px}.calendar-date-rail strong{font-size:27px}.calendar-card-copy h3{font-size:22px}.calendar-card-footer{align-items:flex-start;flex-direction:column}.calendar-state-actions{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.calendar-state-actions button{padding:0 5px}.calendar-conflicts article{grid-template-columns:1fr auto 1fr}.calendar-conflicts article small{grid-column:1/-1}.calendar-event-actions>*{width:100%}.calendar-linked-exhibition{align-items:start;flex-direction:column}}
+
+/* v0.43 provenance evidence passport */
+.provenance-passport{margin:0 0 28px;padding:18px;border:1px solid #d9d6cf;background:#faf9f6}
+.provenance-passport.good{border-left:4px solid #447a52}
+.provenance-passport.warn{border-left:4px solid #b28a3e}
+.provenance-passport.bad{border-left:4px solid #9b4942}
+.provenance-passport-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.provenance-passport-head h4{margin:4px 0 0;font-size:20px}
+.provenance-passport-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.provenance-passport-metrics>div{padding:10px;border:1px solid #e2dfd7;background:#fff}
+.provenance-passport-metrics span{display:block;font-size:10px;color:#777}
+.provenance-passport-metrics strong{display:block;margin-top:3px;font-size:20px}
+.provenance-evidence-events{display:grid;gap:6px}
+.provenance-evidence-events article{display:grid;grid-template-columns:1fr minmax(120px,1fr);gap:12px;padding:9px 0;border-top:1px solid #e4e0d7}
+.provenance-evidence-events article.unresolved{border-left:2px solid #b28a3e;padding-left:9px}
+.provenance-evidence-events article.conflict{border-left-color:#9b4942}
+.provenance-evidence-events b,.provenance-evidence-events small{display:block}
+.provenance-evidence-events small,.provenance-evidence-events span{font-size:11px;color:#777;overflow-wrap:anywhere}
+.provenance-passport-hash{margin-top:12px;padding-top:10px;border-top:1px solid #dedad0}
+.provenance-passport-hash span{display:block;font-size:9px;color:#777}
+.provenance-passport-hash code{display:block;margin-top:4px;font-size:10px;overflow-wrap:anywhere}
+.provenance-boundary{font-size:12px;line-height:1.55;color:#5f5b54}
+.provenance-assertions{display:flex;gap:6px;flex-wrap:wrap}
+.provenance-assertions span{border:1px solid #d7d2c7;border-radius:999px;padding:5px 8px;font-size:9px}
+@media(max-width:700px){.provenance-passport-metrics{grid-template-columns:1fr 1fr}.provenance-evidence-events article{grid-template-columns:1fr}}
