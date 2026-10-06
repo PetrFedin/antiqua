@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {buildProvenanceEvidenceOverview,buildProvenanceEvidencePassport} from '../provenance-evidence-passport-v43.mjs';
+import {buildPortableProvenanceBundle,buildProvenanceEvidenceOverview,buildProvenanceEvidencePassport} from '../provenance-evidence-passport-v43.mjs';
 
 const object={id:'lot-1',objectCode:'A-001',passport:{title:{en:'Work'},maker:{en:'Artist'},attributionStatus:'ATTRIBUTED'}};
 const revision={id:'rev-2',revisionNo:2,passportHash:'a'.repeat(64),previousHash:'b'.repeat(64),changeKind:'PROVENANCE_UPDATE',createdAt:'2026-10-06T00:00:00.000Z'};
@@ -42,3 +42,15 @@ assert.equal(overview.assertions.authenticityCertified,false);
 assert.equal(overview.assertions.universalScoreUsed,false);
 assert.equal(overview.evidenceClasses.INSTITUTIONAL_RECORD,1);
 assert.equal(overview.evidenceOverviewSha256.length,64);
+
+const portable=buildPortableProvenanceBundle(buildProvenanceEvidencePassport({
+  object:{id:'lot-partner',objectCode:'OBJ-PARTNER',passport:{title:{en:'Work'},maker:{en:'Artist'},attributionStatus:'ATTRIBUTED'}},
+  latestRevision:{id:'rev-1',revisionNo:2,passportHash:'abc',previousHash:'def',changeKind:'RESEARCH_UPDATE',createdAt:'2026-10-06T00:00:00.000Z'},
+  entries:[{id:'pe-1',sequenceNo:1,event:{kind:'EXHIBITION'},evidenceClass:'INSTITUTIONAL_RECORD',evidenceStatus:'VERIFIED',evidenceRef:'museum:archive:1'}]
+}));
+assert.equal(portable.schemaVersion,'antiqua-provenance-partner-bundle-v1');
+assert.equal(portable.disclosureBoundary.ownerIdentityIncluded,false);
+assert.equal(portable.disclosureBoundary.authenticityCertified,false);
+assert.equal(portable.signature.status,'unsigned');
+assert.equal(portable.bundleSha256.length,64);
+assert.equal(portable.provenanceEvents.length,1);
