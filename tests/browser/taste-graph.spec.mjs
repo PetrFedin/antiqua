@@ -9,7 +9,7 @@ async function patch(page,path,csrf,body){return page.evaluate(async({path,csrf,
 test('Taste Graph turns explicit actions into explainable discovery and respects dismiss',async({page})=>{
  await page.goto('/',{waitUntil:'domcontentloaded'});const login=await demoLogin(page);expect(login.status).toBe(200);const csrf=login.body.csrf;
  const saved=await post(page,'/api/lots/lot-101/save',csrf,{enabled:true});expect(saved.status).toBe(200);
- const follow=await post(page,'/api/discovery/subscriptions',csrf,{subscriptionType:'FOLLOW_CATEGORY',label:'Print',category:'Print'});expect(follow.status).toBe(201);const subId=follow.body.subscription.id;
+ const follow=await post(page,'/api/discovery/subscriptions',csrf,{subscriptionType:'FOLLOW_CATEGORY',label:'Printmaking',category:'Printmaking'});expect(follow.status).toBe(201);const subId=follow.body.subscription.id;
  await page.reload({waitUntil:'domcontentloaded'});
  const feed=page.locator('[data-culture-feed]');await expect(feed).toBeVisible();await expect(feed).toContainText(/вашим действиям|your actions/i);await expect(feed.locator('[data-taste-explain]')).toBeVisible();
  const api=await page.evaluate(async()=>{const r=await fetch('/api/taste/recommendations?limit=8');return{status:r.status,body:await r.json()}});expect(api.status).toBe(200);expect(api.body.capabilities.explainable).toBe(true);expect(api.body.capabilities.aiUsed).toBe(false);expect(api.body.capabilities.priceUsedForMatching).toBe(false);expect(api.body.profile.signalCounts.SAVED).toBeGreaterThan(0);expect(api.body.profile.signalCounts.FOLLOW_CATEGORY).toBeGreaterThan(0);
