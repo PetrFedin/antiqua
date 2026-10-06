@@ -335,6 +335,8 @@ body{overflow-x:hidden}
 @media(max-width:640px){
  .v24-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
  .v24-lead-grid{grid-template-columns:1fr}
+ .v24-lead-card{scroll-margin-top:118px;scroll-margin-bottom:104px}
+ .v24-lead-card [data-v24-route]{scroll-margin-top:118px;scroll-margin-bottom:104px}
  .v24-lead-card .v14-actions>*{flex:1 1 100%}
  .v24-sla,.v24-next{grid-template-columns:auto 1fr}
  .v24-sla>small{grid-column:1/-1;text-align:left}
