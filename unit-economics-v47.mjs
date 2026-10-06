@@ -51,6 +51,13 @@ export function deriveUnitEconomics({aggregate=null,pilots=[]}={}){
 
  const paymentCoverage=paymentTotal?Number((paymentClassified/paymentTotal).toFixed(4)):null;
  const costCoverage=costTotal?Number((costClassified/costTotal).toFixed(4)):null;
+ const quality={
+  cash:{state:paidPilots>0?'OBSERVED':'MISSING',source:'Commercial Evidence PAYMENT_RECEIVED'},
+  grossContribution:{state:paidPilots>0?'OBSERVED':'MISSING',source:'PAYMENT_RECEIVED - REFUND_RECORDED - DIRECT_COST_RECORDED'},
+  recurringCashShare:{state:paymentCoverage===1&&paymentTotal>0?'DECISION_GRADE':paymentTotal>0?'PARTIAL':'MISSING',source:'PAYMENT_RECEIVED.payload.revenueClass'},
+  costMix:{state:costCoverage===1&&costTotal>0?'DECISION_GRADE':costTotal>0?'PARTIAL':'MISSING',source:'DIRECT_COST_RECORDED.payload.costClass'},
+  renewalEvidence:{state:renewalEvidence>0?'OBSERVED':'MISSING',source:'RENEWAL_ACCEPTED / EXPANSION_ACCEPTED'}
+ };
 
  const locks={
   ARR:{state:'LOCKED',reason:'Requires active recurring contract authority with billing cadence and effective dates. Payment cash alone is insufficient.'},
@@ -77,6 +84,15 @@ export function deriveUnitEconomics({aggregate=null,pilots=[]}={}){
   renewalOrExpansionEvidencePilots:renewalEvidence,
   classificationCoverage:{payments:{classified:paymentClassified,total:paymentTotal,ratio:paymentCoverage},costs:{classified:costClassified,total:costTotal,ratio:costCoverage}},
   pricingConfidence:aggregate?.pricingConfidence||{HIGH:0,MEDIUM:0,LOW:0,UNPROVEN:0},
+  quality,
+  metricLineage:{
+   paidPilots:['dealer_pilot_engagements','dealer_pilot_commercial_events:PAYMENT_RECEIVED'],
+   verifiedCash:['dealer_pilot_commercial_events:PAYMENT_RECEIVED'],
+   grossContribution:['PAYMENT_RECEIVED','REFUND_RECORDED','DIRECT_COST_RECORDED'],
+   recurringCashShare:['PAYMENT_RECEIVED.payload.revenueClass'],
+   costMix:['DIRECT_COST_RECORDED.payload.costClass'],
+   renewalEvidence:['RENEWAL_ACCEPTED','EXPANSION_ACCEPTED']
+  },
   locks,
   boundaries:unitEconomicsCapabilities().boundaries
  }
