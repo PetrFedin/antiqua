@@ -1,4 +1,4 @@
-import {send,readBody} from './runtime-v09.mjs';
+import {send,readBody,requireCsrf,audit} from './runtime-v09.mjs';
 import {commercialEvidenceCapabilities,recordCommercialEvent,sellerCommercialSummary,operatorCommercialSummary,investorCommercialAggregate} from './commercial-evidence-v46.mjs';
 
 export async function routeCommercialEvidencePublicV46(req,res,url){
@@ -16,7 +16,7 @@ export async function routeCommercialEvidenceV46(req,res,url,ctx){
  const operator=url.pathname.match(/^\/api\/operator\/pilots\/([^/]+)\/commercial-evidence(?:\/(events))?$/);
  if(operator){
   const id=decodeURIComponent(operator[1]);
-  if(operator[2]==='events'&&req.method==='POST')return send(res,201,{event:await recordCommercialEvent(ctx.account,id,await readBody(req))});
+  if(operator[2]==='events'&&req.method==='POST'){requireCsrf(req,ctx);const event=await recordCommercialEvent(ctx.account,id,await readBody(req));await audit(req,ctx.account,'COMMERCIAL_EVIDENCE_RECORDED','DEALER_PILOT',id,null,{eventId:event.id,eventType:event.eventType,revenueStream:event.revenueStream,amountMinor:event.amountMinor,currency:event.currency});return send(res,201,{event})}
   if(!operator[2]&&req.method==='GET'){
    const x=await operatorCommercialSummary(ctx.account,id);
    return x?send(res,200,{commercial:x}):send(res,404,{error:'Pilot not found',code:'PILOT_NOT_FOUND'})
