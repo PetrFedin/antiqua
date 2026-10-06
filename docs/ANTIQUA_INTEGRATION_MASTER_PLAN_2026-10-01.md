@@ -627,17 +627,57 @@ The economic hypothesis to validate is that this shared graph improves:
 
 Only measured evidence may turn that hypothesis into a moat claim.
 
-## 20. Next implementation order
+## 20. v0.45 — Decision Intelligence
 
-1. finish v0.43 CI + Browser E2E and merge only on green;
-2. verify v0.44 Collector / Professional / Scholarly projections on buyer, seller and public Dossier paths;
-3. connect first real paid-pilot authority to pricing evidence;
-4. replace traction-dashboard MISSING cells only with sourced pilot facts;
-5. instrument D7/D30 consumer retention and partner renewal cohorts;
-6. measure onboarding/support cost-to-serve per paid partner;
-7. add canonical artwork identity for catalogue-raisonné work only after real institutional use case;
-8. validate one Partner Edition end-to-end;
-9. validate one Gallery Growth paid pilot end-to-end;
-10. only then expose finance-ready ARR / CAC / payback / GMV / gross-margin views.
+v0.45 turns the shared intelligence layer into concrete decision support without introducing hidden scoring:
+
+- Collection Strategy for collectors;
+- Portfolio Intelligence for galleries;
+- Evidence Coverage Map for Artwork Dossier.
+
+Canonical specification:
+- `docs/ANTIQUA_DECISION_INTELLIGENCE_V45.md`
+
+The three outputs remain descriptive. They do not become investment advice, demand forecasting, authenticity scoring or appraisal.
+
+## 21. v0.46 — Commercial Evidence Authority
+
+v0.46 closes the first real business-model evidence loop:
+
+`real pilot -> quote -> written acceptance -> invoice -> payment -> direct cost -> gross contribution -> renewal / expansion`
+
+Canonical specification:
+- `docs/ANTIQUA_COMMERCIAL_EVIDENCE_V46.md`
+
+Core rules:
+
+- commercial writes are operator-controlled;
+- seller access is read-only for its own pilot;
+- durable PostgreSQL is required for writes;
+- events are append-only and signed;
+- quote / LOI / written acceptance are not revenue;
+- invoice is not cash;
+- only `PAYMENT_RECEIVED` creates verified cash;
+- refunds and direct pilot costs reduce gross contribution;
+- renewal / expansion increase evidence maturity but are not automatically cash;
+- idempotency replay with the same body returns the existing event;
+- reuse of an idempotency key with a different body returns `409 IDEMPOTENCY_CONFLICT`;
+- correction uses an explicit void event rather than rewriting history;
+- investor aggregate never performs implicit cross-currency conversion.
+
+Commercial Evidence is the authority that may populate the cash/pricing/gross-contribution cells of the Investor Traction Dashboard. No manual dashboard override is allowed.
+
+## 22. Next implementation order
+
+1. finish CI + Browser E2E on the current artwork-first/intelligence/commercial-evidence head and merge only on green;
+2. expose an operator Commercial Evidence Console over v0.46 with CSRF, audit and evidence-reference requirements;
+3. run one real Gallery Growth pilot through frozen scope -> launch -> commercial ledger -> final acceptance;
+4. replace Investor Traction Dashboard MISSING cells only from v0.46 and pilot authorities;
+5. instrument D7/D30 consumer retention and paid-partner renewal cohorts;
+6. record direct onboarding/support/provider cost per paid pilot and validate gross contribution;
+7. validate one Partner Edition end-to-end with actual accepted fee;
+8. calculate pricing-confidence distribution across independent paid counterparties;
+9. add canonical artwork identity / institutional research only after a real institutional design partner exists;
+10. expose finance-ready ARR / CAC / payback / eligible GMV / gross-margin views only when their source authorities exist.
 
 Anything outside this order must justify itself against the artwork-first product thesis.
