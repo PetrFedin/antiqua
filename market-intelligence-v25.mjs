@@ -1,4 +1,5 @@
 import {db,lots,bi} from './runtime-v09.mjs';
+import {sameArtworkDepartment} from './art-taxonomy-v43.mjs';
 import {listAuthoritativePublicAuctions} from './auction-authority-v15.mjs';
 import {getPublicAuctionResult} from './auction-results-v20.mjs';
 
@@ -21,7 +22,7 @@ const periodOverlap=(a,b)=>{const aa=centuries(a),bb=centuries(b);return[...aa].
 function catalogueReasons(source,candidate){
  const materialWords=overlap(source.materials,candidate.materials);
  const sameMaker=equal(source.maker,candidate.maker)&&!genericAttribution(source.maker);
- const sameDepartment=equal(source.department,candidate.department);
+ const sameDepartment=sameArtworkDepartment(source.department,candidate.department);
  const samePeriod=periodOverlap(source.period,candidate.period);
  const sameOrigin=equal(source.origin,candidate.origin);
  const reasons=[];
