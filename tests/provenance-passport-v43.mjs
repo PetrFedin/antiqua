@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {buildProvenanceEvidencePassport} from '../provenance-evidence-passport-v43.mjs';
+import {buildProvenanceEvidenceOverview,buildProvenanceEvidencePassport} from '../provenance-evidence-passport-v43.mjs';
 
 const object={id:'lot-1',objectCode:'A-001',passport:{title:{en:'Work'},maker:{en:'Artist'},attributionStatus:'ATTRIBUTED'}};
 const revision={id:'rev-2',revisionNo:2,passportHash:'a'.repeat(64),previousHash:'b'.repeat(64),changeKind:'PROVENANCE_UPDATE',createdAt:'2026-10-06T00:00:00.000Z'};
@@ -24,3 +24,21 @@ const conflicted=buildProvenanceEvidencePassport({object,entries:[{id:'c1',seque
 assert.equal(conflicted.evidenceSummary.completeness,'CONFLICTED');
 assert.deepEqual(conflicted.evidenceSummary.conflictEventIds,['c1']);
 console.log('provenance evidence passport v1 PASS');
+
+const overview=buildProvenanceEvidenceOverview({
+  objects:[{id:'lot-1'},{id:'lot-2'},{id:'lot-3'}],
+  entries:[
+    {objectId:'lot-1',id:'e1',sequenceNo:1,event:{kind:'EXHIBITION'},evidenceClass:'INSTITUTIONAL_RECORD',evidenceStatus:'VERIFIED',evidenceRef:'museum:1'},
+    {objectId:'lot-2',id:'e2',sequenceNo:1,event:{kind:'OWNERSHIP'},evidenceClass:'OWNER_DEALER_STATEMENT',evidenceStatus:'UNVERIFIED',evidenceRef:null},
+    {objectId:'lot-3',id:'e3',sequenceNo:1,event:{conflict:true},evidenceClass:'SCHOLARLY_PUBLICATION',evidenceStatus:'VERIFIED',evidenceRef:'book:1'}
+  ]
+});
+assert.equal(overview.publicWorks,3);
+assert.equal(overview.worksWithProvenance,3);
+assert.equal(overview.completeWorks,1);
+assert.equal(overview.incompleteWorks,1);
+assert.equal(overview.conflictedWorks,1);
+assert.equal(overview.assertions.authenticityCertified,false);
+assert.equal(overview.assertions.universalScoreUsed,false);
+assert.equal(overview.evidenceClasses.INSTITUTIONAL_RECORD,1);
+assert.equal(overview.evidenceOverviewSha256.length,64);
