@@ -8,7 +8,7 @@ test.beforeEach(async({page})=>{
 
 test('direct passport link opens exact object and closes cleanly',async({page})=>{
  await page.goto('/?object=lot-109#gallery',{waitUntil:'domcontentloaded'});
- const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();await expect(dialog).toContainText(/Ореховый комод|A walnut commode/i);
+ const dialog=page.locator('#dialog[open]');await expect(dialog).toBeVisible();await expect(dialog).toContainText(/Портрет в профиль|Portrait in Profile/i);
  expect(new URL(page.url()).searchParams.get('object')).toBe('lot-109');
  await dialog.locator('[data-close-dialog]').click();await expect(page.locator('#dialog[open]')).toHaveCount(0);
  await expect.poll(()=>new URL(page.url()).searchParams.has('object')).toBe(false);
