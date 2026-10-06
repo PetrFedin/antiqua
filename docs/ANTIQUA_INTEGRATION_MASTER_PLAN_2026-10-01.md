@@ -2193,3 +2193,97 @@ The SDK cannot bypass staging/review.
 
 **Commercial framing:** Antiqua becomes reusable cultural-heritage research infrastructure and a licensable provenance knowledge layer.
 
+## Defensibility wave — Provenance Evidence Passport and scholarly trust graph
+
+This wave creates a durable scholarly trust layer over provenance, catalogue-raisonné, expert review and institutional federation.
+
+### Provenance Evidence Passport — ADOPT
+
+For a canonical work, create a machine-readable provenance package with:
+
+- canonical work ID/revision;
+- attribution state;
+- provenance events;
+- event source/evidence;
+- confidence/review state;
+- exhibition/bibliography references;
+- image/document evidence;
+- unresolved gaps;
+- rights/publication state;
+- passport version/hash.
+
+The passport is a scholarly evidence package, not an authenticity certificate.
+
+### Provenance Evidence Classes — ADOPT
+
+Every provenance assertion is explicitly classified, for example:
+
+- primary document;
+- institutional record;
+- auction/dealer record;
+- scholarly publication;
+- owner/dealer statement;
+- expert interpretation;
+- machine/OCR candidate;
+- unresolved/unverified.
+
+No source class silently upgrades to verified fact.
+
+### Scholarly Contributor Trust Graph — ADOPT
+
+Graph:
+
+expert/scholar/institution -> reviewed work/event/source -> opinion/decision -> publication/revision
+
+Useful factual dimensions:
+
+- verified identity/affiliation;
+- reviewed submissions;
+- catalogue committee role;
+- field/topic expertise;
+- completed institutional contributions;
+- disclosure status;
+- recency.
+
+No popularity score or "best expert" ranking.
+
+### Scoped Scholarly Credential — ADAPT
+
+Use verifiable-credential-compatible attestations for narrow roles such as:
+
+- Catalogue Committee Member for project X;
+- Institutional Contributor;
+- Provenance Review Participant;
+- IIIF/Linked Art Integration Partner.
+
+Credential proves role/scope, not correctness of scholarly conclusions.
+
+### Evidence Gap Index — ADOPT
+
+For each work show explicit unresolved gaps:
+
+- missing ownership period;
+- unsupported exhibition claim;
+- uncertain attribution event;
+- missing source image/document;
+- conflicting literature.
+
+The system can prioritize research but cannot fabricate the missing event.
+
+### Independent Verification Surface — ADOPT
+
+A museum/estate/researcher can verify a passport/version and inspect public source references without receiving private owner/dealer data.
+
+### Additional acceptance
+
+- passport preserves unresolved/conflicting evidence;
+- source class remains visible;
+- contributor graph contains factual activity only;
+- no AI similarity score is treated as provenance proof;
+- credentials have explicit project/role scope;
+- private provenance evidence is excluded from public verification.
+
+**Sequencing:** Catalogue Raisonné + Provenance API + Expert Board -> evidence classes -> passport -> contributor graph -> credentials -> verification.
+
+**Moat:** the compound scholarly corpus becomes more valuable with every reviewed provenance event, expert decision and institutional contribution.
+
