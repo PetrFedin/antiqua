@@ -64,3 +64,23 @@ test('Commercial Evidence Authority keeps revenue evidence operator-controlled a
   expect(durableWrite.body.code).toBe('PILOT_NOT_FOUND');
  }
 });
+
+
+test('Commercial Evidence Console is operator-only and fails closed without durable PostgreSQL',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});
+ let auth=await login(page,'BUYER');expect(auth.status).toBe(200);
+ await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('[data-v14-tab="commercial-evidence"]')).toHaveCount(0);
+
+ auth=await login(page,'OPERATOR');expect(auth.status).toBe(200);
+ await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ const tab=page.locator('[data-v14-tab="commercial-evidence"]');await expect(tab).toBeVisible();
+ await tab.click();
+ const panel=page.locator('[data-v14-panel="commercial-evidence"]');await expect(panel).toBeVisible();
+ await expect(panel).toContainText(/COMMERCIAL EVIDENCE AUTHORITY/i);
+ const persistence=(await page.evaluate(async()=>{const r=await fetch('/api/operator/commercial-evidence/pilots');return(await r.json()).commercial.persistence}));
+ if(persistence==='MEMORY_FALLBACK'){
+  await expect(panel).toContainText(/DURABLE POSTGRESQL REQUIRED/i);
+  await expect(panel.locator('[data-commercial-evidence-form]')).toHaveCount(0);
+ }
+});
