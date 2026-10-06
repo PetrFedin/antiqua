@@ -22,7 +22,7 @@ async function mount(){
   if(!d?.interest||blockingDialog())return;
   const box=document.createElement('div');
   box.innerHTML=markup(d.interest);
-  dealerPanel.prepend(box.firstElementChild);
+  dealerPanel.append(box.firstElementChild);
  }catch(e){console.error(e)}finally{loading=false}
 }
 
