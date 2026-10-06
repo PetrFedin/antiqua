@@ -56,7 +56,7 @@ function pilotCard(p){
 function panel(data,{standalone=false}={}){
  const persistence=data?.persistence||'UNKNOWN',pilots=data?.pilots||[];
  const body=persistence!=='POSTGRES'
-  ?'<div class="commercial-evidence-blocked"><strong>${copy('ТРЕБУЕТСЯ ПОСТОЯННОЕ ХРАНИЛИЩЕ POSTGRESQL','DURABLE POSTGRESQL REQUIRED')}</strong><p>'+copy('Запись коммерческих доказательств закрыта fail-closed: preview memory нельзя использовать как источник финансовой истины.','Commercial evidence writes are fail-closed: preview memory cannot be used as a financial source of truth.')+'</p></div>'
+  ?'<div class="commercial-evidence-blocked"><strong>'+copy('ТРЕБУЕТСЯ ПОСТОЯННОЕ ХРАНИЛИЩЕ POSTGRESQL','DURABLE POSTGRESQL REQUIRED')+'</strong><p>'+copy('Запись коммерческих доказательств закрыта: временную память нельзя использовать как источник финансовой истины.','Commercial evidence writes are fail-closed: preview memory cannot be used as a financial source of truth.')+'</p></div>'
   :pilots.length?'<div class="commercial-evidence-pilots">'+pilots.map(pilotCard).join('')+'</div>'
   :'<div class="empty-state">'+copy('Реальных пилотных проектов пока нет. Сначала создайте пилот и зафиксируйте его объём.','No real pilot engagements yet. Create and freeze a pilot scope first.')+'</div>';
  const shell=standalone?'<section id="commercialEvidenceStandalone" class="account-block commercial-evidence-console">':'<div data-v14-panel="commercial-evidence" hidden class="v14-panel commercial-evidence-console">',close=standalone?'</section>':'</div>';return shell+
