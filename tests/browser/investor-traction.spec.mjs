@@ -8,7 +8,12 @@ test('Investor traction dashboard separates capability from missing commercial p
  await expect(root).toContainText(/MEMORY_FALLBACK|POSTGRES/);
  await expect(root.locator('.traction-badge')).toContainText([/PRODUCT CAPABILITY|MISSING|ASSUMPTION/]);
  await expect(root.locator('.traction-funnel>div')).toHaveCount(6);
- await expect(root.locator('.traction-evidence-table>div')).toHaveCount(6);
+ const evidenceTables=root.locator('.traction-evidence-table');await expect(evidenceTables).toHaveCount(2);await expect(evidenceTables.nth(0).locator(':scope>div')).toHaveCount(6);await expect(evidenceTables.nth(1).locator(':scope>div')).toHaveCount(6);
+ await expect(root).toContainText(/COMMERCIAL EVIDENCE AUTHORITY/i);
+ await expect(root).toContainText(/QUOTE \/ LOI/i);
+ await expect(root).toContainText(/NOT REVENUE/i);
+ await expect(root).toContainText(/PAYMENT_RECEIVED/i);
+ await expect(root).toContainText(/VERIFIED CASH/i);
  await expect(root.locator('.traction-gate-grid article')).toHaveCount(6);
  await expect(root).toContainText(/Paid pilot|Платные пилоты/i);
  await expect(root).toContainText(/Gross contribution/i);
