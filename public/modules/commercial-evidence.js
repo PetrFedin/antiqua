@@ -41,7 +41,9 @@ function pilotCard(p){
     option('INSTITUTIONAL_RESEARCH','Institutional Research')+
     option('TRANSACTION_REVENUE','Transaction Revenue')+
    '</select></label>'+
-   '<label><span>Revenue class</span><select name="revenueClass"><option value="">—</option>'+option('RECURRING','Recurring')+option('ONE_TIME','One-time')+option('USAGE','Usage')+option('TRANSACTION','Transaction')+option('SPONSORSHIP','Sponsorship')+option('PROJECT','Project')+'</select></label>'+'   <label><span>Cost class</span><select name="costClass"><option value="">—</option>'+option('ACQUISITION','Acquisition')+option('ONBOARDING','Onboarding')+option('SUPPORT','Support')+option('PROVIDER','Provider')+option('EVENT_DELIVERY','Event delivery')+option('RESEARCH_DELIVERY','Research delivery')+option('OTHER','Other')+'</select></label>'+'   <label><span>'+copy('Сумма','Amount')+'</span><input name="amount" type="number" min="0" step="0.01" placeholder="0.00"></label>'+
+   '<label><span>Revenue class</span><select name="revenueClass"><option value="">—</option>'+option('RECURRING','Recurring')+option('ONE_TIME','One-time')+option('USAGE','Usage')+option('TRANSACTION','Transaction')+option('SPONSORSHIP','Sponsorship')+option('PROJECT','Project')+'</select></label>'+
+   '<label><span>Cost class</span><select name="costClass"><option value="">—</option>'+option('ACQUISITION','Acquisition')+option('ONBOARDING','Onboarding')+option('SUPPORT','Support')+option('PROVIDER','Provider')+option('EVENT_DELIVERY','Event delivery')+option('RESEARCH_DELIVERY','Research delivery')+option('OTHER','Other')+'</select></label>'+
+   '<label><span>'+copy('Сумма','Amount')+'</span><input name="amount" type="number" min="0" step="0.01" placeholder="0.00"></label>'+
    '<label><span>'+copy('Валюта','Currency')+'</span><input name="currency" value="EUR" maxlength="3" pattern="[A-Za-z]{3}"></label>'+
    '<label class="wide"><span>Evidence reference</span><input name="evidenceRef" placeholder="proposal:, invoice:, bank:, cost:"></label>'+
    '<label class="wide"><span>'+copy('Комментарий / источник','Comment / source note')+'</span><input name="note" maxlength="500" placeholder="'+copy('Без банковских секретов и персональных данных','No banking secrets or personal data')+'"></label>'+
@@ -50,33 +52,40 @@ function pilotCard(p){
  '</article>';
 }
 
-function panel(data){
+function panel(data,{standalone=false}={}){
  const persistence=data?.persistence||'UNKNOWN',pilots=data?.pilots||[];
  const body=persistence!=='POSTGRES'
   ?'<div class="commercial-evidence-blocked"><strong>DURABLE POSTGRESQL REQUIRED</strong><p>'+copy('Запись коммерческих доказательств закрыта fail-closed: preview memory нельзя использовать как источник финансовой истины.','Commercial evidence writes are fail-closed: preview memory cannot be used as a financial source of truth.')+'</p></div>'
   :pilots.length?'<div class="commercial-evidence-pilots">'+pilots.map(pilotCard).join('')+'</div>'
   :'<div class="empty-state">'+copy('Реальных pilot engagements пока нет. Сначала создайте и заморозьте scope пилота.','No real pilot engagements yet. Create and freeze a pilot scope first.')+'</div>';
- return '<div data-v14-panel="commercial-evidence" hidden class="v14-panel commercial-evidence-console">'+
+ const shell=standalone?'<section id="commercialEvidenceStandalone" class="account-block commercial-evidence-console">':'<div data-v14-panel="commercial-evidence" hidden class="v14-panel commercial-evidence-console">',close=standalone?'</section>':'</div>';return shell+
   '<div class="commercial-evidence-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE AUTHORITY · v0.46</div><h3>'+copy('Доказательство денег','Proof of money')+'</h3><p>'+copy('Operator-only append ledger: quote → accepted price → invoice → cash → direct cost → renewal. Quote, LOI и invoice не становятся cash.','Operator-only append ledger: quote → accepted price → invoice → cash → direct cost → renewal. Quote, LOI and invoice never become cash.')+'</p></div><span>'+esc(persistence)+'</span></div>'+
-  body+'</div>';
+  body+close;
 }
 
 async function mount(){
- if(loading||document.querySelector('[data-v14-tab="commercial-evidence"]'))return;
- const ops=document.querySelector('#v14Operations'),tabs=ops?.querySelector('.v14-tabs'),panels=ops?.querySelector('.v14-panels');if(!tabs||!panels)return;
+ if(loading||document.querySelector('[data-v14-tab="commercial-evidence"]')||document.querySelector('#commercialEvidenceStandalone'))return;
+ const host=document.querySelector('.account-v12');if(!host)return;
  loading=true;
  try{
-  const d=await safe('/api/operator/commercial-evidence/pilots');if(!d?.commercial||!ops.isConnected)return;
+  const d=await safe('/api/operator/commercial-evidence/pilots');if(!d?.commercial||!host.isConnected)return;
   lastData=d.commercial;
-  const btn=document.createElement('button');btn.dataset.v14Tab='commercial-evidence';btn.textContent=copy('Коммерческие доказательства','Commercial Evidence');tabs.append(btn);
-  const box=document.createElement('div');box.innerHTML=panel(lastData);panels.append(box.firstElementChild);
+  const ops=document.querySelector('#v14Operations'),tabs=ops?.querySelector('.v14-tabs'),panels=ops?.querySelector('.v14-panels');
+  const box=document.createElement('div');
+  if(tabs&&panels){
+   const btn=document.createElement('button');btn.dataset.v14Tab='commercial-evidence';btn.textContent=copy('Коммерческие доказательства','Commercial Evidence');tabs.append(btn);
+   box.innerHTML=panel(lastData);panels.append(box.firstElementChild);
+  }else{
+   box.innerHTML=panel(lastData,{standalone:true});host.append(box.firstElementChild);
+  }
  }catch(e){console.error(e)}finally{loading=false}
 }
 
 async function refresh(){
  const d=await safe('/api/operator/commercial-evidence/pilots');if(!d?.commercial)return;lastData=d.commercial;
- const old=document.querySelector('[data-v14-panel="commercial-evidence"]');if(!old)return;
- const box=document.createElement('div');box.innerHTML=panel(lastData);const next=box.firstElementChild;next.hidden=false;old.replaceWith(next);
+ const old=document.querySelector('[data-v14-panel="commercial-evidence"],#commercialEvidenceStandalone');if(!old)return;
+ const standalone=old.id==='commercialEvidenceStandalone',wasHidden=old.hidden;
+ const box=document.createElement('div');box.innerHTML=panel(lastData,{standalone});const next=box.firstElementChild;if(!standalone)next.hidden=wasHidden;old.replaceWith(next);
 }
 
 document.addEventListener('submit',async e=>{
