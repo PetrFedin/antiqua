@@ -73,7 +73,7 @@ test('Commercial Evidence Console is operator-only and fails closed without dura
  await expect(page.locator('[data-v14-tab="commercial-evidence"]')).toHaveCount(0);
 
  auth=await login(page,'OPERATOR');expect(auth.status).toBe(200);
- await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ await page.reload({waitUntil:'domcontentloaded'});
  const tab=page.locator('[data-v14-tab="commercial-evidence"]'),standalone=page.locator('#commercialEvidenceStandalone');
  await expect.poll(async()=>await tab.count()+await standalone.count()).toBeGreaterThan(0);
  const panel=await tab.count()?page.locator('[data-v14-panel="commercial-evidence"]'):standalone;if(await tab.count())await tab.click();await expect(panel).toBeVisible();
