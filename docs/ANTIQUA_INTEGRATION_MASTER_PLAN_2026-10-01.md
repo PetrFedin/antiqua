@@ -591,17 +591,53 @@ The following files are now part of the canonical commercialization path:
 
 These artifacts are intentionally evidence-first. They must not be populated with invented ARR, GMV, CAC, LTV, pricing or retention.
 
-## 19. Next implementation order
+## 19. v0.44 — Shared Intelligence Authority
 
-1. scope-language and navigation cleanup;
-2. public artwork taxonomy guard;
-3. art-only seed/catalogue cleanup;
-4. Artwork Dossier restructuring;
-5. artist-page strengthening;
-6. research/provenance UI;
-7. community actions tied to art entities;
-8. exhibition/event refinement;
-9. commercial CTA cleanup;
-10. deployed responsive smoke and investor-demo pass.
+v0.44 introduces no new source of truth. It projects existing authorities into three role-safe decision layers:
+
+- **Collector Intelligence** — explainable taste directions and adjacent discovery inside My ANTIQUA;
+- **Professional Intelligence** — artwork/artist demand depth and response evidence inside the dealer workspace;
+- **Market & Scholarly Intelligence** — research coverage, attribution links, revisions, open gaps and platform comparables inside Artwork Dossier.
+
+Canonical specification:
+- `docs/ANTIQUA_INTELLIGENCE_V44.md`
+
+Non-negotiable boundaries:
+- no opaque score;
+- no purchase probability inferred from passive behavior;
+- no seller access to personal collector taste;
+- no authenticity score;
+- no automated appraisal;
+- no causal attribution where only temporal/object-level evidence exists;
+- no private owner/location leakage.
+
+### v0.44 investor value
+
+This is the first layer where the same underlying artwork graph demonstrably serves three paying or value-creating constituencies without cloning data models.
+
+The strategic asset is therefore not a recommendation widget. It is a shared decision graph:
+
+`Artwork facts -> collector relevance / professional demand / scholarly-market context`
+
+The economic hypothesis to validate is that this shared graph improves:
+- collector retention;
+- gallery conversion and selection;
+- partner renewal;
+- institutional reuse.
+
+Only measured evidence may turn that hypothesis into a moat claim.
+
+## 20. Next implementation order
+
+1. finish v0.43 CI + Browser E2E and merge only on green;
+2. verify v0.44 Collector / Professional / Scholarly projections on buyer, seller and public Dossier paths;
+3. connect first real paid-pilot authority to pricing evidence;
+4. replace traction-dashboard MISSING cells only with sourced pilot facts;
+5. instrument D7/D30 consumer retention and partner renewal cohorts;
+6. measure onboarding/support cost-to-serve per paid partner;
+7. add canonical artwork identity for catalogue-raisonné work only after real institutional use case;
+8. validate one Partner Edition end-to-end;
+9. validate one Gallery Growth paid pilot end-to-end;
+10. only then expose finance-ready ARR / CAC / payback / GMV / gross-margin views.
 
 Anything outside this order must justify itself against the artwork-first product thesis.
