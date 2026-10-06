@@ -14,6 +14,7 @@ assert.equal(a.items[0].id,'lot-107','same-department works-on-paper candidate w
 assert.ok(a.items[0].reasons.some(x=>x.code==='SAME_DEPARTMENT'));
 assert.ok(a.items[0].reasons.some(x=>x.code==='PERIOD_OVERLAP'));
 assert.equal(JSON.stringify(a).includes('"score"'),false,'no opaque similarity score may be exposed');
+assert.equal(JSON.stringify(a).includes('PRICE_PROXIMITY'),false,'price must not influence or explain artistic similarity');
 
 const again=await similarObjectsFor('lot-109',{limit:4});
 assert.deepEqual(again.items.map(x=>x.id),a.items.map(x=>x.id),'ranking must be deterministic');
