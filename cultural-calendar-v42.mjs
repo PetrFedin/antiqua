@@ -1,10 +1,11 @@
-import {db,uid,now,bi} from './runtime-v09.mjs';
+import {db,lots,uid,now,bi} from './runtime-v09.mjs';
+import {publicArtworkEligible} from './artwork-scope-v43.mjs';
 import {requireOrganizationRole} from './organizations-v15.mjs';
 import {getMyArtNetwork} from './art-network-v41.mjs';
 import {listExhibitions,getExhibition} from './collection-graph-v10.mjs';
 
 const events=new Map(),participation=new Map();
-const EVENT_TYPES=new Set(['OPENING','ARTIST_TALK','CURATOR_TOUR','LECTURE','WORKSHOP','AUCTION_PREVIEW','AUCTION','FAIR_DAY','PRIVATE_VIEW','BOOK_LAUNCH','RESEARCH_SESSION','SCREENING','PERFORMANCE','OTHER']);
+const EVENT_TYPES=new Set(['OPENING','ARTIST_TALK','CURATOR_TOUR','LECTURE','WORKSHOP','AUCTION_PREVIEW','AUCTION','FAIR_DAY','PRIVATE_VIEW','RESEARCH_SESSION','OTHER']);
 const EVENT_STATUSES=new Set(['DRAFT','REVIEW_PENDING','PUBLISHED','CANCELLED','ARCHIVED']);
 const VENUE_MODES=new Set(['PHYSICAL','ONLINE','HYBRID']);
 const VISIBILITIES=new Set(['PRIVATE','UNLISTED','PUBLIC']);
@@ -28,7 +29,9 @@ const publicStatus=x=>x==='PUBLISHED';
 const reviewAllowed=a=>Boolean(a?.roles?.some(r=>REVIEW_ROLES.has(r)));
 const requireReviewer=a=>{if(!reviewAllowed(a))fail(403,'CALENDAR_REVIEW_FORBIDDEN','Calendar review permission required');return a};
 const normalizeCreatorLinks=v=>(Array.isArray(v)?v:[]).map((x,i)=>({creatorId:String(x.creatorId||''),role:String(x.role||'FEATURED_ARTIST').toUpperCase(),sortOrder:Number(x.sortOrder??i)})).filter(x=>x.creatorId&&CREATOR_ROLES.has(x.role)).slice(0,50);
-const normalizeObjectLinks=v=>(Array.isArray(v)?v:[]).map((x,i)=>({objectId:String(x.objectId||''),role:String(x.role||'FEATURED').toUpperCase(),sortOrder:Number(x.sortOrder??i)})).filter(x=>x.objectId&&OBJECT_ROLES.has(x.role)).slice(0,100);
+const artworkById=id=>lots.find(x=>x.id===id)||null;
+const normalizeObjectLinks=v=>(Array.isArray(v)?v:[]).map((x,i)=>({objectId:String(x.objectId||''),role:String(x.role||'FEATURED').toUpperCase(),sortOrder:Number(x.sortOrder??i)})).filter(x=>x.objectId&&OBJECT_ROLES.has(x.role)&&publicArtworkEligible(artworkById(x.objectId))).slice(0,100);
+const hasArtRelation=e=>Boolean(e?.exhibitionId||(e?.creators||[]).length||(e?.objects||[]).some(x=>publicArtworkEligible(artworkById(x.objectId))));
 
 function seed(){
  if(events.size)return;
@@ -65,9 +68,9 @@ async function hydrateEvent(e,{publicOnly=false}={}){
   e.creators=publicOnly
    ?(await db.pool.query(`SELECT ec.creator_id AS "creatorId",ec.role,ec.sort_order AS "sortOrder" FROM cultural_event_creators ec JOIN creators c ON c.id=ec.creator_id WHERE ec.event_id=$1 AND c.profile_status='PUBLISHED' ORDER BY ec.sort_order,ec.creator_id`,[e.id])).rows
    :(await db.pool.query('SELECT creator_id AS "creatorId",role,sort_order AS "sortOrder" FROM cultural_event_creators WHERE event_id=$1 ORDER BY sort_order,creator_id',[e.id])).rows;
-  e.objects=publicOnly
+  e.objects=(publicOnly
    ?(await db.pool.query(`SELECT eo.object_id AS "objectId",eo.role,eo.sort_order AS "sortOrder" FROM cultural_event_objects eo JOIN objects o ON o.id=eo.object_id WHERE eo.event_id=$1 AND o.publication_status='PUBLIC' ORDER BY eo.sort_order,eo.object_id`,[e.id])).rows
-   :(await db.pool.query('SELECT object_id AS "objectId",role,sort_order AS "sortOrder" FROM cultural_event_objects WHERE event_id=$1 ORDER BY sort_order,object_id',[e.id])).rows;
+   :(await db.pool.query('SELECT object_id AS "objectId",role,sort_order AS "sortOrder" FROM cultural_event_objects WHERE event_id=$1 ORDER BY sort_order,object_id',[e.id])).rows).filter(x=>publicArtworkEligible(artworkById(x.objectId)));
  }
  return e
 }
@@ -108,7 +111,7 @@ export async function updateCulturalEvent(account,id,input={}){
  const e={...current,...x,status:'DRAFT',reviewedByAccountId:null,reviewedAt:null,reviewNote:null,updatedAt:now()};events.set(id,e);return clone(e)
 }
 export async function submitCulturalEvent(account,id){
- const e=await eventById(id);if(!e)fail(404,'CALENDAR_EVENT_NOT_FOUND','Event not found');if(e.organizationId)await requireOrganizationRole(account.id,e.organizationId,['OWNER','ADMIN','CATALOGUER']);else if(e.createdByAccountId!==account.id&&!reviewAllowed(account))fail(403,'CALENDAR_EVENT_FORBIDDEN','Event submission denied');if(e.visibility==='PRIVATE')fail(409,'CALENDAR_EVENT_PRIVATE','Choose PUBLIC or UNLISTED before review');
+ const e=await eventById(id);if(!e)fail(404,'CALENDAR_EVENT_NOT_FOUND','Event not found');if(!hasArtRelation(e))fail(409,'CALENDAR_ART_RELATION_REQUIRED','Public ANTIQUA events must link to an artwork, artist or exhibition');if(e.organizationId)await requireOrganizationRole(account.id,e.organizationId,['OWNER','ADMIN','CATALOGUER']);else if(e.createdByAccountId!==account.id&&!reviewAllowed(account))fail(403,'CALENDAR_EVENT_FORBIDDEN','Event submission denied');if(e.visibility==='PRIVATE')fail(409,'CALENDAR_EVENT_PRIVATE','Choose PUBLIC or UNLISTED before review');
  if(db.kind==='POSTGRES'){await db.pool.query("UPDATE cultural_events SET status='REVIEW_PENDING',updated_at=now() WHERE id=$1",[id]);return eventById(id)}
  e.status='REVIEW_PENDING';e.updatedAt=now();events.set(id,e);return clone(e)
 }
@@ -128,7 +131,7 @@ async function sanitizePublicEvent(e){
  if(e.organizationId){const org=(await db.pool.query("SELECT id,name,slug FROM organizations WHERE id=$1 AND status='ACTIVE'",[e.organizationId])).rows[0];if(org)e.organization={id:org.id,name:org.name,slug:org.slug};else{e.organizationId=null;e.organization=null}}
  if(e.organizationLocationId){const loc=(await db.pool.query('SELECT id,label,city,address_line FROM organization_locations WHERE id=$1 AND public=true',[e.organizationLocationId])).rows[0];if(loc)e.organizationLocation={id:loc.id,label:loc.label,city:loc.city,addressLine:loc.address_line};else{e.organizationLocationId=null;e.organizationLocation=null}}
  if(e.exhibitionId){const ok=(await db.pool.query("SELECT 1 FROM exhibitions WHERE id=$1 AND publication_status='PUBLISHED' AND visibility IN('PUBLIC','UNLISTED')",[e.exhibitionId])).rowCount;if(!ok)e.exhibitionId=null}
- if(e.coverObjectId){const ok=(await db.pool.query("SELECT 1 FROM objects WHERE id=$1 AND publication_status='PUBLIC'",[e.coverObjectId])).rowCount;if(!ok)e.coverObjectId=null}
+ if(e.coverObjectId){const ok=(await db.pool.query("SELECT 1 FROM objects WHERE id=$1 AND publication_status='PUBLIC'",[e.coverObjectId])).rowCount;if(!ok||!publicArtworkEligible(artworkById(e.coverObjectId)))e.coverObjectId=null}
  return e
 }
 async function publicEventRows(filters={}){
@@ -143,7 +146,7 @@ async function publicEventRows(filters={}){
    ORDER BY e.starts_at,e.id`,[from,to])).rows;
   xs=[];for(const r of rows){const e=await sanitizePublicEvent(await hydrateEvent(mapEvent(r),{publicOnly:true}));xs.push(e)}
  }else xs=[...events.values()].filter(e=>e.status==='PUBLISHED'&&e.visibility==='PUBLIC'&&Date.parse(e.startsAt)<=Date.parse(to)&&Date.parse(e.endsAt||e.startsAt)>=Date.parse(from)).map(clone);
- return xs.filter(e=>!filters.city||[e.city?.en,e.city?.ru,e.organizationLocation?.city].filter(Boolean).some(x=>String(x).toLowerCase().includes(String(filters.city).toLowerCase()))).filter(e=>!filters.eventType||e.eventType===String(filters.eventType).toUpperCase()).filter(e=>!filters.organizationId||e.organizationId===filters.organizationId).filter(e=>!filters.creatorId||e.creators.some(x=>x.creatorId===filters.creatorId)).filter(e=>!filters.q||JSON.stringify([e.title,e.summary,e.description,e.tags]).toLowerCase().includes(String(filters.q).toLowerCase()))
+ return xs.filter(hasArtRelation).filter(e=>!filters.city||[e.city?.en,e.city?.ru,e.organizationLocation?.city].filter(Boolean).some(x=>String(x).toLowerCase().includes(String(filters.city).toLowerCase()))).filter(e=>!filters.eventType||e.eventType===String(filters.eventType).toUpperCase()).filter(e=>!filters.organizationId||e.organizationId===filters.organizationId).filter(e=>!filters.creatorId||e.creators.some(x=>x.creatorId===filters.creatorId)).filter(e=>!filters.q||JSON.stringify([e.title,e.summary,e.description,e.tags]).toLowerCase().includes(String(filters.q).toLowerCase()))
 }
 
 function normalizeExhibition(x){return{id:x.id,entryType:'EXHIBITION',title:x.title||{},summary:x.subtitle||{},description:x.curatorialStatement||{},organizationId:x.organizationId||null,organization:x.organization||null,venueMode:'PHYSICAL',venueName:x.venueName||{},city:x.city||{},country:x.country||{},timezone:x.timezone||'UTC',startsAt:iso(x.startsAt),endsAt:iso(x.endsAt),allDay:true,bookingUrl:x.bookingUrl||null,publicSourceUrl:x.publicSourceUrl||null,coverObjectId:x.coverObjectId||null,visibility:x.visibility,status:x.status,exhibitionId:x.id}}
