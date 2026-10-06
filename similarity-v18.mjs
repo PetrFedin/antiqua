@@ -1,4 +1,5 @@
 import {db,lots,listings,auctions,lot,publicAuction,bi} from './runtime-v09.mjs';
+import {sameArtworkDepartment} from './art-taxonomy-v43.mjs';
 
 const norm=v=>String(v?.en??v??'').trim().toLowerCase().replace(/[‐‑‒–—]/g,'-');
 const words=v=>new Set(norm(v).split(/[^a-z0-9]+/).filter(x=>x.length>2&&!['the','and','with','style','century'].includes(x)));
@@ -23,7 +24,7 @@ function commerceFor(o){
 }
 function reason(code,ru,en,value=null){return{code,label:bi(en,ru),value}}
 function compareCandidate(source,candidate){
- const reasons=[],materials=overlap(source.materials,candidate.materials),sameMaker=equal(source.maker,candidate.maker)&&!genericAttribution(source.maker),sameDepartment=equal(source.department,candidate.department),sameOrigin=equal(source.origin,candidate.origin),samePeriod=centuryOverlap(source.period,candidate.period);
+ const reasons=[],materials=overlap(source.materials,candidate.materials),sameMaker=equal(source.maker,candidate.maker)&&!genericAttribution(source.maker),sameDepartment=sameArtworkDepartment(source.department,candidate.department),sameOrigin=equal(source.origin,candidate.origin),samePeriod=centuryOverlap(source.period,candidate.period);
  const sourceCommerce=commerceFor(source),candidateCommerce=commerceFor(candidate),den=Math.max(sourceCommerce.price||0,candidateCommerce.price||0,1),priceDistance=Math.abs((sourceCommerce.price||0)-(candidateCommerce.price||0))/den,closePrice=priceDistance<=.25;
  if(sameMaker)reasons.push(reason('SAME_MAKER','Тот же мастер / атрибуция','Same maker / attribution',candidate.maker));
  if(sameDepartment)reasons.push(reason('SAME_DEPARTMENT','Та же категория','Same category',candidate.department));

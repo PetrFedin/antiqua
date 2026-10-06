@@ -6,7 +6,7 @@ import {recordTasteSignal,buildTasteProfile,tasteRecommendations,tasteGraphCapab
 
 const account={id:'taste-v28-memory',sellerId:null,roles:['BUYER']};
 await setObjectFlag(db,account.id,'lot-101','SAVED',true);
-await createSubscription(account,{subscriptionType:'FOLLOW_CATEGORY',label:'Sculpture',category:'Sculpture'});
+await createSubscription(account,{subscriptionType:'FOLLOW_CATEGORY',label:'Printmaking',category:'Printmaking'});
 
 await assert.rejects(()=>recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-102',sourceKey:'too-shallow',metadata:{depth:.2,dwellSeconds:20}}),e=>e?.code==='ENGAGEMENT_THRESHOLD_NOT_MET');
 const first=await recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-102',sourceKey:'engaged-lot-102',metadata:{depth:.6,dwellSeconds:12}});assert.equal(first.idempotent,false);
@@ -18,7 +18,7 @@ assert.equal(built.profile.signalCounts.SAVED,1);
 assert.equal(built.profile.signalCounts.FOLLOW_CATEGORY,1);
 assert.equal(built.profile.signalCounts.ENGAGED_VIEW,1);
 assert.equal(built.profile.signalCounts.DISMISSED,1);
-assert.ok(built.profile.dimensions.department.some(x=>x.key==='sculpture'&&x.points>=SIGNAL_WEIGHTS.FOLLOW_CATEGORY+SIGNAL_WEIGHTS.DISMISSED));
+assert.ok(built.profile.dimensions.department.some(x=>x.key==='print'&&x.points>=SIGNAL_WEIGHTS.FOLLOW_CATEGORY+SIGNAL_WEIGHTS.DISMISSED));
 
 const recs=await tasteRecommendations(account,{limit:8});
 assert.equal(recs.recommendations.some(x=>x.object.id==='lot-101'),false,'saved object must not be rediscovered as a new recommendation');
@@ -28,11 +28,11 @@ await recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-103',so
 const reversed=await tasteRecommendations(account,{limit:20});
 assert.equal(reversed.recommendations.some(x=>x.object.id==='lot-103'),true,'later positive intent must reverse dismiss exclusion');
 const reversedProfile=await buildTasteProfile(account);
-const sculptureFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='sculpture');
-assert.ok(sculptureFacet);
-assert.equal(sculptureFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
-const sculpture=recs.recommendations.find(x=>x.object.id==='lot-112');assert.ok(sculpture,'category follow should surface another sculpture');
-assert.ok(sculpture.reasons.some(x=>x.dimension==='department'&&x.signals.some(s=>s.type==='FOLLOW_CATEGORY')));
+const printFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='print');
+assert.ok(printFacet);
+assert.equal(printFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
+const print=recs.recommendations.find(x=>x.reasons.some(r=>r.dimension==='department'&&r.signals.some(s=>s.type==='FOLLOW_CATEGORY')));assert.ok(print,'category follow should surface another printmaking work');
+assert.ok(print.reasons.some(x=>x.dimension==='department'&&x.signals.some(s=>s.type==='FOLLOW_CATEGORY')));
 assert.equal(recs.capabilities.aiUsed,false);assert.equal(recs.capabilities.priceUsedForMatching,false);assert.equal(recs.capabilities.explainable,true);
 assert.equal(tasteGraphCapabilities().engagedViewThreshold.minimumDepth,.35);
 console.log('ANTIQUA v28 Taste Graph: explicit signals + dedupe + negative feedback + explainable recommendation passed');

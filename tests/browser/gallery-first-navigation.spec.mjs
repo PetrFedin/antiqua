@@ -7,7 +7,7 @@ test('Gallery-first navigation keeps consumer journey separate from professional
  await expect(nav.locator('[data-nav="gallery"]')).toHaveText(/Галерея|Gallery/i);
  await expect(nav.locator('[data-nav="creators"]')).toHaveText(/Художники|Artists/i);
  await expect(nav.locator('[data-nav="collections"]')).toBeVisible();
- await expect(nav.locator('[data-nav="learn"]')).toHaveText(/Знания|Learn/i);
+ await expect(nav.locator('[data-nav="learn"]')).toHaveText(/Исследование|Research|Learn/i);
  await expect(nav.locator('[data-nav="events"]')).toHaveText(/События|Events/i);
  await expect(nav.locator('[data-nav="auctions"]')).toHaveText(/Аукцион|Auction/i);
  await expect(nav.locator('[data-nav="dealers"]')).toHaveCount(0);
@@ -15,7 +15,7 @@ test('Gallery-first navigation keeps consumer journey separate from professional
 
  await nav.locator('[data-nav="learn"]').click();
  await expect(page).toHaveURL(/#learn/);
- await expect(page.locator('main')).toContainText(/Журнал|Journal|истори|story/i);
+ await expect(page.locator('main')).toContainText(/Исследование|Research|истори|story/i);
 
  await page.locator('.main-nav [data-nav="events"]').click();
  await expect(page).toHaveURL(/#events/);

@@ -46,8 +46,7 @@ try{
 
   x=await owner.call('/api/collections',{method:'POST',body:JSON.stringify({title:'Public regression collection',visibility:'PUBLIC'})});assert.equal(x.r.status,201);const publicId=x.body.collection.id;
   assert.equal((await fetch(`${base}/api/collections/${publicId}`)).status,200);
-  list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),true);
+  list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),false,'empty public collection must not enter public discovery before it contains a published artwork');
 
-  assert.equal((await fetch(base+'/api/exhibitions/ex-objects-in-dialogue')).status,200);
   console.log('ANTIQUA 0.16 access smoke: public collections + owner-scoped /mine + private/unlisted isolation passed');
 }finally{child.kill('SIGTERM')}

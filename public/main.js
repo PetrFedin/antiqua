@@ -14,3 +14,7 @@ import './modules/partner-drops.js';
 import './modules/inquiry.js';
 
 import './modules/services.js';
+
+import './modules/intelligence.js';
+
+import './modules/commercial-evidence.js';

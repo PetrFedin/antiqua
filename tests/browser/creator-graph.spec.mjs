@@ -5,8 +5,8 @@ async function post(page,path,csrf,body){return page.evaluate(async({path,csrf,b
 
 test('Creator Graph publishes a real profile workflow without bypassing primary-market authority',async({page})=>{
  await page.goto('/',{waitUntil:'domcontentloaded'});let auth=await login(page,'SELLER');expect(auth.status).toBe(200);const sellerCsrf=auth.body.csrf,token=Date.now().toString();
- const created=await post(page,'/api/creators',sellerCsrf,{nameEn:'Browser Studio '+token,nameRu:'Браузерная мастерская '+token,creatorType:'CRAFTSPERSON',salesModel:'INDEPENDENT',disciplines:[{en:'Collectible objects',ru:'Коллекционные предметы'}]});expect(created.status).toBe(201);const creator=created.body.creator;
- const linked=await post(page,'/api/creators/'+creator.id+'/objects',sellerCsrf,{objectId:'lot-109',creatorRole:'MAKER',marketContext:'PRIMARY',attributionStatus:'SELF_DECLARED'});expect(linked.status).toBe(200);
+ const created=await post(page,'/api/creators',sellerCsrf,{nameEn:'Browser Studio '+token,nameRu:'Браузерная мастерская '+token,creatorType:'ARTIST',salesModel:'INDEPENDENT',disciplines:[{en:'Painting',ru:'Живопись'}]});expect(created.status).toBe(201);const creator=created.body.creator;
+ const linked=await post(page,'/api/creators/'+creator.id+'/objects',sellerCsrf,{objectId:'lot-109',creatorRole:'ARTIST',marketContext:'PRIMARY',attributionStatus:'SELF_DECLARED'});expect(linked.status).toBe(200);
  let privateProfile=await page.evaluate(async id=>{const r=await fetch('/api/creators/'+id);return{status:r.status,body:await r.json()}},creator.id);expect(privateProfile.status).toBe(200);
  auth=await login(page,'OPERATOR');expect(auth.status).toBe(200);const published=await post(page,'/api/creators/'+creator.id+'/publish',auth.body.csrf,{});expect(published.status).toBe(200);expect(published.body.creator.profileStatus).toBe('PUBLISHED');
  auth=await login(page,'BUYER');expect(auth.status).toBe(200);await page.goto('/#creators',{waitUntil:'domcontentloaded'});const card=page.locator('.creator-card').filter({hasText:token});await expect(card).toBeVisible();await card.click();

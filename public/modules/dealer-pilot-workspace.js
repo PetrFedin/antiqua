@@ -3,6 +3,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const pct=v=>v==null?'—':new Intl.NumberFormat(undefined,{style:'percent',maximumFractionDigits:1}).format(Number(v));
 const num=v=>v==null?'—':new Intl.NumberFormat().format(Number(v));
 const mins=v=>v==null?'—':num(v)+' min';
+const moneyMap=m=>Object.keys(m||{}).length?Object.entries(m).map(([c,v])=>new Intl.NumberFormat(undefined,{style:'currency',currency:c,maximumFractionDigits:2}).format(Number(v||0)/100)).join(' · '):'—';
 const copy=(lang,ru,en)=>lang==='ru'?ru:en;
 const api=async path=>{const r=await fetch(path,{credentials:'same-origin'});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Request failed');return d};
 
@@ -60,6 +61,28 @@ function ledger(proof,lang){
  return`<section class="pilot-card"><div class="pilot-card-head"><div><div class="eyebrow">OUTCOME LEDGER</div><h2>${copy(lang,'Реестр коммерческих исходов','Commercial outcome ledger')}</h2></div></div><div class="pilot-ledger"><div class="head"><span>Object</span><span>Stage</span><span>Response</span><span>Outcome</span></div>${rows.map(r=>`<div><span>${esc(r.objectId||'—')}<small>${esc((r.firstBuyerActivityAt||'').slice(0,10))}</small></span><span>${esc(r.stage||'—')}</span><span>${r.responseMinutes==null?'—':esc(String(r.responseMinutes))+' min'}</span><span class="outcome ${String(r.outcome||'').toLowerCase()}">${esc(r.outcome||'OPEN')}</span></div>`).join('')||`<div class="empty">${copy(lang,'Исходов пока нет','No outcomes yet')}</div>`}</div></section>`
 }
 
+
+function commercialEvidencePanel(commercial,lang){
+ if(!commercial?.summary)return`<section class="pilot-card pilot-commercial-evidence"><div class="pilot-card-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE · v0.46</div><h2>${copy(lang,'Доказательство денег','Proof of money')}</h2></div><span class="pilot-period">MISSING / DURABLE DB REQUIRED</span></div><p class="pilot-boundary">${copy(lang,'Коммерческий ledger появляется только после durable PostgreSQL и операторской фиксации quote / accepted price / invoice / payment / direct cost / renewal.','The commercial ledger appears only with durable PostgreSQL and operator-recorded quote / accepted price / invoice / payment / direct cost / renewal evidence.')}</p></section>`;
+ const s=commercial.summary,p=s.pricingEvidence||{};
+ return`<section class="pilot-card pilot-commercial-evidence"><div class="pilot-card-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE · v0.46</div><h2>${copy(lang,'Цена, cash и gross contribution','Price, cash and gross contribution')}</h2></div><span class="pilot-period">${esc(s.evidenceLevel||'MISSING')}</span></div>
+ <div class="pilot-kpi-grid">
+  ${metric(copy(lang,'Pricing confidence','Pricing confidence'),esc(p.confidence||'UNPROVEN'))}
+  ${metric(copy(lang,'Quoted','Quoted'),moneyMap(s.quotedMinorByCurrency))}
+  ${metric(copy(lang,'Accepted','Accepted'),moneyMap(s.acceptedMinorByCurrency))}
+  ${metric(copy(lang,'Cash received','Cash received'),moneyMap(s.cashReceivedMinorByCurrency))}
+  ${metric(copy(lang,'Direct cost','Direct cost'),moneyMap(s.directCostMinorByCurrency))}
+  ${metric(copy(lang,'Gross contribution','Gross contribution'),moneyMap(s.grossContributionMinorByCurrency))}
+ </div>
+ <div class="pilot-uplift-strip">
+  <div><span>${copy(lang,'Realized price ratio','Realized price ratio')}</span><b>${p.realizedPriceRatio==null?'—':pct(p.realizedPriceRatio)}</b></div>
+  <div><span>${copy(lang,'Discount rate','Discount rate')}</span><b>${p.discountRate==null?'—':pct(p.discountRate)}</b></div>
+  <div><span>${copy(lang,'Renewal','Renewal')}</span><b>${s.renewalAccepted?'ACCEPTED':'—'}</b></div>
+  <div><span>${copy(lang,'Expansion','Expansion')}</span><b>${s.expansionAccepted?'ACCEPTED':'—'}</b></div>
+ </div>
+ <p class="pilot-boundary">${copy(lang,'Quote, written acceptance и invoice не считаются cash. Только PAYMENT_RECEIVED увеличивает cash; refund и direct cost уменьшают экономический результат.','Quote, written acceptance and invoice are not cash. Only PAYMENT_RECEIVED increases cash; refunds and direct cost reduce the economic result.')}</p></section>`
+}
+
 function evidence(proof,performance,lang){
  const e=proof.evidenceSnapshot||{},a=performance.attribution||{};
  return`<section class="pilot-card pilot-evidence"><div class="pilot-card-head"><div><div class="eyebrow">SIGNED EVIDENCE PACK</div><h2>${copy(lang,'Проверяемый снимок результатов','Verifiable evidence snapshot')}</h2></div><a class="primary-button" href="/api/pilot/commercial-proof/report" target="_blank" rel="noopener">${copy(lang,'Экспорт отчёта','Export report')}</a></div>
@@ -75,8 +98,9 @@ export async function dealerPilotWorkspace(lang='ru'){
   api('/api/dealer/pilots')
  ]);
  const proof=proofRes.proof||{},performance=performanceRes.performance||{},pilot=pilotRes.analytics||{},engagement=(authorityRes.pilots||[]).find(x=>x.status==='ACTIVE')||(authorityRes.pilots||[])[0]||null;
- const launch=engagement?await pilotLaunchBoard(engagement.id):'';return`<main class="pilot-workspace page section">${engagement?`<section class="pilot-engagement-banner"><div><span>REAL PILOT · ${esc(engagement.status)}</span><strong>${esc(engagement.name)}</strong><small>${esc((engagement.startsAt||'').slice(0,10))} → ${esc((engagement.endsAt||'').slice(0,10))}</small></div><div><span>CONTRACT</span><code>${esc(engagement.contractDigest||'DRAFT · NOT FROZEN')}</code></div></section>`:`<section class="pilot-engagement-banner draft"><div><span>REAL PILOT AUTHORITY</span><strong>${copy(lang,'Engagement ещё не создан','No engagement created yet')}</strong><small>${copy(lang,'Метрики ниже остаются техническим evidence workspace до фиксации реального пилота.','Metrics below remain a technical evidence workspace until a real pilot is contracted.')}</small></div></section>`}<section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
+ const [launch,commercial]=engagement?await Promise.all([pilotLaunchBoard(engagement.id),api('/api/dealer/pilots/'+encodeURIComponent(engagement.id)+'/commercial-evidence').catch(()=>null)]):['',null];return`<main class="pilot-workspace page section">${engagement?`<section class="pilot-engagement-banner"><div><span>REAL PILOT · ${esc(engagement.status)}</span><strong>${esc(engagement.name)}</strong><small>${esc((engagement.startsAt||'').slice(0,10))} → ${esc((engagement.endsAt||'').slice(0,10))}</small></div><div><span>CONTRACT</span><code>${esc(engagement.contractDigest||'DRAFT · NOT FROZEN')}</code></div></section>`:`<section class="pilot-engagement-banner draft"><div><span>REAL PILOT AUTHORITY</span><strong>${copy(lang,'Engagement ещё не создан','No engagement created yet')}</strong><small>${copy(lang,'Метрики ниже остаются техническим evidence workspace до фиксации реального пилота.','Metrics below remain a technical evidence workspace until a real pilot is contracted.')}</small></div></section>`}<section class="pilot-hero"><div><div class="eyebrow">ANTIQUA · DEALER PILOT WORKSPACE</div><h1>${copy(lang,'Коммерческий контроль пилота','Pilot commercial control')}</h1><p>${copy(lang,'Один кабинет: от response SLA и cohort-динамики до object outcomes и подписываемого доказательства результата.','One workspace: from response SLA and cohort movement to object outcomes and a signed evidence pack.')}</p></div><aside><span>${copy(lang,'Активный pipeline','Active pipeline')}</span><strong>${num(performance.dealerPerformance?.currentActiveLeads)}</strong><small>${copy(lang,'Просрочено','Overdue')}: ${num(performance.dealerPerformance?.currentOverdue)}</small></aside></section>
  ${scorecard(proof,lang)}
+ ${commercialEvidencePanel(commercial?.commercial||null,lang)}
  <div class="pilot-two-col">${comparison(proof,lang)}${rolling(proof,lang)}</div>
  ${inventory(proof,performance,lang)}
  ${ledger(proof,lang)}

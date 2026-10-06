@@ -4,7 +4,7 @@ import {createCulturalEvent,submitCulturalEvent,reviewCulturalEvent,updateCultur
 const reviewer={id:'calendar-reviewer-memory',displayName:'Calendar Reviewer',roles:['ADMIN','CATALOGUER']};
 const visitor={id:'calendar-visitor-memory',displayName:'Calendar Visitor',roles:['BUYER']};
 const base=Date.now()+4*864e5,stamp=new Date(base).toISOString();
-const make=(suffix,offset=0)=>({slug:'memory-calendar-'+suffix,title:{en:'Calendar '+suffix,ru:'Календарь '+suffix},summary:{en:'Reviewed cultural event',ru:'Проверенное культурное событие'},eventType:'CURATOR_TOUR',venueMode:'PHYSICAL',venueName:{en:'Test Gallery',ru:'Тестовая галерея'},city:{en:'Berlin',ru:'Берлин'},country:{en:'Germany',ru:'Германия'},timezone:'Europe/Berlin',startsAt:new Date(base+offset).toISOString(),endsAt:new Date(base+offset+90*60000).toISOString(),visibility:'PUBLIC',tags:['painting','tour']});
+const make=(suffix,offset=0)=>({slug:'memory-calendar-'+suffix,title:{en:'Calendar '+suffix,ru:'Календарь '+suffix},summary:{en:'Reviewed cultural event',ru:'Проверенное культурное событие'},eventType:'CURATOR_TOUR',venueMode:'PHYSICAL',venueName:{en:'Test Gallery',ru:'Тестовая галерея'},city:{en:'Berlin',ru:'Берлин'},country:{en:'Germany',ru:'Германия'},timezone:'Europe/Berlin',startsAt:new Date(base+offset).toISOString(),endsAt:new Date(base+offset+90*60000).toISOString(),visibility:'PUBLIC',tags:['painting','tour'],objects:[{objectId:'lot-101',role:'FEATURED'}]});
 
 const a=await createCulturalEvent(reviewer,make('a'));assert.equal(a.status,'DRAFT');
 await submitCulturalEvent(reviewer,a.id);assert.equal((await listPublicCalendar()).entries.some(x=>x.id===a.id),false,'review-pending event must stay private');

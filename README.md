@@ -1,25 +1,49 @@
 # ANTIQUA
 
-Digital platform for collecting, presenting, buying and auctioning antiques and collectible objects.
+ANTIQUA is an artwork-first digital platform for discovering, researching, collecting and, when relevant, acquiring works of art.
 
-## Current state
+## Product focus
 
-This repository is the dedicated ANTIQUA project. It is independent from SYNTHA.
+The active public scope is deliberately narrow:
 
-The current `main` contains a deployable preview runtime used to validate product direction and core interaction flows:
+- painting;
+- drawing;
+- graphics;
+- engraving and etching;
+- lithography, woodcut, linocut and other artist prints;
+- watercolor, gouache, pastel and adjacent works on paper.
 
-- public catalogue;
-- object presentation;
-- personal collection preview;
-- timed auction preview with server-side bid validation;
-- responsive web interface;
-- `/api/health` endpoint.
+ANTIQUA is **not** positioned as a universal antiques or collectibles marketplace.
 
-## Preview limitations
+## Core public journey
 
-The preview is intentionally not represented as production-ready commerce. It currently does **not** provide real payments, escrow, KYC/KYB, expert authentication, durable database persistence, production-grade identity, or settlement.
+`Gallery -> Artwork -> Artist -> Related works -> Research / provenance -> Save -> Collection -> Community / event -> Inquiry / bid when relevant`
 
-## Run
+Commerce is optional at artwork level. A work may be shown for discovery, research, exhibition or collection context without being for sale.
+
+## Current product authorities retained
+
+The existing technical foundation remains reusable:
+
+- artwork/object identity and dossier;
+- creator / artist graph;
+- collections and ownership-related records;
+- provenance, evidence and condition workflows;
+- art-network profiles and relationships;
+- shared Intelligence Authority: collector, professional and scholarly/market projections;
+- exhibitions and Cultural Calendar;
+- inquiry, offer/counteroffer, viewing and auction workflows;
+- durable PostgreSQL contour and existing governance controls.
+
+Operational/dealer tooling stays secondary and must not dominate the normal collector or art-lover experience.
+
+## Active product source of truth
+
+- [Artwork-first master plan](./docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md)
+
+The master plan now contains the explicit keep / remove / defer boundary for the painting-and-works-on-paper concept.
+
+## Runtime
 
 ```bash
 npm start
@@ -27,18 +51,6 @@ npm start
 
 The server listens on `PORT` or `10000` by default.
 
-## Product direction
+## Important limitation
 
-Target end-to-end chain:
-
-`object passport -> collection -> provenance/authentication workflow -> listing -> sale/auction -> payment/settlement -> delivery -> ownership/passport transfer`
-
-All further ANTIQUA development should be committed to this repository only.
-
-## Planned integration roadmap
-
-Canonical implementation plan:
-
-- [docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md](./docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md)
-
-This file is a **planned implementation source**, not evidence that all listed capabilities are already live. Future full-roadmap implementation should cite this filename explicitly and follow its phases, authority boundaries, dependencies and acceptance gates.
+Repository capabilities and migrations are not, by themselves, proof of a production-ready transaction stack. Live deployment, persistence, provider, payment/settlement and real-partner gates must be verified separately before they are represented as production-ready.
