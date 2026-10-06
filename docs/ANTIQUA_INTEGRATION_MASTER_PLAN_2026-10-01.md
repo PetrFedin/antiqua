@@ -422,7 +422,166 @@ These institutional capabilities may move from backlog into implementation only 
 This keeps the defensibility upside without allowing enterprise infrastructure to dilute the collector-facing product.
 
 
-## 17. Next implementation order
+## 17. Commercial architecture for investor MVP
+
+ANTIQUA should not be presented as a single-revenue marketplace. The investor MVP must show a portfolio of revenue motions with explicit evidence gates.
+
+### Revenue motion A — Professional SaaS
+
+**Buyer:** galleries, estates and professional sellers.  
+**Value:** artwork/artist records, private or partner editions, lead workflow, viewing/offer pipeline, analytics and professional workspace.
+
+Formula:
+
+`Professional SaaS revenue = active paid professional accounts × validated monthly price`
+
+Do not publish a price as fact before at least one real paid pilot confirms willingness-to-pay.
+
+Evidence required:
+- signed paid pilot or contract;
+- paid activation;
+- month-2 / month-3 retention;
+- cost-to-serve;
+- support load;
+- renewal intent.
+
+### Revenue motion B — Partner Editions / Event infrastructure
+
+**Buyer:** fairs, auctions, associations, cultural programmes and event owners.
+
+Formula:
+
+`Partner revenue = paid editions × edition fee + onboarding/support`
+
+Value:
+- digital artwork layer before/during/after the event;
+- QR/deep-link continuation;
+- measurable artwork engagement;
+- D7/D30 after-event retention;
+- qualified professional leads.
+
+Evidence required:
+- one real bounded event pilot;
+- fee actually accepted;
+- measurable post-event continuation;
+- repeat or renewal intent.
+
+### Revenue motion C — Eligible transaction revenue
+
+This is conditional revenue, not the public product identity.
+
+Formula:
+
+`Transaction revenue = eligible completed GMV × validated take rate`
+
+Gate:
+- legal/jurisdiction review;
+- KYC/KYB where required;
+- real payment / settlement provider;
+- cancellation/refund/dispute policy;
+- title/ownership and payout rules;
+- real completed transaction evidence.
+
+Do not include research-only, exhibition-only or collection-only works in GMV.
+
+### Revenue motion D — Cultural partnerships
+
+**Buyer:** banks, insurers, brands, developers and other strategic partners.
+
+Formula:
+
+`Partnership revenue = approved activations × project / sponsorship fee`
+
+The partner receives cultural integration and aggregated evidence, not private collector negotiation data.
+
+### Revenue motion E — Institutional Research / Provenance
+
+**Buyer:** museums, foundations, estates, insurers and research teams.
+
+Potential structure:
+- institutional licence;
+- project fee;
+- Research / Provenance API access;
+- integration / mapping services.
+
+This remains **LATER** until a real institutional design partner exists.
+
+### Consumer monetization boundary
+
+Core discovery, artwork understanding and basic collection/follow behavior should not be prematurely paywalled.
+
+A later premium collector layer may include:
+- advanced private collection tools;
+- enhanced alerts;
+- research workspace;
+- export / insurance-ready documentation;
+- private sharing / viewing packs.
+
+It must be added only after retention and willingness-to-pay are demonstrated.
+
+### Investor KPI hierarchy
+
+Product engagement:
+- artwork opens / session;
+- artwork -> artist continuation;
+- research depth;
+- saves;
+- collection adds;
+- follows;
+- D7/D30 return.
+
+Professional value:
+- qualified lead rate;
+- response SLA;
+- viewing rate;
+- offer rate;
+- conversion;
+- D30 demand retention.
+
+Commercial proof:
+- paid pilot conversion;
+- paid retention;
+- recurring revenue share;
+- cost-to-serve;
+- partner CAC;
+- CAC payback;
+- eligible GMV;
+- effective take rate;
+- gross margin.
+
+No CAC, LTV, ARR, GMV or payback metric may be shown as fact without source data.
+
+### Participant value map
+
+- **Collector:** better discovery, trust, continuity and optional commerce.
+- **Artist / estate:** persistent reviewed history, works, exhibitions and representation.
+- **Gallery:** recurring professional workflow and measurable demand.
+- **Expert / historian / curator:** attributable reviewed contribution and citation trail.
+- **Institution:** controlled canonical research/provenance infrastructure.
+- **Fair / auction / event:** measurable digital continuation and partner acquisition.
+- **Strategic partner:** privacy-safe cultural activation and measurable engagement.
+- **Investor:** exposure to recurring B2B, partner-led acquisition, conditional transaction upside and a compounding scholarly/data moat.
+
+### Compounding moat hypothesis
+
+The moat is not “more listings”.
+
+It is the compound graph:
+
+`Artwork identity + Artist graph + Provenance evidence + Research revisions + Demand signals + Professional workflows + Event continuity`
+
+The hypothesis to validate is that every new verified artwork and professional participant improves multiple surfaces at once:
+- discovery;
+- trust;
+- research depth;
+- partner value;
+- retention;
+- commercial conversion.
+
+Only measured evidence should be used to claim that this flywheel is working.
+
+
+## 18. Next implementation order
 
 1. scope-language and navigation cleanup;
 2. public artwork taxonomy guard;
