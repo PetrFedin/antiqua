@@ -7,6 +7,7 @@ import {dealerPerformanceFor,dealerPerformanceCapabilities} from './dealer-perfo
 import {creatorsForObject,creatorGraphCapabilities} from './creator-graph-v30.mjs';
 import {marketIntelligenceFor,marketIntelligenceCapabilities} from './market-intelligence-v25.mjs';
 import {passportRevisionHistory,passportRevisionCapabilities} from './passport-revisions-v16.mjs';
+import {listMyCollections} from './collection-graph-v10.mjs';
 
 const STAGES=['NO_SIGNAL','DISCOVERED','ENGAGED','INQUIRY','VIEWING','NEGOTIATING','TRANSACTING'];
 const RANK=Object.fromEntries(STAGES.map((x,i)=>[x,i]));
@@ -16,9 +17,9 @@ const arr=v=>Array.isArray(v)?v:Array.isArray(v?.en)?v.en:Array.isArray(v?.ru)?v
 const sum=(xs,fn=x=>Number(x||0))=>xs.reduce((a,x)=>a+fn(x),0);
 
 export function intelligenceCapabilities(){return{
- contractVersion:'v44',
+ contractVersion:'v45',
  architecture:'SHARED_FACTS_MULTIPLE_PROJECTIONS',
- projections:['COLLECTOR','PROFESSIONAL','SCHOLARLY_MARKET'],
+ projections:['COLLECTOR','COLLECTION_STRATEGY','PROFESSIONAL','PORTFOLIO','SCHOLARLY_MARKET','RESEARCH_GAPS'],
  projectionOnly:true,
  writesNewAuthority:false,
  aiRequired:false,
@@ -42,6 +43,36 @@ function maturity(signalCount){
  if(n>0)return{state:'EXPLORATORY',signalCount:n};
  return{state:'COLD_START',signalCount:0}
 }
+
+function topCounts(items,keyFn,limit=6){
+ const m=new Map();
+ for(const item of items||[]){const key=keyFn(item);if(!key)continue;const prev=m.get(key)||{key,count:0};prev.count++;m.set(key,prev)}
+ return [...m.values()].sort((a,b)=>b.count-a.count||String(a.key).localeCompare(String(b.key))).slice(0,limit)
+}
+function collectionStrategy(collections=[]){
+ const works=[],seen=new Set();
+ for(const c of collections||[])for(const i of c.items||[]){const o=i.object;if(!o||seen.has(o.id))continue;seen.add(o.id);works.push(o)}
+ const departments=topCounts(works,o=>canonicalArtworkDepartment(o.department));
+ const artists=topCounts(works,o=>String(o.maker?.en||o.maker?.ru||'').trim());
+ const periods=topCounts(works,o=>String(o.period?.en||o.period?.ru||'').trim());
+ const origins=topCounts(works,o=>String(o.origin?.en||o.origin?.ru||'').trim());
+ const dominant=artists[0]?.count||0,total=works.length;
+ return{
+  collections:collections.length,uniqueArtworks:total,
+  concentration:{topArtistShare:total?Number((dominant/total).toFixed(3)):null,dominantArtist:artists[0]?.key||null},
+  dimensions:{departments,artists,periods,origins},
+  interpretation:{
+   concentrationIsDescriptiveNotAdvice:true,
+   noPortfolioValueCalculated:true,
+   noLiquidityAssumption:true,
+   noBuyRecommendation:true
+  }
+ }
+}
+function readinessState(count,{complete=2,partial=1}={}){
+ count=Number(count||0);if(count>=complete)return'PRESENT';if(count>=partial)return'PARTIAL';return'MISSING'
+}
+
 function affinityDirections(profile={}){
  const out=[];
  for(const [dimension,items] of Object.entries(profile.dimensions||{})){
@@ -59,7 +90,7 @@ function affinityDirections(profile={}){
 }
 
 export async function collectorIntelligenceFor(account,{limit=12}={}){
- const [built,recs]=await Promise.all([buildTasteProfile(account),tasteRecommendations(account,{limit})]);
+ const [built,recs,collections]=await Promise.all([buildTasteProfile(account),tasteRecommendations(account,{limit}),listMyCollections(account)]);
  const profile=built.profile||{},directions=affinityDirections(profile),seenDepartments=new Set((profile.dimensions?.department||[]).filter(x=>Number(x.points)>0).map(x=>canonicalArtworkDepartment(x.value)));
  const exploration=(recs.recommendations||[]).filter(x=>!seenDepartments.has(canonicalArtworkDepartment(x.object?.department))).slice(0,4).map(x=>({
   object:clone(x.object),affinityPoints:Number(x.affinityPoints||0),coldStart:Boolean(x.coldStart),
@@ -70,6 +101,7 @@ export async function collectorIntelligenceFor(account,{limit=12}={}){
   generatedAt:new Date().toISOString(),
   collector:{accountId:account.id,maturity:maturity(profile.signalCount),signalCounts:clone(profile.signalCounts||{})},
   directions,
+  collectionStrategy:collectionStrategy(collections),
   exploration,
   recommendations:(recs.recommendations||[]).slice(0,limit),
   interpretation:{
@@ -107,6 +139,8 @@ export async function professionalIntelligenceFor(account,{limit=20}={}){
   }
  }
  const artists=[...artistMap.values()].sort((a,b)=>RANK[b.highestStage]-RANK[a.highestStage]||b.activeLeads-a.activeLeads||b.offers-a.offers||b.saves-a.saves||b.passiveViews-a.passiveViews||String(a.creator.id).localeCompare(String(b.creator.id)));
+ const artistWorks=artists.reduce((n,a)=>n+a.works,0),topArtist=artists[0]||null;
+ const portfolio={artistCoverage:artists.length,artworkCoverage:objects.length,topArtistShare:artistWorks?Number(((topArtist?.works||0)/artistWorks).toFixed(3)):null,topArtistId:topArtist?.creator?.id||null,responseBottleneck:{overdue:Number(performance.dealerPerformance?.currentOverdue||0),medianResponseMinutes:performance.dealerPerformance?.allTimeMedianResponseMinutes??null},stageDistribution:Object.fromEntries(STAGES.map(stage=>[stage,objects.filter(x=>x.stage===stage).length])),interpretation:{descriptiveNotDemandForecast:true,noOpaqueRanking:true,noAudienceIdentityInference:true}};
  const topObjects=objects.map(x=>({
   objectId:x.objectId,objectCode:x.objectCode,title:clone(x.title),stage:x.stage,
   passive:{views:Number(x.passive?.views||0),saved:Number(x.passive?.saved||0),watching:Number(x.passive?.watching||0),editorialOpens:Number(x.passive?.editorialOpens||0)},
@@ -126,7 +160,7 @@ export async function professionalIntelligenceFor(account,{limit=20}={}){
    overdueResponses:Number(performance.dealerPerformance?.currentOverdue||0),
    medianResponseMinutes:performance.dealerPerformance?.allTimeMedianResponseMinutes??null
   },
-  artists,topObjects,
+  artists,topObjects,portfolio,
   contentEvidence:{
    model:performance.attribution?.model||'TEMPORAL_OBJECT_LEVEL_EVIDENCE',
    objectsWithPriorEvidence:Number(performance.attribution?.objectsWithEvidence||0),
@@ -168,6 +202,14 @@ export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}
  ]);
  const evidence=evidenceSummary(o),revList=revisions?.revisions||[],revisionEvidenceCount=sum(revList,x=>Number(x.evidence?.count||0));
  const literature=arr(o.literature),exhibitions=arr(o.exhibitions),questions=researchQuestions(o,creators,market);
+ const evidenceCoverage={
+  attribution:{state:readinessState(creators.length,{complete:1,partial:1}),count:creators.length},
+  provenance:{state:readinessState(evidence.provenanceEvents,{complete:2,partial:1}),count:evidence.provenanceEvents},
+  bibliography:{state:readinessState(literature.length,{complete:2,partial:1}),count:literature.length},
+  exhibitionHistory:{state:readinessState(exhibitions.length,{complete:2,partial:1}),count:exhibitions.length},
+  revisions:{state:readinessState(revList.length,{complete:2,partial:1}),count:revList.length},
+  marketComparables:{state:readinessState(market?.summary?.comparables||0,{complete:2,partial:1}),count:Number(market?.summary?.comparables||0)}
+ };
  return{
   generatedAt:new Date().toISOString(),
   artwork:{
@@ -191,6 +233,7 @@ export async function scholarlyMarketIntelligenceFor(objectId,{marketLimit=8}={}
    items:clone(market?.items||[]),
    interpretation:'CATALOGUE_COMPARABLES_NOT_APPRAISAL'
   },
+  evidenceCoverage,
   openResearchQuestions:questions,
   boundaries:{
    authenticityScore:false,
