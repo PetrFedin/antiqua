@@ -23,6 +23,33 @@ function unresolvedEntry(entry){
   return !entry.evidenceRef || !status || ['UNVERIFIED','UNKNOWN','PENDING','DISPUTED','UNRESOLVED','CANDIDATE'].includes(status);
 }
 
+export const EVIDENCE_GAP_CODES=Object.freeze([
+  'NO_PROVENANCE_EVENTS',
+  'MISSING_EVIDENCE_REFERENCE',
+  'UNRESOLVED_EVIDENCE_STATUS',
+  'UNCLASSIFIED_EVIDENCE',
+  'CONFLICTING_ASSERTION'
+]);
+
+function eventGapCodes(entry){
+  const gaps=[];
+  const status=up(entry.evidenceStatus);
+  if(!entry.evidenceRef)gaps.push('MISSING_EVIDENCE_REFERENCE');
+  if(!status||['UNVERIFIED','UNKNOWN','PENDING','DISPUTED','UNRESOLVED','CANDIDATE'].includes(status))gaps.push('UNRESOLVED_EVIDENCE_STATUS');
+  if(evidenceClass(entry.evidenceClass)==='UNSPECIFIED')gaps.push('UNCLASSIFIED_EVIDENCE');
+  if(entry?.event?.conflict===true||up(entry?.event?.status)==='CONFLICT')gaps.push('CONFLICTING_ASSERTION');
+  return gaps;
+}
+
+function summarizeGapIndex(rows){
+  const eventGaps=rows.map(row=>({eventId:String(row.id),codes:eventGapCodes(row)})).filter(x=>x.codes.length);
+  const byCode=Object.fromEntries(EVIDENCE_GAP_CODES.map(code=>[code,0]));
+  if(rows.length===0)byCode.NO_PROVENANCE_EVENTS=1;
+  for(const item of eventGaps)for(const code of item.codes)byCode[code]+=1;
+  const totalGaps=Object.values(byCode).reduce((a,b)=>a+Number(b||0),0);
+  return {totalGaps,byCode,eventGaps};
+}
+
 export function buildProvenanceEvidencePassport({object,latestRevision=null,entries=[]}={}){
   if(!object?.id)throw Object.assign(new Error('Object required'),{code:'PROVENANCE_PASSPORT_OBJECT_REQUIRED'});
   const normalized=[...entries].sort((a,b)=>Number(a.sequenceNo)-Number(b.sequenceNo)||String(a.id).localeCompare(String(b.id))).map(raw=>({
@@ -38,6 +65,7 @@ export function buildProvenanceEvidencePassport({object,latestRevision=null,entr
   }));
   const unresolved=normalized.filter(x=>x.unresolved).map(x=>x.id);
   const conflicts=normalized.filter(x=>x.conflict).map(x=>x.id);
+  const gapIndex=summarizeGapIndex(normalized);
   const attributionStatus=String(object?.passport?.attributionStatus||object?.attributionStatus||'UNSPECIFIED');
   const canonical={
     schemaVersion:PROVENANCE_PASSPORT_VERSION,
@@ -62,7 +90,8 @@ export function buildProvenanceEvidencePassport({object,latestRevision=null,entr
       byClass:Object.fromEntries(EVIDENCE_CLASSES.map(c=>[c,normalized.filter(x=>x.evidenceClass===c).length])),
       unresolvedEventIds:unresolved,
       conflictEventIds:conflicts,
-      completeness:normalized.length===0?'EMPTY':conflicts.length?'CONFLICTED':unresolved.length?'INCOMPLETE':'EVIDENCED'
+      completeness:normalized.length===0?'EMPTY':conflicts.length?'CONFLICTED':unresolved.length?'INCOMPLETE':'EVIDENCED',
+      gapIndex
     },
     assertions:{
       authenticityCertified:false,
@@ -98,11 +127,14 @@ export function buildProvenanceEvidenceOverview({objects=[],entries=[]}={}){
     const unresolved=rows.filter(unresolvedEntry).length;
     const conflicts=rows.filter(row=>row?.event?.conflict===true||row?.event?.status==='CONFLICT').length;
     const completeness=rows.length===0?'EMPTY':conflicts?'CONFLICTED':unresolved?'INCOMPLETE':'EVIDENCED';
+    const gapIndex=summarizeGapIndex(rows);
     return {
       objectId:String(object.id),
       eventCount:rows.length,
       unresolvedEvents:unresolved,
       conflictEvents:conflicts,
+      gapCount:gapIndex.totalGaps,
+      gapCodes:Object.entries(gapIndex.byCode).filter(([,count])=>count>0).map(([code])=>code),
       completeness
     };
   });
@@ -125,6 +157,8 @@ export function buildProvenanceEvidenceOverview({objects=[],entries=[]}={}){
     conflictedWorks:works.filter(x=>x.completeness==='CONFLICTED').length,
     emptyWorks:works.filter(x=>x.completeness==='EMPTY').length,
     evidenceClasses:classCounts,
+    evidenceGaps:Object.fromEntries(EVIDENCE_GAP_CODES.map(code=>[code,works.reduce((sum,work)=>sum+(work.gapCodes.includes(code)?1:0),0)])),
+    worksWithEvidenceGaps:works.filter(x=>x.gapCount>0).length,
     works,
     assertions:{
       authenticityCertified:false,
