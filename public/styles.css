@@ -727,6 +727,20 @@ body{overflow-x:hidden}
 .showcase-intelligence-formula strong{font:400 24px/1 Georgia,serif}.showcase-intelligence-formula b{font-size:10px;font-weight:500}.showcase-intelligence-formula span{color:var(--muted)}
 @media(max-width:760px){.showcase-intelligence-grid{grid-template-columns:1fr}.showcase-intelligence-grid article{min-height:190px}}
 
+
+/* ---- v0.45 · Decision Intelligence ---- */
+.intelligence-strategy-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 18px}
+.intelligence-strategy-grid article{min-height:110px;padding:12px;background:#efe8df;border-top:1px solid var(--line);display:grid;align-content:space-between}
+.intelligence-strategy-grid strong{font:400 24px/1 Georgia,serif;overflow-wrap:anywhere}.intelligence-strategy-grid span{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.intelligence-dimension-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:28px}
+.intelligence-dimension-rail>div{padding:12px;border:1px solid var(--line);min-height:120px}.intelligence-dimension-rail span{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.intelligence-dimension-rail p{margin:18px 0 0;font:400 14px/1.55 Georgia,serif}
+.intelligence-stage-rail{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:28px}
+.intelligence-stage-rail>div{padding:10px;border-right:1px solid var(--line);display:grid;gap:10px}.intelligence-stage-rail>div:last-child{border-right:0}.intelligence-stage-rail span{font-size:7px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.intelligence-stage-rail strong{font:400 22px/1 Georgia,serif}
+.v44-evidence-map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:18px 0 24px}.v44-evidence-map>div{padding:12px;border:1px solid var(--line);min-height:110px;display:grid;align-content:space-between}.v44-evidence-map span{font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.v44-evidence-map strong{font:400 16px/1 Georgia,serif}.v44-evidence-map small{font-size:8px;color:var(--muted)}
+.v44-evidence-map [data-evidence-state="PRESENT"]{background:#e7eee6}.v44-evidence-map [data-evidence-state="PARTIAL"]{background:#efe9dc}.v44-evidence-map [data-evidence-state="MISSING"]{background:#f0e0dc}
+@media(max-width:980px){.intelligence-strategy-grid,.intelligence-dimension-rail{grid-template-columns:repeat(2,1fr)}.intelligence-stage-rail{display:flex;overflow-x:auto}.intelligence-stage-rail>div{flex:0 0 120px}.v44-evidence-map{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.intelligence-strategy-grid,.intelligence-dimension-rail,.v44-evidence-map{grid-template-columns:1fr}.intelligence-stage-rail{margin-left:-16px;margin-right:-16px;padding:0 16px;border:0;gap:8px}.intelligence-stage-rail>div{border:1px solid var(--line)}}
+
 /* ---- v0.32 · Dealer Interest Signals ---- */
 .dealer-interest-v32{border-top:1px solid var(--line);padding-top:38px}
 .dealer-interest-v32 .block-head p{max-width:900px}
