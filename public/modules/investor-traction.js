@@ -2,19 +2,20 @@ import {safe,copy,esc} from './core.js';
 
 const badge=(state)=>`<span class="traction-badge traction-${String(state).toLowerCase().replaceAll(' ','-')}">${esc(state)}</span>`;
 const fmt=v=>v==null?'—':String(v);
+const moneyMap=m=>Object.keys(m||{}).length?Object.entries(m).map(([c,v])=>new Intl.NumberFormat(undefined,{style:'currency',currency:c,maximumFractionDigits:2}).format(Number(v||0)/100)).join(' · '):'—';
 const metric=(label,value,state,detail)=>`<article class="traction-metric"><div>${badge(state)}<span>${esc(label)}</span></div><strong>${esc(fmt(value))}</strong><small>${esc(detail||'')}</small></article>`;
 
-function structuralMetrics(health){
- const dbReady=Boolean(health?.persistence?.persistent);
+function structuralMetrics(health,commercial){
+ const dbReady=Boolean(health?.persistence?.persistent),hasCommercial=commercial?.persistence==='POSTGRES';
  return[
   {label:copy('Production readiness','Production readiness'),value:dbReady?'POSTGRES':'MEMORY_FALLBACK',state:dbReady?'PRODUCT CAPABILITY':'MISSING',detail:copy('Фактический persistence status текущего runtime.','Actual persistence state of the current runtime.')},
-  {label:copy('Активные реальные пилоты','Active real pilots'),value:null,state:'MISSING',detail:copy('Появится только из pilot authority после фактического запуска.','Populated only from pilot authority after a real launch.')},
-  {label:copy('Платные пилоты','Paid pilots'),value:null,state:'MISSING',detail:copy('Требуется фактический fee + payment evidence.','Requires actual fee + payment evidence.')},
-  {label:copy('Полученные деньги','Cash received'),value:null,state:'MISSING',detail:copy('Никаких forecast/LOI вместо cash.','No forecast or LOI is treated as cash.')},
+  {label:copy('Активные реальные пилоты','Active real pilots'),value:hasCommercial?commercial.activePilots:null,state:hasCommercial?'PILOT TELEMETRY':'MISSING',detail:copy('Считаются только записи Pilot Authority.','Counted only from Pilot Authority records.')},
+  {label:copy('Платные пилоты','Paid pilots'),value:hasCommercial?commercial.paidPilots:null,state:commercial?.paidPilots>0?'VERIFIED CASH':hasCommercial?'PILOT TELEMETRY':'MISSING',detail:copy('Пилот становится paid только при PAYMENT_RECEIVED.','A pilot becomes paid only with PAYMENT_RECEIVED.')},
+  {label:copy('Полученные деньги','Cash received'),value:hasCommercial?moneyMap(commercial.cashReceivedMinorByCurrency):null,state:commercial?.paidPilots>0?'VERIFIED CASH':hasCommercial?'PILOT TELEMETRY':'MISSING',detail:copy('Quote, LOI и invoice сюда не входят.','Quote, LOI and invoice are excluded.')},
   {label:copy('D30 retained paid partners','D30 retained paid partners'),value:null,state:'MISSING',detail:copy('Появится после первого когорного окна.','Available only after the first eligible cohort window.')},
   {label:copy('Eligible completed GMV','Eligible completed GMV'),value:null,state:'MISSING',detail:copy('Только завершённые сделки eligible works.','Completed transactions on eligible works only.')},
   {label:copy('Recurring revenue share','Recurring revenue share'),value:null,state:'MISSING',detail:copy('Нужна фактическая revenue mix.','Requires actual revenue mix.')},
-  {label:copy('Gross contribution','Gross contribution'),value:null,state:'MISSING',detail:copy('Cash revenue − direct onboarding/support/provider cost.','Cash revenue − direct onboarding/support/provider cost.')}
+  {label:copy('Gross contribution','Gross contribution'),value:hasCommercial?moneyMap(commercial.grossContributionMinorByCurrency):null,state:commercial?.paidPilots>0?'VERIFIED CASH':hasCommercial?'PILOT TELEMETRY':'MISSING',detail:copy('Cash − refunds − direct onboarding/support/provider cost.','Cash − refunds − direct onboarding/support/provider cost.')}
  ];
 }
 
@@ -31,14 +32,16 @@ const evidenceRows=[
 ];
 
 export async function investorTractionView(){
- const [health,pilotCaps,partnerCaps,creatorCaps]=await Promise.all([
+ const [health,pilotCaps,partnerCaps,creatorCaps,commercialCaps,commercialAggregate]=await Promise.all([
   safe('/api/health'),
   safe('/api/pilot/commercial-proof/capabilities'),
   safe('/api/partner/pilot-analytics/capabilities'),
-  safe('/api/creators/capabilities')
+  safe('/api/creators/capabilities'),
+  safe('/api/commercial-evidence/capabilities'),
+  safe('/api/operator/investor-commercial-aggregate')
  ]);
- const metrics=structuralMetrics(health||{});
- const capabilityCount=[pilotCaps?.capabilities,partnerCaps?.capabilities,creatorCaps?.capabilities].filter(Boolean).length;
+ const commercial=commercialAggregate?.commercial||null,metrics=structuralMetrics(health||{},commercial);
+ const capabilityCount=[pilotCaps?.capabilities,partnerCaps?.capabilities,creatorCaps?.capabilities,commercialCaps?.capabilities].filter(Boolean).length;
  return `<main class="traction-page page section">
  <section class="traction-hero">
   <div><div class="eyebrow">INVESTOR TRACTION CONTROL</div><h1>${copy('Только доказанные цифры','Only evidence-backed numbers')}</h1><p>${copy('Этот экран специально не заполняется “красивыми” прогнозами. Пока нет факта — стоит MISSING. Когда появятся real pilots, pricing, retention и cash, те же ячейки станут доказательной историей компании.','This surface deliberately avoids decorative forecasts. If a fact does not exist, it stays MISSING. Once real pilots, pricing, retention and cash exist, the same cells become the company evidence trail.')}</p></div>
@@ -48,6 +51,8 @@ export async function investorTractionView(){
  <section class="traction-block"><div class="section-head"><div><div class="eyebrow">EXECUTIVE STRIP</div><h2>${copy('Что инвестор может считать фактом сегодня','What an investor can treat as fact today')}</h2></div></div><div class="traction-metric-grid">${metrics.map(x=>metric(x.label,x.value,x.state,x.detail)).join('')}</div></section>
 
  <section class="traction-block"><div class="section-head"><div><div class="eyebrow">PARTNER FUNNEL</div><h2>${copy('Коммерческая воронка без подмены pipeline выручкой','Commercial funnel without treating pipeline as revenue')}</h2></div></div><div class="traction-funnel">${stages.map(([name,state],i)=>`<div><b>${String(i+1).padStart(2,'0')}</b><strong>${esc(name)}</strong>${badge(state)}<small>—</small></div>`).join('')}</div></section>
+
+ <section class="traction-block"><div class="section-head"><div><div class="eyebrow">COMMERCIAL EVIDENCE AUTHORITY · v0.46</div><h2>${copy('Что считается деньгами — и что ими не является','What counts as money — and what does not')}</h2><p>${copy('Quote → written acceptance → invoice → cash → direct cost → renewal фиксируются отдельными подписанными событиями. Только payment формирует cash.','Quote → written acceptance → invoice → cash → direct cost → renewal are separate signed events. Only payment creates cash.')}</p></div></div><div class="traction-evidence-table"><div class="head"><span>Event</span><span>${copy('Экономический статус','Economic status')}</span><span>${copy('Правило','Rule')}</span></div><div><strong>QUOTE / LOI</strong><span>${badge('NOT REVENUE')}</span><p>${copy('Коммерческая гипотеза или намерение.','Commercial hypothesis or intent.')}</p></div><div><strong>INVOICE</strong><span>${badge('NOT CASH')}</span><p>${copy('Создаёт требование к оплате, но не cash.','Creates a receivable, not cash.')}</p></div><div><strong>PAYMENT_RECEIVED</strong><span>${badge('VERIFIED CASH')}</span><p>${copy('Единственное событие, увеличивающее подтверждённый cash.','The only event that increases verified cash.')}</p></div><div><strong>REFUND / DIRECT COST</strong><span>${badge('ECONOMIC ADJUSTMENT')}</span><p>${copy('Уменьшают gross contribution.','Reduce gross contribution.')}</p></div><div><strong>RENEWAL / EXPANSION</strong><span>${badge('RETENTION EVIDENCE')}</span><p>${copy('Повышает pricing confidence и подтверждает повторяемость.','Raises pricing confidence and supports repeatability.')}</p></div></div></section>
 
  <section class="traction-block"><div class="section-head"><div><div class="eyebrow">PRICING EVIDENCE</div><h2>${copy('Каждый revenue stream имеет собственный уровень доказательства','Every revenue stream has its own evidence level')}</h2></div></div><div class="traction-evidence-table"><div class="head"><span>${copy('Поток','Stream')}</span><span>${copy('Статус','Status')}</span><span>${copy('Что доказано','Evidence')}</span></div>${evidenceRows.map(x=>`<div><strong>${esc(x.stream)}</strong><span>${badge(x.status)}</span><p>${esc(x.proof)}</p></div>`).join('')}</div></section>
 
