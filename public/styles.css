@@ -778,3 +778,18 @@ body{overflow-x:hidden}
 .provenance-assertions{display:flex;gap:6px;flex-wrap:wrap}
 .provenance-assertions span{border:1px solid #d7d2c7;border-radius:999px;padding:5px 8px;font-size:9px}
 @media(max-width:700px){.provenance-passport-metrics{grid-template-columns:1fr 1fr}.provenance-evidence-events article{grid-template-columns:1fr}}
+
+/* v0.43 research evidence observatory */
+.evidence-observatory{margin:32px 0 36px;padding:24px;border:1px solid #d8d3c8;background:#f8f6f1}
+.evidence-observatory .section-head{margin-bottom:18px}
+.evidence-observatory .section-head h2{margin:5px 0 8px;max-width:820px}
+.evidence-observatory .section-head p{max-width:760px;color:#68635b}
+.evidence-observatory-grid{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid #d8d3c8}
+.evidence-observatory-grid article{padding:14px;border-right:1px solid #d8d3c8}.evidence-observatory-grid article:last-child{border-right:0}
+.evidence-observatory-grid span{display:block;font-size:9px;letter-spacing:.08em;color:#777}.evidence-observatory-grid strong{display:block;margin-top:5px;font-size:28px}
+.evidence-observatory-events{display:flex;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid #ddd7cd}.evidence-observatory-events span{color:#777;font-size:12px}
+.evidence-class-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px;margin-top:14px}.evidence-class-grid>div{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #e1ddd5}.evidence-class-grid b{font-size:9px}.evidence-class-grid span{font-weight:700}
+.evidence-observatory-proof{margin-top:14px;padding-top:12px;border-top:1px solid #ddd7cd}.evidence-observatory-proof span{display:block;font-size:9px;color:#777}.evidence-observatory-proof code{display:block;margin-top:5px;font-size:10px;overflow-wrap:anywhere}
+.evidence-observatory-boundary{margin:12px 0 0;font-size:12px;line-height:1.55;color:#665f55}
+@media(max-width:900px){.evidence-observatory-grid{grid-template-columns:repeat(3,1fr)}.evidence-observatory-grid article:nth-child(3){border-right:0}.evidence-observatory-grid article:nth-child(-n+3){border-bottom:1px solid #d8d3c8}}
+@media(max-width:560px){.evidence-observatory{padding:16px}.evidence-observatory-grid{grid-template-columns:1fr 1fr}.evidence-observatory-grid article:nth-child(odd){border-right:1px solid #d8d3c8}.evidence-observatory-grid article:nth-child(even){border-right:0}.evidence-observatory-events{display:grid}}
