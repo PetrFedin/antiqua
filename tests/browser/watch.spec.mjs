@@ -24,15 +24,15 @@ test('WATCH turns dossier follow into watchlist and readable seller-change notif
   await dialog.locator('[data-close-dialog]').click();
 
   await page.goto('/#account',{waitUntil:'domcontentloaded'});
-  const watchlist=page.locator('#watchlistV19');await expect(watchlist).toBeVisible();await expect(watchlist).toContainText(/Ореховый комод|A walnut commode/i);await expect(watchlist.locator('[data-watch="lot-109"]')).toBeVisible();
+  const watchlist=page.locator('#watchlistV19');await expect(watchlist).toBeVisible();await expect(watchlist).toContainText(/Вид через лагуну|View across the lagoon/i);await expect(watchlist.locator('[data-watch="lot-109"]')).toBeVisible();
 
   const seller=await demoLogin(page,'SELLER');expect(seller.status).toBe(200);
   const changed=await mutateListing(page,seller.body.csrf,Number(originalPrice)-100);expect(changed.status).toBe(200);expect(changed.body.watch?.subscribers).toBeGreaterThanOrEqual(1);
 
   const buyerAgain=await demoLogin(page,'BUYER');expect(buyerAgain.status).toBe(200);buyerCsrf=buyerAgain.body.csrf;
   await page.reload({waitUntil:'domcontentloaded'});
-  const item=page.locator('.activity-item').filter({hasText:/Изменение наблюдаемого предмета|Watched object changed/i}).first();
-  await expect(item).toBeVisible();await expect(item).toContainText(/Ореховый комод|A walnut commode/i);await expect(item).toContainText(/Цена|Price/i);
+  const item=page.locator('.activity-item').filter({hasText:/Изменение наблюдаемого произведения|Watched artwork changed|Изменение наблюдаемого предмета|Watched object changed/i}).first();
+  await expect(item).toBeVisible();await expect(item).toContainText(/Вид через лагуну|View across the lagoon/i);await expect(item).toContainText(/Цена|Price/i);
 
   const stop=page.locator('#watchlistV19 [data-watch="lot-109"]');await expect(stop).toBeVisible();
   const stoppedResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/lots/lot-109/alert'&&r.request().method()==='POST');
