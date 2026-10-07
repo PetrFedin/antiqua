@@ -2411,3 +2411,128 @@ Export and citation remain first-class; lock-in comes from the compound research
 **Sequencing:** Provenance Passport -> interchange profile -> reference catalogue -> institutional contributors -> federated publishing -> identity resolution -> consortium/API licensing.
 
 **Moat:** Antiqua becomes shared provenance/research infrastructure whose value increases with every institutionally sourced and scholarly reviewed relationship.
+
+
+## 2026-10-07 — Scholarly Attestation Trust Runtime
+
+The attestation layer must preserve scholarly disagreement. External signatures authenticate who made an assertion and against which revision; they do not make the assertion true.
+
+### Standards baseline
+
+- W3C Verifiable Credentials Data Model 2.0: https://www.w3.org/TR/vc-data-model-2.0/
+- W3C Bitstring Status List v1.0: https://www.w3.org/TR/vc-bitstring-status-list/
+- OpenID4VCI / OpenID4VP for scoped contributor credentials;
+- OpenID Federation 1.0 for bounded institutional trust networks.
+
+### Institution / Expert Key Lifecycle — P0
+
+Persistent issuer metadata:
+
+`PROVISIONED -> ACTIVE -> VERIFY_ONLY -> RETIRED / COMPROMISED`.
+
+Every attestation binds to:
+
+- issuer;
+- key;
+- immutable passport revision;
+- assertion type/scope;
+- evidence reference;
+- issued_at;
+- credential hash.
+
+Normal key rotation must not destroy historical scholarly verification.
+
+### Signed Attestation Status — P0
+
+Expose machine-readable current status:
+
+- ACTIVE;
+- REVOKED;
+- HISTORICAL;
+- ISSUER_SUSPENDED;
+- KEY_COMPROMISED.
+
+The status surface must not expose private owner/dealer evidence.
+
+### Scholarly Presentation Protocol — P1
+
+A museum/estate/researcher should be able to present the minimum required proof:
+
+- institutional affiliation;
+- committee role;
+- scoped review participation;
+- exact attestation.
+
+OpenID4VP-compatible presentation can be supported where useful, without requiring a consumer wallet for normal web verification.
+
+### Institutional Federation — P1
+
+For consortium research, define which institutions may issue which role credentials.
+
+Federation trust never means:
+
+- automatic canonical overwrite;
+- universal authenticity authority;
+- access to private collection data.
+
+### Attestation Transparency Log — P1
+
+Create an append-only public-safe log containing hashes/metadata of:
+
+- received attestation;
+- revoke;
+- key rotation;
+- revision supersession.
+
+Purpose: prove chronology and detect silent historical rewriting. Private evidence content stays outside the public log.
+
+### Research Agent Verification API — P1
+
+AI/research agents may query:
+
+`work -> current revision -> assertions -> conflicts -> source classes -> attestations -> gaps`.
+
+Every machine answer must preserve:
+
+- canonical vs contested vs unverified;
+- source class;
+- revision;
+- evidence gap;
+- current/historical attestation state.
+
+Agent output can propose research tasks but never fabricate missing provenance.
+
+### Institutional Due-Diligence Room — P1
+
+For a museum, insurer, lender, collector or estate, produce a scoped dossier:
+
+- public passport;
+- permitted private evidence;
+- active/historical attestations;
+- conflicts/gaps;
+- rights state;
+- revision chain;
+- verification receipt.
+
+Access is purpose/role scoped and fully audited.
+
+### Commercial products
+
+- institutional verification API;
+- catalogue-raisonné trust workspace;
+- museum/estate federation gateway;
+- private due-diligence room;
+- insurer/lender provenance package;
+- scholarly contributor credential service;
+- licensed research-agent API.
+
+### Acceptance gate
+
+- SUPPORT and CONTRADICT coexist without winner mutation;
+- key rotation preserves old signature verification;
+- revoked attestation remains in historical graph;
+- new passport revision makes prior scoped assertions historical, not deleted;
+- public log contains no private owner/dealer evidence;
+- research-agent responses preserve uncertainty and evidence gaps.
+
+**Economic effect:** Antiqua can monetize institutional research, due diligence, verification and federation while its defensibility compounds through signed scholarly history rather than opaque authenticity scoring.
