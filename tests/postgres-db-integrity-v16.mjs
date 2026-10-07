@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {migrationManifest} from '../migration-manifest-v16.mjs';
 
-if(!process.env.DATABASE_URL){console.log('ANTIQUA PostgreSQL DB integrity: manifest 001..033 + FK/orphan prevention + exact shipment source + cross-aggregate consistency + Money/media guards passed');process.exit(0)}
+if(!process.env.DATABASE_URL){console.log('ANTIQUA PostgreSQL DB integrity: SKIPPED (DATABASE_URL not set)');process.exit(0)}
 
 const {db}=await import('../runtime-v09.mjs');
 const token=crypto.randomUUID().replaceAll('-','');
