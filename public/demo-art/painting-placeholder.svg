@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+<rect width="900" height="1200" fill="#e9e0d1"/>
+<rect x="62" y="64" width="776" height="1072" fill="#203044"/>
+<path d="M0 820 L190 600 L330 715 L500 480 L690 700 L900 545 L900 1200 L0 1200Z" fill="#8b6a4d"/>
+<path d="M0 930 Q230 820 450 930 T900 885" fill="none" stroke="#d8c5a8" stroke-width="34" opacity=".82"/>
+<circle cx="690" cy="260" r="88" fill="#d9b77c" opacity=".72"/>
+<title>ANTIQUA demonstration painting</title>
+</svg>

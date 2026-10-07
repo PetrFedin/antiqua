@@ -157,14 +157,14 @@ test('seller workspace creates complete object drafts and safely toggles storefr
   const form=page.locator('#sellerDraftCreateForm');await expect(form).toBeVisible();
   const token=Date.now().toString();
   const values={
-    titleRu:`Браузерный предмет ${token}`,titleEn:`Browser object ${token}`,
-    categoryRu:'Декоративное искусство',categoryEn:'Decorative Arts',
-    makerRu:'Тестовый мастер',makerEn:'Test maker',
+    titleRu:`Браузерная картина ${token}`,titleEn:`Browser painting ${token}`,
+    categoryRu:'Живопись',categoryEn:'Painting',
+    makerRu:'Тестовая школа',makerEn:'Test school',
     periodRu:'XX век',periodEn:'20th century',
     originRu:'Франция',originEn:'France',
-    materialsRu:'Бронза',materialsEn:'Bronze',
+    materialsRu:'Холст, масло',materialsEn:'Oil on canvas',
     dimensionsRu:'20 × 10 см',dimensionsEn:'20 × 10 cm',
-    descriptionRu:'Описание предмета для браузерного теста',descriptionEn:'Object description for browser proof',
+    descriptionRu:'Описание картины для браузерного теста',descriptionEn:'Painting description for browser proof',
     provenanceRu:'Частная коллекция, тестовая запись',provenanceEn:'Private collection, test record',
     conditionRu:'Хорошее состояние',conditionEn:'Good condition',
     shippingFrom:'Paris'

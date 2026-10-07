@@ -49,7 +49,7 @@ async function advanceShipmentToDelivered(page,operator,shipmentId){
 }
 
 test('public auction result moves from hammer to completed sale without leaking identities',async({page},testInfo)=>{
- const cfg=testInfo.project.name.includes('mobile')?{auctionId:'auc-104',lotId:'lot-104',secondMax:8500}:{auctionId:'auc-105',lotId:'lot-105',secondMax:7600};
+ const cfg=testInfo.project.name.includes('mobile')?{auctionId:'auc-104',lotId:'lot-104',secondMax:9000}:{auctionId:'auc-105',lotId:'lot-105',secondMax:22000};
  await page.goto('/',{waitUntil:'domcontentloaded'});
  let result=await publicResult(page,cfg.auctionId);expect(result.status).toBe(200);
 

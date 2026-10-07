@@ -1,4 +1,5 @@
 import {db,lots,listings,auctions,lot,publicAuction,bi} from './runtime-v09.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const norm=v=>String(v?.en??v??'').trim().toLowerCase().replace(/[‐‑‒–—]/g,'-');
 const words=v=>new Set(norm(v).split(/[^a-z0-9]+/).filter(x=>x.length>2&&!['the','and','with','style','century'].includes(x)));
@@ -51,12 +52,12 @@ function publicItem(x){
 }
 export function similarityCapabilities(){return{method:'CATALOGUE_RULES_V1',ranking:'LEXICOGRAPHIC_EXPLAINABLE',personalized:false,behavioralInputs:false,opaqueScore:false,reasonCodes:['SAME_MAKER','SAME_DEPARTMENT','MATERIAL_OVERLAP','PERIOD_OVERLAP','SAME_ORIGIN','PRICE_PROXIMITY']}}
 async function publicObjectIds(){
- if(db.kind!=='POSTGRES')return new Set(lots.map(x=>x.id));
- const rows=(await db.pool.query("SELECT id FROM objects WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'")).rows;
- return new Set(rows.map(x=>String(x.id)));
+ if(db.kind!=='POSTGRES')return new Set(lots.filter(x=>isPaintingCategory(x.department)).map(x=>x.id));
+ const rows=(await db.pool.query("SELECT id,passport FROM objects WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'")).rows;
+ return new Set(rows.filter(x=>isPaintingCategory(x.passport?.department||x.passport?.category)).map(x=>String(x.id)));
 }
 export async function similarObjectsFor(objectId,{limit=4}={}){
- const source=lot(String(objectId||''));if(!source)return null;
+ const source=lot(String(objectId||''));if(!source||!isPaintingCategory(source.department))return null;
  const visible=await publicObjectIds();if(!visible.has(source.id))return null;
  limit=Math.max(1,Math.min(12,Number(limit)||4));
  const rows=lots.filter(x=>x.id!==source.id&&visible.has(x.id)).map(x=>compareCandidate(source,x)).filter(Boolean).sort(cmp).slice(0,limit).map(publicItem);

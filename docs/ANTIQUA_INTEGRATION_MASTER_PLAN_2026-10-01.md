@@ -47,7 +47,7 @@ Do not reuse another project's DB.
 
 ## Product reset — Gallery-first Art Platform
 
-**Decision:** Antiqua is now oriented first around paintings and works on paper: painting, drawing, graphics, engraving, printmaking and adjacent visual-art categories. The reset is product-level, not a technical rewrite.
+**Decision — superseded on 2026-10-07:** Antiqua is now a paintings-only platform in its public and professional product. Supported painterly media are oil, acrylic, tempera, watercolor, gouache and pastel. Standalone drawing, printmaking, engraving, etching, lithography, sculpture, decorative art, furniture, ceramics, jewelry, clocks, manuscripts and generic antiques are out of scope. The existing Object Authority remains only as the internal technical identity for Artwork records; it is not a public product category.
 
 ### Public product promise
 **Discover art → understand the work and artist → learn → save/collect → attend → bid/buy when relevant.**
@@ -62,7 +62,7 @@ Commercial journey:
 `Artwork → Auction lot → Watch → Bid → Result → Collection/ownership record`
 
 ### Public information architecture
-1. **Gallery** — image-first discovery of paintings, drawings, graphics, engravings and prints.
+1. **Gallery** — image-first discovery of paintings and painterly works only.
 2. **Artists** — creator pages, periods, works, exhibitions, editorial context and related artists.
 3. **Artworks** — high-quality media, object facts, provenance/research depth, related works and auction state where applicable.
 4. **Collections** — saved works, personal/private collections, curated/public collections and collection records.
@@ -72,18 +72,15 @@ Commercial journey:
 8. **For professionals** — dealer/pilot/evidence tools remain available only as a secondary/backstage professional surface.
 
 ### Scope boundary
-Initial taxonomy prioritizes:
-- painting;
-- drawing;
-- graphics;
-- engraving;
-- etching;
-- lithography;
-- woodcut/linocut;
-- screenprint and other artist prints;
-- watercolor/gouache/pastel and related works on paper.
+Current authoritative taxonomy is paintings-only:
+- oil painting;
+- acrylic painting;
+- tempera;
+- watercolor;
+- gouache;
+- pastel painting.
 
-Sculpture, decorative art, photography and other object categories may remain technically supported but do not define the initial public positioning.
+Standalone drawing, printmaking/prints, sculpture, decorative art, photography, furniture, ceramics, jewelry, clocks, manuscripts and generic antiques are excluded from ingestion, publication and public discovery. Historical generic Object Authority code may remain internally for identifier compatibility, but it must not re-open those product categories.
 
 ### Authority reuse — no parallel systems
 - existing object/passport remains artwork authority;
@@ -577,7 +574,7 @@ Never generate a credit line from missing/uncertain data without marking the unc
 ## Gallery-first delivery sequence
 After INT-00 runtime durability is proven, prioritize:
 1. consumer navigation and Home/Gallery hierarchy;
-2. painting/works-on-paper taxonomy;
+2. paintings-only taxonomy and publication guard;
 3. Artwork → Artist → Related Works continuity;
 4. Collections + Taste Graph personalized discovery;
 5. Books/Courses/Events cultural-content graph;
@@ -639,7 +636,7 @@ Only then open the Collections/Taste implementation slice.
 
 ## Product expansion — Antiqua Art Network
 
-**Direction:** Antiqua is a focused digital ecosystem for painting, drawing, graphics, engraving/printmaking and adjacent works on paper. It brings together people and institutions around authoritative Artwork/Artist records instead of building a generic social network.
+**Direction — superseded on 2026-10-07:** Antiqua is a focused digital ecosystem for paintings and painterly media only. It brings together people and institutions around authoritative Artwork/Artist records instead of building a generic social network.
 
 ### Network graph
 
@@ -2536,3 +2533,55 @@ Access is purpose/role scoped and fully audited.
 - research-agent responses preserve uncertainty and evidence gaps.
 
 **Economic effect:** Antiqua can monetize institutional research, due diligence, verification and federation while its defensibility compounds through signed scholarly history rather than opaque authenticity scoring.
+
+
+## 2026-10-07 implementation checkpoint — Paintings-only product contract
+
+**Status: ACTIVE IMPLEMENTATION**
+
+This checkpoint supersedes every earlier recommendation in this document that treated standalone drawing, graphics, engraving, printmaking or generic works on paper as public ANTIQUA product categories.
+
+Authoritative product scope:
+`PAINTINGS_ONLY`
+
+Allowed public categories:
+- painting;
+- watercolor;
+- gouache;
+- tempera;
+- pastel;
+- acrylic painting.
+
+Explicitly excluded from ingestion/publication/public discovery:
+- standalone drawing;
+- etching/engraving/lithography/printmaking;
+- sculpture;
+- decorative art;
+- furniture;
+- ceramics/porcelain;
+- jewelry/silver;
+- clocks/watches;
+- manuscripts;
+- generic antiques.
+
+Architecture rule:
+`legacy Object Authority -> internal artwork identifier compatibility only`.
+It must not be used to justify reopening a generic antiques/object marketplace.
+
+Required enforcement:
+`seller ingestion -> draft editing -> submit -> catalogue review -> publish -> public catalogue -> seller inventory -> Artwork Passport -> Taste Graph`.
+
+Research/institutional layers remain valid, but their subject domain is now paintings:
+`Artwork Passport -> Provenance -> Evidence -> Scholarly Contributions -> Scoped Credentials -> Independent Verification -> Research Interchange -> Institutional Contributors`.
+
+Commercial and cultural layers remain:
+`Gallery -> Artist -> Collection -> Exhibition/Event -> Research -> Private Sale/Auction`,
+but only for artworks inside the paintings-only domain.
+
+Acceptance:
+1. no legacy antique seed cards remain in public/demo catalogues;
+2. non-painting drafts fail with `PAINTING_CATEGORY_REQUIRED`;
+3. public catalogue and recommendations cannot expose excluded categories;
+4. auctions may only surface lots whose artwork is in scope;
+5. master plan, UI copy and onboarding taxonomy use the same scope;
+6. research uncertainty/provenance rules are unchanged: narrowing the product domain must never imply stronger authenticity claims.
