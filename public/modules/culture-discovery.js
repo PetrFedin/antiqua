@@ -29,7 +29,7 @@ function objectCard(catalog,lot,saved,reason='',{dismissible=false}={}){
  if(reason)body.append(make('div','culture-match-reason',reason));
  body.append(make('div','culture-object-maker',local(lot.maker)));
  body.append(make('h3','',local(lot.title)));
- body.append(make('p','culture-object-meta',[local(lot.period),local(lot.origin)].filter(Boolean).join(' · ')));
+ body.append(make('p','culture-object-meta',[local(lot.period),local(lot.materials),local(lot.dimensions)].filter(Boolean).join(' · ')));const research=make('div','culture-object-research');research.append(make('span','',copy('Провенанс','Provenance')+' '+String(Array.isArray(local(lot.provenance))?local(lot.provenance).length:0)));research.append(make('span','',copy('Выставки','Exhibitions')+' '+String(Array.isArray(local(lot.exhibitions))?local(lot.exhibitions).length:0)));research.append(make('span','',copy('Литература','Literature')+' '+String(Array.isArray(local(lot.literature))?local(lot.literature).length:0)));body.append(research);
  body.append(make('strong','culture-object-price',displayPrice(catalog,lot)));
  const trust=make('div','culture-object-trust');trust.append(make('span','',copy('Паспорт произведения','Artwork Passport')));if(lot.conditionGrade)trust.append(make('span','',copy('Состояние ','Condition ')+lot.conditionGrade));body.append(trust);
  if(dismissible){const dismiss=make('button','text-button culture-object-dismiss',copy('Не моё','Not for me'));dismiss.type='button';dismiss.dataset.tasteDismiss=lot.id;body.append(dismiss)}
