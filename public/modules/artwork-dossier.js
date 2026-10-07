@@ -25,9 +25,9 @@ function scholarlyBlock(rows,lang){
         <p>${esc(local(x.summary,lang)||'—')}</p>
         <div class="dossier-contribution-meta"><span>${lang==='ru'?'Опубликовано':'Published'}: ${date(x.publishedAt,lang)}</span><span>${lang==='ru'?'Disclosure':'Disclosure'}: ${esc(x.disclosureStatus||'—')}</span></div>
         ${x.credentialsAtReview?.length?`<div class="dossier-credentials">${x.credentialsAtReview.map(c=>credentialCard(c,lang)).join('')}</div>`:''}
-        <small class="research-boundary">${lang==='ru'?'Credential подтверждает роль и scope, но не истинность заключения и не подлинность картины.':'A credential attests role and scope, not the truth of a conclusion or artwork authenticity.'}</small>
       </article>`;
     }).join('')}</div>`:`<p class="muted">${empty}</p>`}
+    <small class="research-boundary">${lang==='ru'?'Credential подтверждает роль и scope, но не истинность заключения и не подлинность картины.':'A credential attests role and scope, not the truth of a conclusion or artwork authenticity.'}</small>
   </section>`;
 }
 
