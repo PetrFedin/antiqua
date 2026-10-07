@@ -793,3 +793,20 @@ body{overflow-x:hidden}
 .evidence-observatory-boundary{margin:12px 0 0;font-size:12px;line-height:1.55;color:#665f55}
 @media(max-width:900px){.evidence-observatory-grid{grid-template-columns:repeat(3,1fr)}.evidence-observatory-grid article:nth-child(3){border-right:0}.evidence-observatory-grid article:nth-child(-n+3){border-bottom:1px solid #d8d3c8}}
 @media(max-width:560px){.evidence-observatory{padding:16px}.evidence-observatory-grid{grid-template-columns:1fr 1fr}.evidence-observatory-grid article:nth-child(odd){border-right:1px solid #d8d3c8}.evidence-observatory-grid article:nth-child(even){border-right:0}.evidence-observatory-events{display:grid}}
+
+
+/* v0.50 paintings-only artwork cards */
+.artwork-attribution{font-size:11px;line-height:1.45;margin-top:2px}
+.artwork-medium{margin-top:8px;font:400 14px/1.35 var(--display,Georgia,serif);color:var(--ink)}
+.artwork-dimensions{margin-top:3px;font-size:10px;color:var(--muted)}
+.artwork-research-chips,.culture-object-research{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
+.artwork-research-chips span,.culture-object-research span{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.55);font-size:8px;letter-spacing:.04em;color:var(--muted)}
+.artwork-research-chips b{font-size:9px;color:var(--ink)}
+@media(max-width:800px){
+ .artwork-medium{font-size:13px}
+ .artwork-research-chips,.culture-object-research{gap:4px;margin-top:8px}
+ .artwork-research-chips span,.culture-object-research span{padding:4px 6px;font-size:7px}
+}
+@media(max-width:560px){
+ .artwork-research-chips span:nth-child(n+3),.culture-object-research span:nth-child(n+3){display:none}
+}
