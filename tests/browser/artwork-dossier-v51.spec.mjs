@@ -36,10 +36,9 @@ test('Artwork Dossier exposes research, scholarly and market layers on responsiv
     expect(['auto','scroll']).toContain(overflow);
   }
 
-  const en=page.locator('[data-lang="en"]:visible').first();
-  if(await en.isVisible().catch(()=>false)){
-    await en.click();
-    await expect(dialog).toContainText(/Artwork history/i);
-    await expect(dialog).not.toContainText(/Object history/i);
-  }
+  const en=dialog.locator('[data-lang="en"]').first();
+  await expect(en).toBeVisible();
+  await en.click();
+  await expect(dialog).toContainText(/Artwork history/i);
+  await expect(dialog).not.toContainText(/Object history/i);
 });
