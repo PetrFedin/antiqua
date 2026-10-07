@@ -155,7 +155,7 @@ export async function provenanceAttestationGraph(objectId){
       a.received_at AS "receivedAt",a.revoked_at AS "revokedAt",a.revocation_reason AS "revocationReason"
       FROM provenance_attestations a JOIN provenance_attestation_issuers i ON i.id=a.issuer_id
       WHERE a.object_id=$1 ORDER BY a.issued_at DESC,a.id`,[objectId])).rows;
-  }else rows=[...memoryAttestations.values()].filter(x=>x.objectId===objectId).map(structuredClone);
+  }else rows=[...memoryAttestations.values()].filter(x=>x.objectId===objectId).map(x=>structuredClone(x));
   const latest=await latestRevision(objectId);
   const annotated=rows.map(row=>({...row,currentRevision:latest?row.passportRevisionId===latest.id:false}));
   const activeCurrent=annotated.filter(x=>x.status==='ACTIVE'&&x.currentRevision);
