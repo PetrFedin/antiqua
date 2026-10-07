@@ -12,7 +12,7 @@ function updateBrandShell(){
  if(line)line.textContent=copy('ANTIQUA · МИР ИСКУССТВА','ANTIQUA · WORLD OF ART');
  if(promise)promise.textContent=copy('Художники · Произведения · Знание · Коллекционирование','Artists · Artworks · Knowledge · Collecting');
  if(footer)footer.textContent=copy('Мир искусства','World of Art');
- if(footerPromise)footerPromise.textContent=copy('Живопись · Графика · Гравюра · История · Коллекционирование','Painting · Works on paper · Prints · History · Collecting');
+ if(footerPromise)footerPromise.textContent=copy('Живопись · Провенанс · Выставки · Коллекционирование','Painting · Provenance · Exhibitions · Collecting');
 }
 
 function listingFor(catalog,id){return (catalog.listings||[]).find(x=>x.lotId===id)||null}
@@ -65,7 +65,7 @@ function feature(data){
 
 function hero(data){
  const f=feature(data),section=make('section','culture-hero');section.dataset.cultureHero='';
- const copyBox=make('div','culture-hero-copy');copyBox.append(make('div','eyebrow','ANTIQUA'));copyBox.append(make('h1','',copy('Мир искусства','World of Art')));copyBox.append(make('p','',copy('Живопись, графика и гравюра — через художников, историю, происхождение, коллекции и новые открытия.','Painting, works on paper and prints through artists, history, provenance, collections and discovery.')));copyBox.append(make('small','',copy('Открывайте произведения, изучайте художников, собирайте собственный взгляд на искусство и находите события вокруг него.','Discover works, explore artists, build your own view of art and find the events around it.')));
+ const copyBox=make('div','culture-hero-copy');copyBox.append(make('div','eyebrow','ANTIQUA'));copyBox.append(make('h1','',copy('Мир искусства','World of Art')));copyBox.append(make('p','',copy('Живопись — через художников, историю, происхождение, коллекции, выставки и новые открытия.','Painting through artists, history, provenance, collections, exhibitions and discovery.')));copyBox.append(make('small','',copy('Открывайте произведения, изучайте художников, собирайте собственный взгляд на искусство и находите события вокруг него.','Discover works, explore artists, build your own view of art and find the events around it.')));
  const actions=make('div','culture-hero-actions'),discover=make('button','primary-button',copy('Открывать искусство','Discover art'));discover.type='button';discover.addEventListener('click',()=>q('#cultureCatalogue')?.scrollIntoView({behavior:'smooth',block:'start'}));actions.append(discover);if(f.live){const link=make('a','secondary-button culture-hero-link',copy('Кураторская история','Curated story'));link.href='#exhibition/'+f.live.id;actions.append(link)}copyBox.append(actions);section.append(copyBox);
  const media=make('div','culture-hero-media');if(f.cover){const open=make('button');open.type='button';open.dataset.passport=f.cover.id;const img=make('img');img.src=f.cover.image||'';img.alt=local(f.cover.title);open.append(img);media.append(open);const caption=make('div','culture-hero-caption');caption.append(make('span','',local(f.cover.maker)));caption.append(make('strong','',local(f.cover.title)));caption.append(make('small','',[local(f.cover.period),local(f.cover.origin)].filter(Boolean).join(' · ')));media.append(caption)}section.append(media);return section
 }
@@ -106,7 +106,7 @@ function collections(data){
 }
 
 function refineCatalogue(catalogue){
- catalogue.id='cultureCatalogue';catalogue.classList.add('culture-catalogue');const eyebrow=q('.editorial-head .eyebrow',catalogue),intro=q('.editorial-head .muted',catalogue);if(eyebrow)eyebrow.textContent=copy('ГАЛЕРЕЯ','GALLERY');if(intro)intro.textContent=copy('Исследуйте живопись, графику и гравюру по художнику, периоду, технике и происхождению. Паспорт произведения, состояние, провенанс и аукционный контекст остаются рядом с каждой работой.','Explore painting, works on paper and prints by artist, period, technique and origin. Artwork passport, condition, provenance and auction context remain close to every work.');
+ catalogue.id='cultureCatalogue';catalogue.classList.add('culture-catalogue');const eyebrow=q('.editorial-head .eyebrow',catalogue),intro=q('.editorial-head .muted',catalogue);if(eyebrow)eyebrow.textContent=copy('ГАЛЕРЕЯ','GALLERY');if(intro)intro.textContent=copy('Исследуйте живопись по художнику, периоду, технике, провенансу и выставочной истории. Паспорт произведения, состояние, провенанс и аукционный контекст остаются рядом с каждой работой.','Explore paintings by artist, period, medium, provenance and exhibition history. Artwork passport, condition, provenance and auction context remain close to every work.');
 }
 
 async function decorate(){
