@@ -4,6 +4,7 @@ import {listSubscriptions} from './domain-e2e-v14.mjs';
 import {listOffers} from './offer-negotiation-v22.mjs';
 import {listViewingRequests} from './viewing-v23.mjs';
 import {listCollectionRecords} from './domain-e2e-v14.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const memoryEvents=new Map();
 const DIMENSIONS=['maker','department','period','origin'];
@@ -22,10 +23,10 @@ function publicObject(row){
 }
 
 async function catalogue({publicOnly=false}={}){
- if(db.kind!=='POSTGRES')return lots.map(publicObject);
+ if(db.kind!=='POSTGRES')return lots.map(publicObject).filter(x=>isPaintingCategory(x.department));
  const where=publicOnly?"WHERE publication_status='PUBLIC' AND catalogue_status='APPROVED'":'';
  const rows=(await db.pool.query('SELECT id,object_code,passport,publication_status,catalogue_status FROM objects '+where)).rows;
- return rows.map(publicObject)
+ return rows.map(publicObject).filter(x=>isPaintingCategory(x.department))
 }
 
 function eventMapKey(accountId,sourceKey){return accountId+'|'+sourceKey}
