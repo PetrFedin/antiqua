@@ -8,7 +8,7 @@ const val=v=>String(local(v)||'').trim();
 function factualWhy(o){
  const identity=[val(o.maker),val(o.period),val(o.origin)].filter(Boolean).join(' · ');
  const materials=val(o.materials),dimensions=val(o.dimensions);
- const first=identity?copy('Каталожная запись связывает предмет с ','The catalogue record connects the object with ')+identity+'.':'';
+ const first=identity?copy('Каталожная запись связывает произведение с ','The catalogue record connects the artwork with ')+identity+'.':'';
  const second=materials?copy('Материалы: ','Materials: ')+materials+(dimensions?' · '+dimensions:'')+'.':dimensions?copy('Размеры: ','Dimensions: ')+dimensions+'.':'';
  const third=copy('Ниже отдельно показаны происхождение, состояние, рыночные аналоги и доказательства паспорта — без смешения подтверждённых данных и маркетингового текста.','Provenance, condition, market comparables and Passport evidence are shown separately below, without blending documented data with marketing copy.');
  return [first,second,third].filter(Boolean).join(' ')
@@ -37,7 +37,7 @@ function trustStrip(o,passport,market){
 function whyBlock(o){
  const s=make('section','v27-why');s.id='dossierWhyV27';
  s.append(make('div','eyebrow',copy('ПОЧЕМУ СТОИТ РАССМОТРЕТЬ','WHY LOOK CLOSER')));
- s.append(make('h3','',copy('Предмет прежде данных','The object before the data')));
+ s.append(make('h3','',copy('Произведение прежде данных','The artwork before the data')));
  s.append(make('p','',factualWhy(o)));
  return s
 }
@@ -45,8 +45,8 @@ function whyBlock(o){
 function moveStory(body){
  const overview=q('#dossier-overview',body);if(!overview||q('#dossierStoryV27',body))return;
  const story=make('section','v27-story');story.id='dossierStoryV27';
- story.append(make('div','eyebrow',copy('ИСТОРИЯ ПРЕДМЕТА','OBJECT STORY')));
- story.append(make('h3','',copy('Что говорит каталожная запись','What the catalogue record says')));
+ story.append(make('div','eyebrow',copy('ИСТОРИЯ ПРОИЗВЕДЕНИЯ','ARTWORK STORY')));
+ story.append(make('h3','',copy('Что говорит каталожная запись о произведении','What the catalogue record says about the artwork')));
  const children=[...overview.children].filter(x=>!x.classList.contains('dossier-facts'));
  children.forEach(x=>story.append(x));
  const facts=overview.querySelector('.dossier-facts');if(facts){overview.insertBefore(make('div','eyebrow',copy('ДЕТАЛИ','DETAILS')),facts);overview.insertBefore(make('h3','',copy('Факты и параметры','Facts and specifications')),facts)}
@@ -58,7 +58,9 @@ function rebuildTabs(body){
  const items=[
   ['#dossier-provenance',copy('Происхождение','Provenance')],
   ['#dossier-condition',copy('Состояние','Condition')],
-  q('#dossierMarketIntelligenceV25',body)?['#dossierMarketIntelligenceV25',copy('Рынок','Market')]:null,
+  q('#dossier-scholarly',body)?['#dossier-scholarly',copy('Исследователи','Scholarly')]:null,
+  q('#dossier-market-history',body)?['#dossier-market-history',copy('История рынка','Market history')]:null,
+  q('#dossierMarketIntelligenceV25',body)?['#dossierMarketIntelligenceV25',copy('Аналоги','Comparables')]:null,
   q('#dossierStoryV27',body)?['#dossierStoryV27',copy('История','Story')]:null,
   q('#dossierSimilarV18',body)?['#dossierSimilarV18',copy('Похожие','Related')]:null,
   ['#dossier-overview',copy('Детали','Details')],
@@ -70,7 +72,7 @@ function rebuildTabs(body){
 function reorder(body){
  if(!body||!body.isConnected)return;moveStory(body);
  const tabs=q('.dossier-tabs',body),disclaimer=q('.dossier-disclaimer',body);if(!tabs)return;
- const order=['#dossier-provenance','#dossier-condition','#dossierMarketIntelligenceV25','#dossierStoryV27','#dossierSimilarV18','#dossier-overview','#dossier-evidence'];
+ const order=['#dossier-provenance','#dossier-condition','#dossier-scholarly','#dossier-market-history','#dossierMarketIntelligenceV25','#dossierStoryV27','#dossierSimilarV18','#dossier-overview','#dossier-evidence'];
  let cursor=tabs;
  for(const selector of order){const node=q(selector,body);if(node){if(cursor.nextElementSibling!==node)cursor.after(node);cursor=node}}
  if(disclaimer&&cursor.nextElementSibling!==disclaimer)cursor.after(disclaimer);rebuildTabs(body)
@@ -92,7 +94,7 @@ async function enhancePassport(event){
  const toolbar=q('.dossier-toolbar',body),commerce=q('.dossier-commerce-dock',body),tabs=q('.dossier-tabs',body);
  const why=whyBlock(o),trust=trustStrip(o,passport,market);
  if(toolbar){toolbar.after(why);if(commerce){why.after(commerce);commerce.after(trust)}else why.after(trust)}else if(tabs){tabs.before(why,trust)}
- const eyebrow=q('.dossier-toolbar .eyebrow',body);if(eyebrow)eyebrow.textContent=copy('КУЛЬТУРА ВЕЩЕЙ · ','CULTURE OF OBJECTS · ')+String(o.objectId||id);
+ const eyebrow=q('.dossier-toolbar .eyebrow',body);if(eyebrow)eyebrow.textContent=copy('КУЛЬТУРА ЖИВОПИСИ · ','PAINTING CULTURE · ')+String(o.objectId||id);
  moveStory(body);scheduleReorder(body);observeAsyncSections(body)
 }
 
