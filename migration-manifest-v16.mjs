@@ -30,7 +30,10 @@ const files=[
   '027_v41_art_network_identity.sql',
   '028_v42_cultural_calendar.sql',
   '029_v43_provenance_evidence_passport.sql',
-  '030_v44_provenance_attestations.sql'
+  '030_v44_provenance_attestations.sql',
+  '031_v44_scholarly_contributor_trust.sql',
+  '032_v45_scoped_scholarly_credentials.sql',
+  '033_v46_independent_passport_verification.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
