@@ -810,3 +810,47 @@ body{overflow-x:hidden}
 @media(max-width:560px){
  .artwork-research-chips span:nth-child(n+3),.culture-object-research span:nth-child(n+3){display:none}
 }
+
+
+/* v0.51 Artwork Dossier research composition */
+.artwork-research-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px 0}
+.artwork-research-summary>div{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.42);display:grid;gap:5px}
+.artwork-research-summary span,.dossier-contribution-meta,.market-history-row span{font-size:9px;letter-spacing:.045em;text-transform:uppercase;color:var(--muted)}
+.artwork-research-summary strong{font:500 18px/1.1 var(--display,Georgia,serif)}
+.artwork-research-section{margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}
+.dossier-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:12px}
+.dossier-contribution-list,.dossier-market-history{display:grid;gap:10px}
+.dossier-contribution{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(255,255,255,.46)}
+.dossier-contribution-head{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.dossier-contribution-head strong{font:500 16px/1.25 var(--display,Georgia,serif)}
+.dossier-contribution-head span{font-size:9px;letter-spacing:.05em;color:var(--muted)}
+.dossier-contribution p{margin:10px 0 8px}
+.dossier-contribution-meta{display:flex;gap:12px;flex-wrap:wrap}
+.dossier-credentials{display:grid;gap:6px;margin-top:10px}
+.dossier-credential{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;border-radius:12px;background:rgba(0,0,0,.035)}
+.dossier-credential div{display:grid;gap:2px}
+.dossier-credential strong{font-size:11px}
+.dossier-credential span,.dossier-credential small{font-size:9px;color:var(--muted)}
+.market-history-row{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(2,minmax(110px,.8fr));gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.market-history-row:last-child{border-bottom:0}
+.market-history-row>div{display:grid;gap:4px}
+.market-history-row strong,.market-history-row b{font-size:13px}
+.research-boundary{display:block;margin-top:9px;color:var(--muted);line-height:1.45}
+.dossier-boundary{margin-top:18px;padding:10px 12px;border-left:2px solid var(--line)}
+@media(max-width:900px){
+ .artwork-research-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .market-history-row{grid-template-columns:1fr 1fr}
+ .market-history-row>div:first-child{grid-column:1/-1}
+}
+@media(max-width:620px){
+ .artwork-research-summary{grid-template-columns:1fr 1fr;gap:6px}
+ .artwork-research-summary>div{padding:10px}
+ .artwork-research-summary strong{font-size:16px}
+ .dossier-contribution{padding:12px}
+ .dossier-contribution-head,.dossier-credential{display:grid}
+ .market-history-row{grid-template-columns:1fr}
+ .market-history-row>div:first-child{grid-column:auto}
+ .dossier-tabs{overflow-x:auto;scrollbar-width:none}
+ .dossier-tabs::-webkit-scrollbar{display:none}
+ .dossier-tabs a{white-space:nowrap}
+}
