@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {buildSyntheticReferenceCatalogue,SYNTHETIC_REFERENCE_CATALOGUE_VERSION} from '../synthetic-reference-catalogue-v48.mjs';
+
+const c=buildSyntheticReferenceCatalogue();
+assert.equal(c.catalogueVersion,SYNTHETIC_REFERENCE_CATALOGUE_VERSION);
+assert.equal(c.synthetic,true);
+assert.equal(c.passport.work.objectId,c.work.id);
+assert.equal(c.passport.evidenceSummary.completeness,'CONFLICTED');
+assert.equal(c.acceptance.containsIntentionalConflict,true);
+assert.equal(c.acceptance.containsIntentionalEvidenceGap,true);
+assert.equal(c.passport.evidenceSummary.gapIndex.byCode.MISSING_EVIDENCE_REFERENCE,1);
+assert.equal(c.passport.evidenceSummary.gapIndex.byCode.CONFLICTING_ASSERTION,1);
+assert.equal(c.verification.status,'MATCH');
+assert.equal(c.verification.hashMatches,true);
+assert.equal(c.interchange.attribution.status,'DISPUTED');
+assert.equal(c.interchange.boundaries.uncertaintyFlattened,false);
+assert.equal(c.interchange.boundaries.conflictingAssertionsPreserved,true);
+assert.equal(c.partnerBundle.sourcePassportSha256,c.passport.evidencePackageSha256);
+assert.equal(c.acceptance.privateOwnerIdentityIncluded,false);
+assert.equal(c.acceptance.authenticityCertified,false);
+console.log('synthetic reference catalogue v48 PASS');
