@@ -2585,3 +2585,44 @@ Acceptance:
 4. auctions may only surface lots whose artwork is in scope;
 5. master plan, UI copy and onboarding taxonomy use the same scope;
 6. research uncertainty/provenance rules are unchanged: narrowing the product domain must never imply stronger authenticity claims.
+
+
+## 2026-10-07 implementation checkpoint — v0.51 Artwork Experience Cleanup
+
+**Scope:** paintings-only product language + unified Artwork Dossier read-model.
+
+### Decisions
+
+- Public UX uses **Artwork / Painting / Gallery / Fine Art Dealer** terminology. Internal `objectId` and Object Authority remain technical compatibility identifiers only.
+- Artwork Dossier is a **derived public read-model** over existing authorities. It is not a new writable authority and introduces no migration.
+- Dossier composes:
+  - Artwork Passport / revision history;
+  - Provenance Evidence Passport, including conflicts and evidence gaps;
+  - published Scholarly Contributions;
+  - scoped Scholarly Credentials valid at the time of review;
+  - authoritative closed-auction Market History;
+  - current sale/auction state from existing Product/Auction authorities;
+  - Related Works, IIIF and Research Interchange links.
+- Scoped credential proves role/scope only. It never certifies correctness of a scholarly conclusion, attribution or artwork authenticity.
+- Published scholarly contribution records factual participation/opinion. It does not become an authenticity certificate.
+- Market History includes only authoritative closed-auction outcomes. Current asking price/live bid state and comparables remain separate concepts.
+- Consumer UI remains image-first. Research depth is progressive disclosure and must remain usable on monitor, tablet and phone.
+- No universal expert score, popularity score or hidden trust ranking is introduced.
+
+### v0.51 acceptance
+
+1. public terminology is Artwork-first across Gallery, Inquiry, Collection, Related Works, Viewing and professional analytics;
+2. `GET /api/lots/:id/dossier` returns the derived research projection without creating a new authority;
+3. provenance conflicts/gaps remain explicit;
+4. credentials-at-review are time-bounded and carry explicit non-certification assertions;
+5. market history does not reuse current asking price;
+6. responsive browser journey passes on desktop and mobile Chromium;
+7. CI + Browser E2E must be green before merge.
+
+### Post-v0.51 sequence
+
+After v0.51 is green and merged, return to the production-admission chain:
+
+`PostgreSQL admission -> /api/ready=READY -> Synthetic Reference Catalogue smoke -> Independent Verification smoke -> Research Interchange smoke -> Institutional Contributors`.
+
+Institutional Contributors must extend Organization / Scholarly Contribution / Credential authorities rather than creating a second institutional identity system.
