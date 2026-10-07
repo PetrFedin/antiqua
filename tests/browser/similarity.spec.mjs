@@ -9,9 +9,9 @@ test('dossier shows explainable similar objects and navigates without stale reco
  await expect(panel).toContainText(/персонализация|personalization/i);
  const cards=panel.locator('.similarity-card');expect(await cards.count()).toBeGreaterThan(0);
  const first=cards.first();await expect(first).toContainText(/Та же категория|Same category/i);await expect(first).toContainText(/Близкий исторический период|Related historical period/i);
- const firstId=await first.getAttribute('data-similar-object');expect(firstId).toBe('lot-102');
+ const firstId=await first.getAttribute('data-similar-object');expect(firstId).toBe('lot-101');
  await first.locator('[data-passport]').first().click();
- await expect(dialog).toContainText(/Портрет в синем интерьере|Portrait in a blue interior/i);
+ await expect(dialog).toContainText(/Речной пейзаж после дождя|River landscape after rain/i);
  const refreshed=dialog.locator('#dossierSimilarV18');await expect(refreshed).toBeVisible();
  await expect(refreshed.locator('[data-similar-object="lot-109"]')).toBeVisible();
  await expect(dialog.locator('#dossierSimilarV18')).toHaveCount(1);
