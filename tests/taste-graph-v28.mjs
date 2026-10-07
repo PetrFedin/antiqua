@@ -28,7 +28,7 @@ await recordTasteSignal(account,{signalType:'ENGAGED_VIEW',objectId:'lot-103',so
 const reversed=await tasteRecommendations(account,{limit:20});
 assert.equal(reversed.recommendations.some(x=>x.object.id==='lot-103'),true,'later positive intent must reverse dismiss exclusion');
 const reversedProfile=await buildTasteProfile(account);
-const paintingFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='sculpture');
+const paintingFacet=reversedProfile.profile.dimensions.department.find(x=>x.key==='painting');
 assert.ok(paintingFacet);
 assert.equal(paintingFacet.signals.some(x=>x.type==='DISMISSED'),false,'superseded dismiss must not keep depressing taste facets');
 const painting=recs.recommendations.find(x=>x.object.id==='lot-112');assert.ok(painting,'category follow should surface another painting');
