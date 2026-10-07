@@ -7,7 +7,7 @@ import {creatorsView,creatorPage} from './modules/creators.js';
 import {artNetworkView,artProfilePage,artOrganizationPage,artNetworkMeView,bindArtNetwork} from './modules/art-network.js';
 import {calendarView,calendarEventPage,bindCulturalCalendar} from './modules/cultural-calendar.js';
 import {relatedWorksGrid} from './modules/related-works.js';
-import {artworkResearchSections} from './modules/artwork-dossier-v51.js';
+import {artworkResearchSections} from './modules/artwork-dossier.js';
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const state={
