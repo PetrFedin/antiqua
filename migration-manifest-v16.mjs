@@ -28,7 +28,9 @@ const files=[
   '025_v39_pilot_governance_verification.sql',
   '026_v40_real_pilot_launch.sql',
   '027_v41_art_network_identity.sql',
-  '028_v42_cultural_calendar.sql'
+  '028_v42_cultural_calendar.sql',
+  '029_v43_provenance_evidence_passport.sql',
+  '030_v44_provenance_attestations.sql'
 ];
 
 export const migrationManifest=Object.freeze(files.map((file,index)=>Object.freeze({
