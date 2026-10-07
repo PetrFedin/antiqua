@@ -21,6 +21,8 @@ function evidenceOverviewView(o){
   </div>
   <div class="evidence-observatory-events"><b>${Number(o.provenanceEvents||0)} ${copy('событий провенанса','provenance events')}</b><span>${Number(o.resolvedEvents||0)} resolved · ${Number(o.unresolvedEvents||0)} unresolved · ${Number(o.conflictEvents||0)} conflict</span></div>
   <div class="evidence-class-grid">${classes.map(([k,n])=>`<div><b>${esc(k.replaceAll('_',' '))}</b><span>${Number(n)}</span></div>`).join('')||`<p>${copy('Классифицированных доказательств пока нет.','No classified evidence yet.')}</p>`}</div>
+  <div class="evidence-observatory-boundary"><strong>${copy('Пробелы доказательств','Evidence gaps')}</strong> · ${Number(o.worksWithEvidenceGaps||0)} ${copy('работ требуют дополнительной проверки','works require additional review')}</div>
+  <div class="evidence-class-grid">${Object.entries(o.evidenceGaps||{}).filter(([,n])=>Number(n)>0).map(([k,n])=>`<div><b>${esc(k.replaceAll('_',' '))}</b><span>${Number(n)}</span></div>`).join('')||`<p>${copy('Явных пробелов не зафиксировано.','No explicit evidence gaps recorded.')}</p>`}</div>
   <div class="evidence-observatory-proof"><span>SHA-256 snapshot</span><code>${esc(o.evidenceOverviewSha256||'—')}</code></div>
   <p class="evidence-observatory-boundary">${copy('Подлинность и атрибуция не сертифицируются автоматически; пробелы и конфликты остаются видимыми.','Authenticity and attribution are not automatically certified; gaps and conflicts remain visible.')}</p>
  </section>`;
