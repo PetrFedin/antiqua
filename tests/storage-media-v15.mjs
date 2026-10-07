@@ -33,7 +33,7 @@ try{
   const seller=new Client(),buyer=new Client();
   let x=await seller.call('/api/auth/demo-login',{method:'POST',body:JSON.stringify({persona:'SELLER'})});assert.equal(x.r.status,200);
   const buyerPassword=`Aa1!${crypto.randomBytes(18).toString('base64url')}`;x=await buyer.call('/api/auth/register',{method:'POST',body:JSON.stringify({email:`media-buyer-${crypto.randomUUID()}@example.test`,displayName:'Media isolation buyer',password:buyerPassword,accountType:'BUYER'})});assert.equal(x.r.status,201);
-  x=await seller.call('/api/seller/drafts',{method:'POST',body:JSON.stringify({titleEn:'Media storage proof',titleRu:'Проверка media storage',categoryEn:'Decorative Arts',categoryRu:'Декоративное искусство'})});assert.equal(x.r.status,201);const draftId=x.body.draft.id;
+  x=await seller.call('/api/seller/drafts',{method:'POST',body:JSON.stringify({titleEn:'Media storage proof',titleRu:'Проверка media storage',categoryEn:'Painting',categoryRu:'Живопись'})});assert.equal(x.r.status,201);const draftId=x.body.draft.id;
 
   const good=Buffer.from(`ANTIQUA private media ${crypto.randomUUID()}`),goodHash=crypto.createHash('sha256').update(good).digest('hex');
   x=await intent(seller,draftId,{bytes:good.length,sha256:goodHash,role:'HERO'});assert.equal(x.r.status,201);const goodAsset=x.body.asset,goodUpload=x.body.uploadUrl;assert.equal(goodAsset.status,'UPLOADING');assert.equal('storageKey' in goodAsset,false);assert.equal(x.body.expiresIn,Number(process.env.OBJECT_STORAGE_UPLOAD_TTL_SECONDS||900));
