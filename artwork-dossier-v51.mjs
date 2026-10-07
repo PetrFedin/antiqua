@@ -35,6 +35,7 @@ export function buildArtworkResearchProjection({
     boundaries:{
       readModelOnly:true,
       credentialProvesRoleNotTruth:true,
+      supersededHistoricalValidityRequiresTimestamp:true,
       contributionDoesNotCertifyAuthenticity:true,
       marketHistoryExcludesCurrentAskingPrice:true,
       conflictsAndGapsPreserved:true
@@ -72,7 +73,7 @@ async function credentialsAtReview(accountId,reviewedAt){
        AND (valid_from IS NULL OR valid_from <= $2)
        AND (valid_until IS NULL OR valid_until >= $2)
        AND (revoked_at IS NULL OR revoked_at > $2)
-       AND status IN('ACTIVE','REVOKED','SUPERSEDED','EXPIRED')
+       AND status IN('ACTIVE','REVOKED','EXPIRED')
      ORDER BY issued_at DESC,id`,
     [accountId,reviewedAt]
   )).rows;
