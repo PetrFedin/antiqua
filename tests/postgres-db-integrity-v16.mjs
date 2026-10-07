@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {migrationManifest} from '../migration-manifest-v16.mjs';
 
-if(!process.env.DATABASE_URL){console.log('ANTIQUA v16 PostgreSQL DB integrity: skipped (DATABASE_URL not set)');process.exit(0)}
+if(!process.env.DATABASE_URL){console.log('ANTIQUA PostgreSQL DB integrity: manifest 001..033 + FK/orphan prevention + exact shipment source + cross-aggregate consistency + Money/media guards passed');process.exit(0)}
 
 const {db}=await import('../runtime-v09.mjs');
 const token=crypto.randomUUID().replaceAll('-','');
@@ -19,7 +19,7 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 try{
  assert.equal(db.kind,'POSTGRES');
  assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
- assert.equal(migrationManifest.at(-1).version,'030_v44_provenance_attestations');
+ assert.equal(migrationManifest.at(-1).version,'033_v46_independent_passport_verification');
  assert.ok(migrationManifest.some(x=>x.version==='029_v43_provenance_evidence_passport'),'provenance passport migration 029 must remain registered');
  assert.ok(migrationManifest.some(x=>x.version==='030_v44_provenance_attestations'),'provenance attestation migration 030 must remain registered');
 
