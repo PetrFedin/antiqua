@@ -64,3 +64,58 @@ export function artworkResearchSections(dossier,lang='ru'){
     ${marketBlock(dossier.marketHistory||[],lang)}
     <small class="research-boundary dossier-boundary">${lang==='ru'?'Research Dossier — derived read-model. Конфликты и пробелы сохраняются; authenticity не сертифицируется автоматически.':'Research Dossier is a derived read-model. Conflicts and gaps are preserved; authenticity is never automatically certified.'}</small>`;
 }
+
+
+async function safeDossier(id){
+  try{
+    const r=await fetch('/api/lots/'+encodeURIComponent(id)+'/dossier',{headers:{accept:'application/json'}});
+    if(!r.ok)return null;
+    return await r.json();
+  }catch{return null}
+}
+
+function ensureResearchTabs(body,lang){
+  const tabs=body?.querySelector('.dossier-tabs');
+  if(!tabs)return;
+  if(!tabs.querySelector('a[href="#dossier-scholarly"]')){
+    const a=document.createElement('a');
+    a.href='#dossier-scholarly';
+    a.textContent=lang==='ru'?'Исследователи':'Scholarly';
+    tabs.append(a);
+  }
+  if(!tabs.querySelector('a[href="#dossier-market-history"]')){
+    const a=document.createElement('a');
+    a.href='#dossier-market-history';
+    a.textContent=lang==='ru'?'Рынок':'Market';
+    tabs.append(a);
+  }
+}
+
+async function enhanceArtworkDossier(event){
+  const id=String(event.detail?.id||'');
+  if(!id)return;
+  const dialog=document.querySelector('#dialog[open]')||document.querySelector('#dialog');
+  const body=dialog?.querySelector('.dossier-body');
+  if(!body)return;
+  const lang=document.documentElement.lang==='en'?'en':'ru';
+  if(body.querySelector('#dossier-scholarly')&&body.querySelector('#dossier-market-history')){
+    ensureResearchTabs(body,lang);
+    return;
+  }
+  const payload=await safeDossier(id);
+  const dossier=payload?.dossier||null;
+  if(!dossier||!body.isConnected)return;
+  const evidence=body.querySelector('#dossier-evidence');
+  if(!evidence)return;
+  const box=document.createElement('div');
+  box.innerHTML=artworkResearchSections(dossier,lang);
+  for(const node of [...box.children]){
+    if(node.id&&body.querySelector('#'+CSS.escape(node.id)))continue;
+    evidence.append(node);
+  }
+  ensureResearchTabs(body,lang);
+}
+
+window.addEventListener('antiqua:passport',e=>{
+  enhanceArtworkDossier(e).catch(console.error);
+});
