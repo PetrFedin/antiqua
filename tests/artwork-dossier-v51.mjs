@@ -31,6 +31,7 @@ assert.equal(dossier.scholarlyContributions[0].credentialsAtReview[0].statusAtRe
 assert.equal(dossier.scholarlyContributions[0].credentialsAtReview[0].assertions.scholarlyConclusionCertified,false);
 assert.equal(dossier.marketHistory[0].status,'SOLD');
 assert.equal(dossier.boundaries.credentialProvesRoleNotTruth,true);
+assert.equal(dossier.boundaries.supersededHistoricalValidityRequiresTimestamp,true);
 assert.equal(dossier.boundaries.marketHistoryExcludesCurrentAskingPrice,true);
 assert.equal(dossier.boundaries.conflictsAndGapsPreserved,true);
 assert.equal(artworkDossierCapabilities().expertScore,false);
