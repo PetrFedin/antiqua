@@ -5,7 +5,7 @@ const fmtDateTime=v=>v?new Intl.DateTimeFormat(localStorage.getItem('antiqua_lan
 const objTitle=(d,id)=>local(d.catalog?.lots?.find(x=>x.id===id)?.title)||id;
 
 function authSheet(){
- sheet('<div class="action-sheet-head"><div><div class="micro">COMMERCIAL SERVICES</div><h2>'+copy('Войдите в аккаунт покупателя','Sign in with a buyer account')+'</h2><p>'+copy('Запрос отчёта о состоянии и просмотр предмета ведутся как структурированные процессы, а не обычные сообщения.','Condition reports and viewings are handled as structured workflows rather than ordinary messages.')+'</p></div><button class="action-sheet-close" data-close-sheet>×</button></div>')
+ sheet('<div class="action-sheet-head"><div><div class="micro">COMMERCIAL SERVICES</div><h2>'+copy('Войдите в аккаунт покупателя','Sign in with a buyer account')+'</h2><p>'+copy('Запрос отчёта о состоянии и просмотр произведения ведутся как структурированные процессы, а не обычные сообщения.','Condition reports and viewings are handled as structured workflows rather than ordinary messages.')+'</p></div><button class="action-sheet-close" data-close-sheet>×</button></div>')
 }
 function requestSheet(kind,ctx){
  const isCondition=kind==='condition',title=isCondition?copy('Запросить Condition Report','Request Condition Report'):copy('Запросить просмотр','Request viewing');
@@ -48,7 +48,7 @@ function viewingCard(d,r){
  const slots=currentProposal(r),cal=r.calendarEvent;
  return '<article class="v14-card v23-service-card" data-v23-viewing-card="'+esc(r.id)+'">'+
  '<div class="v14-card-head"><span class="status-pill">'+esc(status(r.status))+'</span><b>v'+esc(r.version)+'</b></div>'+
- '<h4>'+esc(objTitle(d,r.objectId))+'</h4><small>'+copy('Просмотр предмета','Object viewing')+'</small>'+
+ '<h4>'+esc(objTitle(d,r.objectId))+'</h4><small>'+copy('Просмотр произведения','Artwork viewing')+'</small>'+
  (r.note?'<p>'+esc(r.note)+'</p>':'')+
  (slots.length?'<div class="v23-slot-list">'+slots.map(s=>'<span>'+esc(fmtDateTime(s.startsAt))+'</span>').join('')+'</div>':'')+
  (cal?'<div class="v23-calendar-summary"><b>'+copy(cal.status==='CANCELLED'?'Календарь отменён':'В календаре',cal.status==='CANCELLED'?'Calendar cancelled':'Calendar confirmed')+'</b><span>'+fmtDateTime(cal.startsAt)+'</span></div>':'')+
