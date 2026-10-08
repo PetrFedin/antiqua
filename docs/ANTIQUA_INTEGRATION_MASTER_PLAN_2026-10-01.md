@@ -2685,3 +2685,89 @@ Production admission is complete only when all of the following are simultaneous
 8. Reference Catalogue, Independent Verification and Research Interchange smoke checks pass on the admitted deployment.
 
 Until this gate is complete, do not start Institutional Contributors implementation. Read-only design review and master-plan maintenance are allowed, but no new institutional authority may be introduced.
+
+
+## 2026-10-08 production admission evidence refresh
+
+**Status: BLOCKED BY DEDICATED DATABASE CREDENTIAL / ACCOUNT ACCESS**
+
+This checkpoint records observed production evidence and does not change product scope or authority boundaries.
+
+### Verified code and live runtime
+
+- GitHub canonical `main`: `39ca58e94490ceb058c67dc1e1625bb5ea616c68`.
+- Current Render service: `antiqua-preview` / `srv-dakjr0ad0e5s73e7ijp0` in workspace `ME`.
+- Current Render live deploy still runs `e509caf7ea70274913a57f5b47766aba960a290a` (v0.52 startup bootstrap).
+- The difference between current GitHub `main` and the live deploy is documentation-only PR #126; production admission must nevertheless use the exact current `main` when the database binding is available.
+- Live startup executes `node scripts/start-v52.mjs`.
+
+### Machine-readable readiness evidence
+
+Observed from `GET https://antiqua-preview.onrender.com/api/ready`:
+
+- admission status: `BLOCKED`;
+- `productionReady=false`;
+- runtime persistence: `MEMORY_FALLBACK`;
+- `databaseConfigured=false`;
+- `previewMode=true`;
+- `externalManagedSchema=true`;
+- expected migration count: `33`;
+- expected migration head: `033_v46_independent_passport_verification`;
+- applied migration count/head: unavailable until PostgreSQL is configured;
+- blockers:
+  - `DATABASE_URL_MISSING`;
+  - `PERSISTENCE_NOT_POSTGRES`;
+  - `PREVIEW_MODE_ENABLED`.
+
+This is the expected safe failure state. It must not be bypassed or reclassified as production-ready.
+
+### Dedicated database access evidence
+
+The approved database remains the dedicated Supabase project:
+
+- project name: `antiqua-postgres`;
+- project ref: `yutrntnncubcssqbohco`;
+- owning organization: `mercury-moda`.
+
+Current connected Supabase tooling does **not** have access to that organization/project. It currently exposes a different organization/project (`ethylfresh-87's Org` / `marco-pescarolo-commercial-os`), which must not be used by Antiqua.
+
+The connected Render workspace contains only `mfw-postgres` as a Render-managed PostgreSQL instance. It is explicitly prohibited for Antiqua and must not be bound to this service.
+
+A targeted local search on the authorized Mac found no saved `yutrntnncubcssqbohco` reference in the normal working/configuration locations or shell history, so no existing dedicated credential can be safely recovered from the current local contour.
+
+### Network / connection-mode decision
+
+For Render application traffic to Supabase, use the dedicated Antiqua **Shared Pooler / Supavisor session-mode** connection string on port `5432` when obtaining the production `DATABASE_URL`. This is the appropriate Supabase mode for a persistent backend on an IPv4-only network such as Render.
+
+Do not commit the connection string or database password to GitHub, this plan, logs or test fixtures.
+
+### Strict recovery and admission sequence
+
+No product or institutional expansion is allowed before this exact chain completes:
+
+`obtain access to mercury-moda / antiqua-postgres`
+→ `copy dedicated Session pooler DATABASE_URL`
+→ `bind DATABASE_URL to Render antiqua-preview`
+→ `ANTIQUA_MIGRATE_ON_START=true`
+→ deploy exact current `main`
+→ prove canonical migrations `001–033 exact`
+→ verify `schema_migrations` has no missing/unexpected versions
+→ `ANTIQUA_MIGRATE_ON_START=false`
+→ `PREVIEW_MODE=false`
+→ final deploy exact current `main`
+→ `persistence=POSTGRES`
+→ `/api/ready = 200 / READY`
+→ restart durability proof
+→ Synthetic Reference Catalogue smoke
+→ Independent Passport Verification smoke
+→ Research Interchange smoke
+→ only then Institutional Contributors.
+
+### Stop rules
+
+- Do not create a replacement Render Postgres for convenience.
+- Do not bind `mfw-postgres`, Marco Pescarolo PostgreSQL, or any other project's database.
+- Do not enable migration-on-start before the correct dedicated `DATABASE_URL` is present.
+- Do not disable preview mode before migrations are proven exact.
+- Do not start Institutional Contributors implementation while `/api/ready` is blocked.
+- Do not broaden product scope: authoritative public scope remains `PAINTINGS_ONLY`.
