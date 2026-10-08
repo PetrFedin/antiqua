@@ -19,7 +19,7 @@ function card(x){
 }
 function markup(d){
  return `<section id="dossierSimilarV18" class="dossier-similarity">
-  <div class="similarity-head"><div><div class="eyebrow">EXPLAINABLE SIMILARITY</div><h3>${copy('Похожие предметы','Similar objects')}</h3><p>${copy('Подборка строится по каталожным признакам. Причины сходства показаны явно; персонализация и скрытый рейтинг не используются.','Selected from catalogue attributes. Reasons are shown explicitly; no personalization or opaque ranking is used.')}</p></div></div>
+  <div class="similarity-head"><div><div class="eyebrow">EXPLAINABLE SIMILARITY</div><h3>${copy('Похожие произведения','Similar artworks')}</h3><p>${copy('Подборка строится по каталожным признакам. Причины сходства показаны явно; персонализация и скрытый рейтинг не используются.','Selected from catalogue attributes. Reasons are shown explicitly; no personalization or opaque ranking is used.')}</p></div></div>
   <div class="similarity-grid">${(d.items||[]).map(card).join('')}</div>
  </section>`;
 }

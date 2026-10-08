@@ -18,9 +18,9 @@ function rowCard(x){
 function markup(a){
  const s=a.summary||{},objects=a.objects||[];
  return `<section id="sellerAnalyticsV17" class="account-block seller-analytics-v17">
-  <div class="block-head"><div><div class="eyebrow">DEALER ANALYTICS</div><h2>${copy('Спрос и коммерческая воронка','Demand & commercial funnel')}</h2><p>${copy('Только фактические действия внутри ANTIQUA. Просмотр — дедуплицированное открытие паспорта предмета в 30-минутном окне; личности посетителей продавцу не раскрываются.','Only measured ANTIQUA actions are shown. A view is a deduplicated object-passport session in a 30-minute window; visitor identities are not exposed to the seller.')}</p></div></div>
+  <div class="block-head"><div><div class="eyebrow">DEALER ANALYTICS</div><h2>${copy('Спрос и коммерческая воронка','Demand & commercial funnel')}</h2><p>${copy('Только фактические действия внутри ANTIQUA. Просмотр — дедуплицированное открытие паспорта произведения в 30-минутном окне; личности посетителей продавцу не раскрываются.','Only measured ANTIQUA actions are shown. A view is a deduplicated artwork-passport session in a 30-minute window; visitor identities are not exposed to the seller.')}</p></div></div>
   <div class="v12-kpis">
-   ${metric(s.objects||0,copy('Предметы','Objects'))}
+   ${metric(s.objects||0,copy('Произведения','Artworks'))}
    ${metric(s.views||0,copy('Просмотры','Views'))}
    ${metric(s.saved||0,copy('Сохранения','Saves'))}
    ${metric(s.conversations||0,copy('Диалоги','Threads'))}
@@ -30,7 +30,7 @@ function markup(a){
    ${metric(settledText(s),copy('Закрытые расчёты','Settled value'))}
    ${metric(s.openDisputes||0,copy('Открытые споры','Open disputes'))}
   </div>
-  <div class="block-head compact-head"><div><div class="eyebrow">OBJECT SIGNALS</div><h3>${copy('Предметы по фактическим сигналам спроса','Objects by measured demand signals')}</h3></div></div>
+  <div class="block-head compact-head"><div><div class="eyebrow">ARTWORK SIGNALS</div><h3>${copy('Произведения по фактическим сигналам спроса','Artworks by measured demand signals')}</h3></div></div>
   <div class="account-card-grid compact">${objects.length?objects.map(rowCard).join(''):`<div class="empty-state">${copy('Измеримых действий пока нет','No measured actions yet')}</div>`}</div>
  </section>`;
 }
