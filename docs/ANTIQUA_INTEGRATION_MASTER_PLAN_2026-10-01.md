@@ -2626,3 +2626,62 @@ After v0.51 is green and merged, return to the production-admission chain:
 `PostgreSQL admission -> /api/ready=READY -> Synthetic Reference Catalogue smoke -> Independent Verification smoke -> Research Interchange smoke -> Institutional Contributors`.
 
 Institutional Contributors must extend Organization / Scholarly Contribution / Credential authorities rather than creating a second institutional identity system.
+
+
+## 2026-10-08 implementation checkpoint — v0.52 Production Admission Startup Bootstrap
+
+**Status:** merged to main and live on Render.
+
+### What v0.52 changes
+
+- Render web startup is routed through `scripts/start-v52.mjs`.
+- Default startup behavior is unchanged when `ANTIQUA_MIGRATE_ON_START` is not enabled.
+- `ANTIQUA_MIGRATE_ON_START=true` is an explicit operator-controlled bootstrap for production admission only.
+- When enabled, startup requires `DATABASE_URL`, applies the canonical migration manifest before importing server/runtime, and aborts startup on migration failure.
+- Runtime remains externally managed: `ANTIQUA_EXTERNAL_MANAGED_SCHEMA=true` still prevents normal runtime auto-migration.
+- This removes the dependency on an interactive Render shell for the production migration pass.
+
+### Current production state
+
+- Canonical code state after merge: `main=e509caf7ea70274913a57f5b47766aba960a290a`.
+- Render live deploy is running the same v0.52 code.
+- Last verified runtime persistence is `MEMORY_FALLBACK`.
+- Dedicated `antiqua-postgres` is still the only acceptable production database.
+- Do not bind `mfw-postgres`, Marco Pescarolo Postgres, or any other project database to Antiqua.
+- Do not set `PREVIEW_MODE=false` before the dedicated `DATABASE_URL` is bound and migrations are proven exact.
+- Render auto-deploy must not be trusted implicitly; verify the exact deployed Git SHA after every production-changing merge.
+
+### Production admission sequence
+
+The next operation is strict and must not be bypassed:
+
+`dedicated antiqua-postgres DATABASE_URL`
+→ `ANTIQUA_MIGRATE_ON_START=true`
+→ deploy exact current `main`
+→ migration manifest `001–033`
+→ verify exact `schema_migrations` with no missing/unexpected versions
+→ `ANTIQUA_MIGRATE_ON_START=false`
+→ `PREVIEW_MODE=false`
+→ final deploy exact current `main`
+→ runtime `persistence=POSTGRES`
+→ `GET /api/ready = 200 / READY`
+→ restart durability proof
+→ Synthetic Reference Catalogue smoke
+→ Independent Passport Verification smoke
+→ Research Interchange smoke
+→ Institutional Contributors.
+
+### Production admission acceptance
+
+Production admission is complete only when all of the following are simultaneously true:
+
+1. runtime persistence is `POSTGRES`;
+2. `DATABASE_URL` points to the dedicated Antiqua database;
+3. preview mode is disabled;
+4. external managed schema mode remains enabled;
+5. applied migrations are exactly the canonical `001–033` manifest;
+6. `/api/ready` reports `READY` with no blockers;
+7. restart does not lose authoritative state;
+8. Reference Catalogue, Independent Verification and Research Interchange smoke checks pass on the admitted deployment.
+
+Until this gate is complete, do not start Institutional Contributors implementation. Read-only design review and master-plan maintenance are allowed, but no new institutional authority may be introduced.
