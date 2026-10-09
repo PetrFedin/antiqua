@@ -2721,19 +2721,22 @@ Observed from `GET https://antiqua-preview.onrender.com/api/ready`:
 
 This is the expected safe failure state. It must not be bypassed or reclassified as production-ready.
 
-### Dedicated database access evidence
+### Dedicated database identity evidence
 
-The approved database remains the dedicated Supabase project:
+**Correction recorded 2026-10-09:** the previously recorded Supabase ref `yutrntnncubcssqbohco` is not an approved Antiqua identifier and must not be used for Antiqua. Independent project evidence associates that ref with another project's database authority. The earlier Antiqua association was not backed by a primary Supabase project response, database host, pooler identity, or creation receipt.
 
-- project name: `antiqua-postgres`;
-- project ref: `yutrntnncubcssqbohco`;
-- owning organization: `mercury-moda`.
+The durable database requirement remains unchanged:
 
-Current connected Supabase tooling does **not** have access to that organization/project. It currently exposes a different organization/project (`ethylfresh-87's Org` / `marco-pescarolo-commercial-os`), which must not be used by Antiqua.
+- Antiqua must use its own dedicated PostgreSQL project;
+- historical labels such as `antiqua-postgres` and `mercury-moda` are discovery hints only until returned by fresh Supabase metadata;
+- the actual Antiqua project ref is currently **UNCONFIRMED**;
+- no DDL, migration, test query, runtime binding, backup, or restore may target `yutrntnncubcssqbohco` on behalf of Antiqua.
 
-The connected Render workspace contains only `mfw-postgres` as a Render-managed PostgreSQL instance. It is explicitly prohibited for Antiqua and must not be bound to this service.
+Current connected Supabase tooling still exposes only the currently authenticated organization/projects and does not expose a verified dedicated Antiqua project. Those visible projects must not be reused.
 
-A targeted local search on the authorized Mac found no saved `yutrntnncubcssqbohco` reference in the normal working/configuration locations or shell history, so no existing dedicated credential can be safely recovered from the current local contour.
+The connected Render workspace contains `mfw-postgres` as a Render-managed PostgreSQL instance. It is explicitly prohibited for Antiqua and must not be bound to this service.
+
+Canonical database identity rules are now maintained in `docs/ANTIQUA_DATABASE_IDENTITY_GATE_2026-10-09.md`.
 
 ### Network / connection-mode decision
 
@@ -2745,8 +2748,9 @@ Do not commit the connection string or database password to GitHub, this plan, l
 
 No product or institutional expansion is allowed before this exact chain completes:
 
-`obtain access to mercury-moda / antiqua-postgres`
-→ `copy dedicated Session pooler DATABASE_URL`
+`restore Supabase access and rediscover the dedicated Antiqua project from fresh primary metadata`
+→ `prove project identity and schema lineage read-only`
+→ `copy the confirmed project's dedicated Session pooler DATABASE_URL`
 → `bind DATABASE_URL to Render antiqua-preview`
 → `ANTIQUA_MIGRATE_ON_START=true`
 → deploy exact current `main`
@@ -2767,7 +2771,7 @@ No product or institutional expansion is allowed before this exact chain complet
 
 - Do not create a replacement Render Postgres for convenience.
 - Do not bind `mfw-postgres`, Marco Pescarolo PostgreSQL, or any other project's database.
-- Do not enable migration-on-start before the correct dedicated `DATABASE_URL` is present.
+- Do not enable migration-on-start before the correct dedicated project identity is proven and its `DATABASE_URL` is present.
 - Do not disable preview mode before migrations are proven exact.
 - Do not start Institutional Contributors implementation while `/api/ready` is blocked.
 - Do not broaden product scope: authoritative public scope remains `PAINTINGS_ONLY`.
