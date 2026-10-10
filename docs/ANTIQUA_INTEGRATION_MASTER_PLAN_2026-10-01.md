@@ -2753,12 +2753,13 @@ No product or institutional expansion is allowed before this exact chain complet
 → `copy the confirmed project's dedicated Session pooler DATABASE_URL`
 → `bind DATABASE_URL to Render antiqua-preview`
 → `ANTIQUA_MIGRATE_ON_START=true`
-→ deploy exact current `main`
+→ capture exact current `main` SHA at binding time
+→ deploy that exact SHA
 → prove canonical migrations `001–033 exact`
 → verify `schema_migrations` has no missing/unexpected versions
 → `ANTIQUA_MIGRATE_ON_START=false`
 → `PREVIEW_MODE=false`
-→ final deploy exact current `main`
+→ final deploy the same captured SHA
 → `persistence=POSTGRES`
 → `/api/ready = 200 / READY`
 → restart durability proof
