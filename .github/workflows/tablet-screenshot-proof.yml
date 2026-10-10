@@ -1,0 +1,61 @@
+name: Real tablet screenshot proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tablet-screenshot-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Start actual Antiqua application
+        env:
+          PORT: '12026'
+          PREVIEW_MODE: 'true'
+          NODE_ENV: test
+        run: |
+          node server-v14.mjs > /tmp/antiqua-tablet.log 2>&1 &
+          echo $! > /tmp/antiqua-tablet.pid
+          for i in {1..60}; do
+            curl -fsS http://127.0.0.1:12026/api/health >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/antiqua-tablet.log
+          exit 1
+      - name: Capture real iPad viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+          await fs.mkdir('artifacts/tablet-proof',{recursive:true});
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:834,height:1112},deviceScaleFactor:1});
+          await page.goto('http://127.0.0.1:12026/',{waitUntil:'networkidle'});
+          const gallery=page.locator('[data-nav="gallery"]:visible').first();
+          if(await gallery.isVisible().catch(()=>false)) await gallery.click();
+          await page.waitForTimeout(400);
+          await page.screenshot({path:'artifacts/tablet-proof/antiqua-tablet.png',fullPage:false});
+          const catalog=page.locator('#catalogGrid');
+          if(await catalog.isVisible().catch(()=>false)) await catalog.screenshot({path:'artifacts/tablet-proof/antiqua-gallery-tablet.png'});
+          await browser.close();
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-real-tablet-${{ github.sha }}
+          path: artifacts/tablet-proof/*.png
+          if-no-files-found: error
+          retention-days: 14
