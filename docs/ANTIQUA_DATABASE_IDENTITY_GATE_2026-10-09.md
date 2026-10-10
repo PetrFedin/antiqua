@@ -22,7 +22,7 @@ No Antiqua DDL, migration, test query, runtime binding, backup, or restore opera
 
 ## Current verified state
 
-- Repository authority: `main@eb814863d310b106e600ff0aa85386dccb8c1c44`.
+- Latest observed repository head at this checkpoint: `main@f9525eab308e4915526f59cfa0000690edd80d97`. This SHA is observational only; production admission must capture and deploy the exact `main` that is current at binding time.
 - Render service: `antiqua-preview` / `srv-dakjr0ad0e5s73e7ijp0`.
 - Render live commit: `e509caf7ea70274913a57f5b47766aba960a290a`.
 - Render runtime persistence: `MEMORY_FALLBACK`.
@@ -128,14 +128,14 @@ Only after Identity Recovery and Database Identity Proof are GREEN:
 3. Keep `PREVIEW_MODE=true`.
 4. Set `ANTIQUA_EXTERNAL_MANAGED_SCHEMA=true`.
 5. Set `ANTIQUA_MIGRATE_ON_START=true`.
-6. Deploy exact current `main`.
+6. Capture the current `main` SHA immediately before deployment and deploy that exact SHA; if `main` advances before final admission, restart exact-head qualification from the new head.
 7. Verify startup migration logs and exact commit.
 8. Query `schema_migrations` and prove `001–033 exact`.
 9. Verify no missing or unexpected versions.
 10. Set `ANTIQUA_MIGRATE_ON_START=false`.
 11. Reverify the bound database identity.
 12. Set `PREVIEW_MODE=false`.
-13. Final deploy of the exact same current `main`.
+13. Final deploy of the exact same captured SHA. Do not silently advance to a newer `main` between migration proof and final READY proof.
 14. Prove `persistence=POSTGRES`.
 15. Prove `GET /api/ready` returns `200` with `status=READY` and no blockers.
 16. Perform restart durability proof using a controlled authoritative write.
