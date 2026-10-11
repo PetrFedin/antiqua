@@ -11,7 +11,9 @@ const viewports=[
 // A visible DOM node is not evidence that its remote artwork bitmap loaded.
 // Wake lazy assets before full-page capture and record loaded/fallback states.
 async function settleMuseumGalleryImages(gallery) {
+  await expect(gallery).toHaveAttribute('data-museum-hydrated','true',{timeout:15_000});
   const cards=gallery.locator('.museum-artwork-card');
+  await expect(cards).toHaveCount(9,{timeout:15_000});
   await cards.locator('img').evaluateAll(images => {
     images.forEach(image => { image.loading='eager'; });
   });
@@ -37,7 +39,8 @@ test('v0.54 external museum artwork images must decode, not just exist in DOM',a
   await expect(gallery).toBeVisible();
   const state=await settleMuseumGalleryImages(gallery);
   console.log('MUSEUM_IMAGE_STATES',JSON.stringify(state));
-  for(const id of ['27992','20684','28560','14655']) {
+  expect(state).toHaveLength(9);
+  for(const id of ['27992','20684','28560','14655','16568','16571','111442','61128','25865']) {
     expect(state.find(item=>item.id===id)?.status,
       'museum image '+id+' must be genuinely loaded').toBe('loaded');
   }
