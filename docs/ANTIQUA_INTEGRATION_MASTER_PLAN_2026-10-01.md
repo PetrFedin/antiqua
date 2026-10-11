@@ -2776,3 +2776,43 @@ No product or institutional expansion is allowed before this exact chain complet
 - Do not disable preview mode before migrations are proven exact.
 - Do not start Institutional Contributors implementation while `/api/ready` is blocked.
 - Do not broaden product scope: authoritative public scope remains `PAINTINGS_ONLY`.
+
+
+## 2026-10-11 — v0.53 open-access museum visual gallery (proposed)
+
+**Product scope:** PAINTINGS_ONLY. **Deployment boundary:** frontend reference layer only. This feature does not remove the existing dedicated-PostgreSQL production admission blocker and does not create any new auction, commerce, Artist or provenance authority.
+
+### Source-backed visual direction
+
+Museum image sources reviewed:
+- Art Institute of Chicago Open Access: https://www.artic.edu/open-access/open-access-images
+- Museum Artwork API: https://api.artic.edu/docs/
+- Museum IIIF images: https://www.artic.edu/iiif/2/{image_id}/full/843,/0/default.jpg
+- License: https://creativecommons.org/publicdomain/zero/1.0/
+
+**Primary verified static example:** Georges Seurat, *A Sunday on La Grande Jatte — 1884*, museum artwork id 27992, source image id `2d484387-2509-5e8e-2c43-22f9981972eb`, museum accession 1926.224, is_public_domain=true, artwork_type_title=Painting. Original source: https://www.artic.edu/artworks/27992
+
+### Implementation
+
+- Separate museum reference display on the gallery-first home, before taste modules.
+- Source-backed hero artwork replacing the previous repeated placeholder visual at the first fold.
+- Gallery of public-domain paintings showing artist/title/date/medium and outbound museum record, with filters and responsive mobile layout.
+- Fullscreen-ish modal with museum source and CC0 license, visually separated from a commercial Artwork Dossier.
+- A small optional set of museum candidates is hydrated only from live official museum API records; each result is admitted only when `is_public_domain===true`, `artwork_type_title==='Painting'`, and `image_id` matches the expected IIIF ID shape.
+- No invented sales status, price, ownership, provenance, independent certificate or verification for museum works.
+- Only the primary Seurat record is statically pinned after primary API verification; the optional references disappear safely when API fetch fails.
+- No automatic mutation of existing mock `lot-101…lot-112` image/artist/price/provenance records. Their underlying mock sales are visibly distinct from the museum gallery.
+- Phone/tablet/desktop responsive layout; an image failure produces a notice and museum source link rather than an unrelated image.
+
+### Critical exclusions
+
+Do not scrape Pinterest, Google Images, auction listings or contemporary gallery websites and silently republish their photographs. Never treat an image search result or freely visible image as a reuse license. External museum media is presentation-only; it is not a licensed production Artwork record until separate Media Authority admission. No real artist is represented as registered on ANTIQUA and no real museum is represented as a seller or platform partner.
+
+### Follow-up QA
+
+1. Github CI/static structural tests and Browser E2E on exact PR head.
+2. Confirm IIIF fetch/CORS availability with browser network checks on desktop, tablet and iPhone.
+3. Confirm all external artwork images have valid on-screen source attribution and no Buy/Bid buttons.
+4. Recheck accessibility, hero LCP and img fallback behavior.
+5. Merge exact-head only after GREEN.
+6. Render preview deployment only when it can be proven without changing the dedicated DB admission flags; production READY still requires the separate PostgreSQL gate.
