@@ -53,6 +53,29 @@ const COMMONS = Object.freeze({
   14655: {
     image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Pierre-Auguste_Renoir_-_Two_Sisters_%28On_the_Terrace%29_-_1933.455_-_Art_Institute_of_Chicago.jpg?width=960',
     source: 'https://commons.wikimedia.org/wiki/File:Pierre-Auguste_Renoir_-_Two_Sisters_%28On_the_Terrace%29_-_1933.455_-_Art_Institute_of_Chicago.jpg'
+  },
+  // Optional artworks are admitted only when the museum API verifies
+  // Painting + public domain + IIIF identity; their image mirrors are
+  // separately matched to the same museum accession and Commons record.
+  16568: {
+    image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Claude_Monet_-_Water_Lilies_-_1933.1157_-_Art_Institute_of_Chicago.jpg?width=960',
+    source: 'https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Water_Lilies_-_1933.1157_-_Art_Institute_of_Chicago.jpg'
+  },
+  16571: {
+    image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Claude_Monet_-_Arrival_of_the_Normandy_Train%2C_Gare_Saint-Lazare_-_Google_Art_Project.jpg?width=960',
+    source: 'https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Arrival_of_the_Normandy_Train%2C_Gare_Saint-Lazare_-_Google_Art_Project.jpg'
+  },
+  111442: {
+    image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mary_Cassatt_-_The_Child%27s_Bath_-_1910.2_-_Art_Institute_of_Chicago.jpg?width=960',
+    source: 'https://commons.wikimedia.org/wiki/File:Mary_Cassatt_-_The_Child%27s_Bath_-_1910.2_-_Art_Institute_of_Chicago.jpg'
+  },
+  61128: {
+    image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Henri_de_Toulouse-Lautrec_-_At_the_Moulin_Rouge_-_1928.610_-_Art_Institute_of_Chicago.jpg?width=960',
+    source: 'https://commons.wikimedia.org/wiki/File:Henri_de_Toulouse-Lautrec_-_At_the_Moulin_Rouge_-_1928.610_-_Art_Institute_of_Chicago.jpg'
+  },
+  25865: {
+    image: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/1937.1039_-_The_Herring_Net.jpg?width=960',
+    source: 'https://commons.wikimedia.org/wiki/File:1937.1039_-_The_Herring_Net.jpg'
   }
 });
 
