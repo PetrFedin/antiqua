@@ -35,6 +35,7 @@ for(const device of viewports){
 test('v0.54 source API unavailable remains an honest reference gallery',async({page})=>{
   await page.route('https://api.artic.edu/**',route=>route.abort());
   await page.route('https://www.artic.edu/iiif/**',route=>route.abort());
+  await page.route('https://commons.wikimedia.org/**',route=>route.abort());
   await page.setViewportSize({width:390,height:844});
   await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
   const root=page.locator('[data-museum-open-access]');
