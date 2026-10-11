@@ -37,3 +37,24 @@ test('Museum reference imagery stays usable on iPhone-sized gallery screen',asyn
   await root.locator('[data-museum-artwork="27992"] [data-museum-open]').click();
   await expect(page.locator('dialog[data-museum-dialog][open]')).toBeVisible();
 });
+
+
+test('museum four-image gallery and mobile dialog keep scroll and close usable',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+  const root=page.locator('[data-museum-open-access]');
+  await expect(root.locator('[data-museum-artwork="27992"]')).toBeVisible();
+  await expect(root.locator('[data-museum-artwork="20684"]')).toBeVisible();
+  await expect(root.locator('[data-museum-artwork="28560"]')).toBeVisible();
+  await expect(root.locator('[data-museum-artwork="14655"]')).toBeVisible();
+  await root.locator('[data-museum-artwork="28560"] [data-museum-open]').click();
+  const modal=page.locator('dialog[data-museum-dialog][open]');
+  await expect(modal).toBeVisible();
+  const geometry=await modal.evaluate(el=>({height:el.getBoundingClientRect().height,viewport:innerHeight,close:el.querySelector('.museum-work-close').getBoundingClientRect().toJSON()}));
+  expect(geometry.height).toBeLessThanOrEqual(geometry.viewport+1);
+  expect(geometry.close.top).toBeGreaterThanOrEqual(0);
+  expect(geometry.close.bottom).toBeLessThanOrEqual(geometry.viewport);
+  await expect(page.locator('html')).toHaveClass(/museum-modal-open/);
+  await modal.locator('.museum-work-close').click();
+  await expect(page.locator('html')).not.toHaveClass(/museum-modal-open/);
+});
