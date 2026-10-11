@@ -48,7 +48,7 @@ test('v0.54 external museum artwork images must decode, not just exist in DOM',a
 
 for(const device of viewports){
   test('v0.54 gallery visual proof '+device.name,async({page})=>{
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await page.setViewportSize({width:device.width,height:device.height});
     await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
     const gallery=page.locator('[data-museum-open-access]');
@@ -60,7 +60,28 @@ for(const device of viewports){
     await expect(card.locator('a[href="https://www.artic.edu/artworks/27992"]')).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     expect(overflow,'document has horizontal overflow').toBe(false);
-    await settleMuseumGalleryImages(gallery);
+    const states=await settleMuseumGalleryImages(gallery);
+    // Full-page screenshots can omit off-screen decoded bitmaps in headless Chromium.
+    // The actual visitor scrolls; create viewport proof per museum grid row as well.
+    expect(states).toHaveLength(9);
+    for(const state of states){
+      expect(state.status,'decoded image '+state.id+' on '+device.name).toBe('loaded');
+    }
+    const cards=gallery.locator('.museum-artwork-card');
+    const columns=device.width>=881?3:2;
+    for(let i=0;i<9;i+=columns){
+      const image=cards.nth(i).locator('.museum-artwork-image img');
+      await image.scrollIntoViewIfNeeded();
+      await expect.poll(()=>image.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+      // Two compositor frames after actual scrolling: screenshot tests the
+      // painted viewport, not just the DOM image's decode state.
+      await page.evaluate(()=>new Promise(resolve=>
+        requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await page.screenshot({
+        path:'artifacts/visual-proof/gallery-row-'+device.name+'-'+Math.floor(i/columns)+'.png',
+        fullPage:false
+      });
+    }
     await page.screenshot({path:'artifacts/visual-proof/gallery-'+device.name+'.png',fullPage:true});
     await card.locator('[data-museum-open]').click();
     const dialog=page.locator('dialog[data-museum-dialog][open]');
