@@ -8,8 +8,44 @@ const viewports=[
   {name:'desktop',width:1440,height:900}
 ];
 
+// A visible DOM node is not evidence that its remote artwork bitmap loaded.
+// Wake lazy assets before full-page capture and record loaded/fallback states.
+async function settleMuseumGalleryImages(gallery) {
+  const cards=gallery.locator('.museum-artwork-card');
+  await cards.locator('img').evaluateAll(images => {
+    images.forEach(image => { image.loading='eager'; });
+  });
+  await expect.poll(
+    () => cards.evaluateAll(items => items.map(card => {
+      const image=card.querySelector('.museum-artwork-image img');
+      return image?.complete && image.naturalWidth>0 ? 'loaded'
+        : card.querySelector('.museum-image-fallback') ? 'fallback' : 'pending';
+    }).filter(state => state==='pending').length),
+    {timeout:30_000,intervals:[300,700,1500]}
+  ).toBe(0);
+  return cards.evaluateAll(items => items.map(card => ({
+    id:card.dataset.museumArtwork,
+    status:card.querySelector('.museum-artwork-image img')?.naturalWidth>0?'loaded':'fallback'
+  })));
+}
+
+test('v0.54 external museum artwork images must decode, not just exist in DOM',async({page})=>{
+  test.setTimeout(90_000);
+  await page.setViewportSize({width:834,height:1112});
+  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+  const gallery=page.locator('[data-museum-open-access]');
+  await expect(gallery).toBeVisible();
+  const state=await settleMuseumGalleryImages(gallery);
+  console.log('MUSEUM_IMAGE_STATES',JSON.stringify(state));
+  for(const id of ['27992','20684','28560','14655']) {
+    expect(state.find(item=>item.id===id)?.status,
+      'museum image '+id+' must be genuinely loaded').toBe('loaded');
+  }
+});
+
 for(const device of viewports){
   test('v0.54 gallery visual proof '+device.name,async({page})=>{
+    test.setTimeout(90_000);
     await page.setViewportSize({width:device.width,height:device.height});
     await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
     const gallery=page.locator('[data-museum-open-access]');
@@ -21,6 +57,7 @@ for(const device of viewports){
     await expect(card.locator('a[href="https://www.artic.edu/artworks/27992"]')).toBeVisible();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     expect(overflow,'document has horizontal overflow').toBe(false);
+    await settleMuseumGalleryImages(gallery);
     await page.screenshot({path:'artifacts/visual-proof/gallery-'+device.name+'.png',fullPage:true});
     await card.locator('[data-museum-open]').click();
     const dialog=page.locator('dialog[data-museum-dialog][open]');
