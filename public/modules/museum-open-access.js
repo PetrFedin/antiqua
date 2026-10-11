@@ -9,47 +9,21 @@ const LICENSE_URL = 'https://creativecommons.org/publicdomain/zero/1.0/';
 const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const CORE = Object.freeze([
-  {
-    id: 16568, imageId: '3c27b499-af56-f0d5-93b5-a7f2f1ad5813',
-    en: 'Water Lilies', ru: 'Кувшинки',
-    artistEn: 'Claude Monet', artistRu: 'Клод Моне',
-    date: '1906', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
-    dimensions: '89.9 × 94.1 cm', accession: '1933.1157', genre: 'landscape'
-  },
-  {
-    id: 20684, imageId: 'f8fd76e9-c396-5678-36ed-6a348c904d27',
-    en: 'Paris Street; Rainy Day', ru: 'Парижская улица в дождь',
-    artistEn: 'Gustave Caillebotte', artistRu: 'Гюстав Кайботт',
-    date: '1877', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
-    dimensions: '212.2 × 276.2 cm', accession: '1964.336', genre: 'city'
-  },
-  {
-    id: 28560, imageId: '6644829f-f292-c5c4-a73c-0356a6fdbf0d',
-    en: 'The Bedroom', ru: 'Спальня',
-    artistEn: 'Vincent van Gogh', artistRu: 'Винсент Ван Гог',
-    date: '1889', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
-    dimensions: '73.6 × 92.3 cm', accession: '1926.417', genre: 'interior'
-  },
-  {
-    id: 27992, imageId: '2d484387-2509-5e8e-2c43-22f9981972eb',
-    en: 'A Sunday on La Grande Jatte — 1884', ru: 'Воскресный день на острове Гранд-Жатт',
-    artistEn: 'Georges Seurat', artistRu: 'Жорж Сёра',
-    date: '1884–1886', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
-    dimensions: '207.5 × 308.1 cm', accession: '1926.224', genre: 'figures'
-  },
-  {
-    id: 16571, imageId: '0f1cc0e0-e42e-be16-3f71-2022da38cb93',
-    en: 'Arrival of the Normandy Train, Gare Saint-Lazare', ru: 'Прибытие нормандского поезда на вокзал Сен-Лазар',
-    artistEn: 'Claude Monet', artistRu: 'Клод Моне',
-    date: '1877', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
-    dimensions: '60.3 × 80.2 cm', accession: '1933.1158', genre: 'city'
-  }
+  // The full museum record confirms id, image_id, Painting and public domain.
+  {id: 27992, imageId: '2d484387-2509-5e8e-2c43-22f9981972eb',
+   en: 'A Sunday on La Grande Jatte — 1884', ru: 'Воскресный день на острове Гранд-Жатт',
+   artistEn: 'Georges Seurat', artistRu: 'Жорж Сёра',
+   date: '1884–1886', medium: 'Oil on canvas', mediumRu: 'Холст, масло',
+   dimensions: '207.5 × 308.1 cm', accession: '1926.224', genre: 'figures'}
 ]);
 
-// Further paintings are rendered only when live museum metadata proves
-// is_public_domain=true, artwork_type_title=Painting and a valid image_id.
-// Missing/changed API records are simply omitted; never guess an image.
+// Other records are never shipped with guessed image IDs or metadata;
+// they enter the UI only after live API verification.
 const OPTIONAL = Object.freeze([
+  {id: 16568, ru: 'Кувшинки', artistRu: 'Клод Моне', genre: 'landscape'},
+  {id: 20684, ru: 'Парижская улица в дождь', artistRu: 'Гюстав Кайботт', genre: 'city'},
+  {id: 28560, ru: 'Спальня', artistRu: 'Винсент Ван Гог', genre: 'interior'},
+  {id: 16571, ru: 'Прибытие поезда на вокзал Сен-Лазар', artistRu: 'Клод Моне', genre: 'city'},
   {id: 14655, ru: 'Две сестры (на террасе)', artistRu: 'Пьер Огюст Ренуар', genre: 'figures'},
   {id: 111442, ru: 'Купание ребёнка', artistRu: 'Мэри Кассат', genre: 'figures'},
   {id: 61128, ru: 'В Мулен Руж', artistRu: 'Анри де Тулуз-Лотрек', genre: 'figures'},
@@ -184,8 +158,8 @@ async function loadOptionalPaintings() {
         const artistEn = String(record.artist_display || '').split(' (')[0].trim();
         return [{
           id: record.id, imageId: record.image_id,
-          en: String(record.title || ''), ru: hint.ru,
-          artistEn, artistRu: hint.artistRu,
+          en: String(record.title || ''), ru: String(record.title || ''),
+          artistEn, artistRu: artistEn,
           date: String(record.date_display || '—'),
           medium: String(record.medium_display || 'Painting'),
           mediumRu: String(record.medium_display || 'Живопись'),
