@@ -111,7 +111,13 @@ export function museumImageUrl(item, width = 843) {
 // Wikimedia originals are preferred for verified paintings: Art Institute's IIIF
 // gateway may challenge embedded requests. Use the museum IIIF only as a fallback.
 export function museumDisplayImageUrl(item, width = 843) {
-  return COMMONS[Number(item?.id)]?.image || museumImageUrl(item, width);
+  const mirror = COMMONS[Number(item?.id)]?.image;
+  if (mirror) {
+    // 480px thumbnails are sufficient for the gallery; keep modal imagery sharp.
+    const size = Number(width) <= 400 ? 480 : 960;
+    return mirror.replace(/width=960$/, 'width=' + size);
+  }
+  return museumImageUrl(item, width);
 }
 export function bindMuseumImage(img, item, width = 843) {
   const primary = museumDisplayImageUrl(item, width);
@@ -146,7 +152,9 @@ function paintingCard(item) {
   media.className = 'museum-artwork-image';
   const img = document.createElement('img');
   img.alt = loc(item, 'artist') + '. ' + loc(item, 'title') + ', ' + item.date;
-  img.loading = 'lazy';
+  // Nine small museum cards: eager loading prevents visibly blank artwork grids
+  // when the panel is below the fold or a full-page screenshot is taken.
+  img.loading = 'eager';
   img.decoding = 'async';
   bindMuseumImage(img, item, 400);
   media.append(img);
@@ -206,7 +214,12 @@ function updateCards(section) {
   if (!grid) return;
   const genre = section.dataset.museumFilter || 'all';
   const items = allPaintings().filter(item => genre === 'all' || item.genre === genre);
-  grid.replaceChildren(...items.map(paintingCard));
+  // Do not destroy already decoded images when the optional AIC metadata arrives.
+  // Replacing all children re-started the CDN requests and created blank captures.
+  const previous = new Map(Array.from(grid.querySelectorAll('[data-museum-artwork]'),
+    card => [card.dataset.museumArtwork, card]));
+  grid.replaceChildren(...items.map(item =>
+    previous.get(String(item.id)) || paintingCard(item)));
   const count = section.querySelector('[data-museum-count]');
   if (count) count.textContent = String(items.length) + copy(' произведений', ' paintings');
 }
@@ -322,6 +335,7 @@ export function museumGalleryPanel() {
   // A single, bounded optional request. Basic gallery works without network/API.
   loadOptionalPaintings().then(() => {
     if (section.isConnected) updateCards(section);
+    section.dataset.museumHydrated = 'true';
   });
   return section;
 }
