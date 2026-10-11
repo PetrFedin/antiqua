@@ -854,3 +854,49 @@ body{overflow-x:hidden}
  .dossier-tabs::-webkit-scrollbar{display:none}
  .dossier-tabs a{white-space:nowrap}
 }
+
+
+/* v0.53 Museum Open Access. External images are a reference exhibition only,
+   never sale inventory or a substitute for canonical Media/Artwork authority. */
+.museum-open-access{padding-top:74px;padding-bottom:84px}
+.museum-open-head{display:flex;align-items:end;justify-content:space-between;gap:28px;border-top:1px solid var(--line);padding-top:32px;margin-bottom:24px}
+.museum-open-head>div{max-width:770px}
+.museum-open-head h2{margin:12px 0;font:400 clamp(36px,4.7vw,68px)/1.01 Georgia,'Times New Roman',serif;letter-spacing:-.04em}
+.museum-open-head p{font-size:15px;line-height:1.65;color:var(--muted);max-width:730px}
+.museum-open-head>a{white-space:nowrap;text-decoration:none;color:var(--ink);border-bottom:1px solid currentColor;font-size:13px;padding-bottom:4px}
+.museum-open-filters{display:flex;gap:7px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}
+.museum-open-filters button{white-space:nowrap;border:1px solid var(--line);border-radius:100px;background:transparent;color:var(--ink);padding:10px 16px;min-height:42px;cursor:pointer}
+.museum-open-filters button.active,.museum-open-filters button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.museum-open-count{font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:14px 0 18px}
+.museum-open-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px 15px}
+.museum-artwork-card{min-width:0;display:flex;flex-direction:column}
+.museum-artwork-open{border:0;padding:0;background:none;color:inherit;display:block;width:100%;text-align:left;cursor:pointer}
+.museum-artwork-image{position:relative;display:flex;width:100%;aspect-ratio:4/4.7;overflow:hidden;background:#ded6cd;align-items:center;justify-content:center}
+.museum-artwork-image img{display:block;width:100%;height:100%;object-fit:contain;transition:transform .4s ease}
+.museum-artwork-open:hover img{transform:scale(1.02)}
+.museum-artwork-badge{position:absolute;bottom:12px;left:12px;background:rgba(251,248,241,.92);padding:7px 10px;font-size:9px;letter-spacing:.08em;color:#26221d}
+.museum-artwork-info{display:grid;gap:6px;padding:16px 0 10px}
+.museum-artwork-creator{font-size:12px;color:var(--muted)}
+.museum-artwork-info strong{font:400 clamp(19px,2.2vw,29px)/1.15 Georgia,serif}
+.museum-artwork-facts{font-size:11px;line-height:1.5;color:var(--muted)}
+.museum-artwork-source{display:flex;flex-wrap:wrap;justify-content:space-between;gap:7px;border-top:1px solid var(--line);padding:12px 0;color:var(--muted);font-size:10px}
+.museum-artwork-source a{color:var(--ink)}
+.museum-open-terms{font-size:11px;color:var(--muted);line-height:1.7;margin:28px 0 0;max-width:960px}
+.museum-image-unavailable{background:repeating-linear-gradient(125deg,#d6cfc4,#d6cfc4 20px,#e6dfd6 20px,#e6dfd6 40px)}
+.museum-image-fallback{display:block;max-width:260px;text-align:center;line-height:1.65;padding:28px;font-size:12px;color:#514b45}
+.museum-work-dialog{position:fixed;inset:0;margin:auto;border:0;padding:0;width:min(1100px,calc(100vw - 28px));max-width:1100px;max-height:min(94dvh,850px);background:var(--paper);color:var(--ink);box-shadow:0 32px 100px #0008}
+.museum-work-dialog::backdrop{background:#111d}
+.museum-work-dialog[open]{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(300px,.75fr)}
+.museum-work-canvas{min-width:0;min-height:540px;background:#dbd3c8;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.museum-work-canvas img{width:100%;height:100%;max-height:82dvh;object-fit:contain}
+.museum-work-details{display:flex;flex-direction:column;padding:26px;gap:14px;overflow-y:auto}
+.museum-work-close{align-self:flex-end;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:50%;background:transparent;font-size:25px;cursor:pointer}
+.museum-work-author{font-size:14px;color:var(--muted);margin:0}
+.museum-work-details h2{font:400 clamp(32px,4vw,56px)/1.06 Georgia,serif;letter-spacing:-.03em;margin:0}
+.museum-work-details>p{line-height:1.6;margin:0}
+.museum-work-accession,.museum-work-disclaimer{color:var(--muted);font-size:12px}
+.museum-work-links{display:grid;gap:10px;margin-top:auto;padding-top:22px;border-top:1px solid var(--line)}
+.museum-work-links a{font-size:13px;color:inherit}
+@media(max-width:880px){.museum-open-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.museum-open-head{align-items:start;flex-direction:column}.museum-work-dialog[open]{grid-template-columns:1fr}.museum-work-canvas{min-height:0;height:min(49dvh,510px)}.museum-work-canvas img{max-height:49dvh}}
+@media(max-width:540px){.museum-open-access{padding-top:44px;padding-bottom:50px}.museum-open-grid{gap:14px 9px}.museum-artwork-info strong{font-size:19px}.museum-artwork-badge{font-size:8px;left:6px;bottom:6px}.museum-artwork-source{display:grid}.museum-open-head h2{font-size:39px}.museum-work-dialog{max-height:94dvh}.museum-work-details{padding:16px}.museum-work-canvas{height:42dvh}}
+@media(prefers-reduced-motion:reduce){.museum-artwork-image img{transition:none}}
