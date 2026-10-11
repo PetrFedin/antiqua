@@ -12,8 +12,10 @@ test('Museum open-access exhibition is art-first, attributed and not a fake sale
   await expect(card.locator('a[href="https://www.artic.edu/artworks/27992"]')).toBeVisible();
   await expect(card.locator('[data-passport]')).toHaveCount(0);
   await expect(card).not.toContainText(/Купить|Buy now|Ставка|Bid now/i);
-  const img=card.locator('img');
-  await expect(img).toHaveAttribute('src',/2d484387-2509-5e8e-2c43-22f9981972eb/);
+  // IIIF identity must remain verifiable when the external CDN is offline.
+  // The app replaces failed images with an explicit source-linked fallback.
+  await expect(card).toHaveAttribute('data-museum-image-id','2d484387-2509-5e8e-2c43-22f9981972eb');
+  await expect(card.locator('img, .museum-image-fallback').first()).toBeVisible();
   await card.locator('[data-museum-open]').click();
   const dialog=page.locator('dialog[data-museum-dialog][open]');
   await expect(dialog).toBeVisible();

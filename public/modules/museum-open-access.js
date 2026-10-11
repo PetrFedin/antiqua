@@ -58,6 +58,7 @@ function paintingCard(item) {
   article.className = 'museum-artwork-card';
   article.dataset.museumGenre = item.genre;
   article.dataset.museumArtwork = String(item.id);
+  article.dataset.museumImageId = item.imageId; // stable evidence even when a remote image fails to load
   const open = document.createElement('button');
   open.type = 'button';
   open.className = 'museum-artwork-open';

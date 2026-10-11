@@ -6,6 +6,7 @@ const museum=readFileSync(new URL('../public/modules/museum-open-access.js',impo
 const home=readFileSync(new URL('../public/modules/culture-discovery.js',import.meta.url),'utf8');
 const css=readFileSync(new URL('../public/styles.css',import.meta.url),'utf8');
 const seed=readFileSync(new URL('../data-v08.mjs',import.meta.url),'utf8');
+const server=readFileSync(new URL('../server-v14.mjs',import.meta.url),'utf8');
 
 test('public-domain reference paintings are separated from sale inventory',()=>{
   assert.match(museum,/museum-artwork-badge/);
@@ -31,6 +32,7 @@ test('museum hero and independent gallery are wired into the gallery-first flow'
 test('visual gallery is responsive and keeps missing external images honest',()=>{
   assert.match(css,/@media\(max-width:540px\).*?\.museum-open-access/s);
   assert.match(museum,/museum-image-unavailable/);
+  assert.match(museum,/article\.dataset\.museumImageId = item\.imageId/);
   assert.match(museum,/sourceFor\(item\)/);
   assert.match(museum,/AbortController/);
   assert.match(museum,/museum-work-disclaimer/);
@@ -38,4 +40,9 @@ test('visual gallery is responsive and keeps missing external images honest',()=
 test('the existing mock sale lot never pretends to be a museum painting',()=>{
   assert.match(seed,/painting-placeholder\.svg/);
   assert.doesNotMatch(seed,/artic\.edu\/artworks/);
+});
+
+test('museum metadata fetch is narrowly allowed by the application CSP',()=>{
+  assert.match(server,/connect-src 'self' https:\/\/api\.artic\.edu; frame-ancestors 'none'/);
+  assert.doesNotMatch(server,/connect-src[^;]*\*/);
 });
