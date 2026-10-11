@@ -24,7 +24,7 @@ test('featured Seurat uses a primary-source IIIF id and real attribution',()=>{
 });
 test('museum hero and independent gallery are wired into the gallery-first flow',()=>{
   assert.match(home,/featuredMuseumPainting/);
-  assert.match(home,/museumImageUrl\(museum,843\)/);
+  assert.match(home,/bindMuseumImage\(img,museum,843\)/);
   assert.match(home,/open\.dataset\.museumOpen/);
   assert.match(home,/root\.append\(museumGalleryPanel\(\)\)/);
   assert.doesNotMatch(home,/open\.dataset\.passport=f\.cover\.id/);
@@ -33,6 +33,10 @@ test('visual gallery is responsive and keeps missing external images honest',()=
   assert.match(css,/@media\(max-width:540px\).*?\.museum-open-access/s);
   assert.match(museum,/museum-image-unavailable/);
   assert.match(museum,/article\.dataset\.museumImageId = item\.imageId/);
+  assert.match(museum,/Special:Redirect\/file/);
+  assert.match(museum,/bindMuseumImage\(img, item, 400\)/);
+  assert.match(css,/html\.museum-modal-open\{overflow:hidden\}/);
+  assert.match(css,/\.museum-work-details\{flex:1 1 auto;min-height:0;overflow-y:auto/);
   assert.match(museum,/sourceFor\(item\)/);
   assert.match(museum,/AbortController/);
   assert.match(museum,/museum-work-disclaimer/);
