@@ -14,7 +14,7 @@ if(target.mode==='managed' && process.env.PREVIEW_MODE!=='true')
 
 const pool=new Pool({
   connectionString:process.env.DATABASE_URL,
-  ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:false},
+  ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:true},
   max:1
 });
 let client;
