@@ -67,6 +67,14 @@ try{
   const expected=migrationManifest.map(m=>m.version);
   if(JSON.stringify(actual)!==JSON.stringify(expected))
     throw new Error('ANTIQUA_DB_GATE: POST_MIGRATION_MANIFEST_MISMATCH');
+  const complete=await inspectDatabaseLineage(client);
+  if(complete.pendingVersions.length!==0)
+    throw new Error('ANTIQUA_DB_GATE: POST_MIGRATION_LINEAGE_INCOMPLETE');
+  // The same process may start the runtime immediately after migration. Its
+  // inventory has legitimately changed; refresh only this process's approved
+  // fingerprint. Subsequent deployments still require an independent review.
+  if(target.mode==='managed')
+    process.env.ANTIQUA_REVIEWED_DB_FINGERPRINT=complete.fingerprint;
   console.log('ANTIQUA schema migrations complete',actual.length,actual.at(-1));
 }finally{
   if(client){
