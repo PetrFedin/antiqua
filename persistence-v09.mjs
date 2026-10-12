@@ -32,7 +32,7 @@ class PgStore{
  async hasDomain(){return Number((await this.pool.query('select count(*)::int n from objects')).rows[0].n)>0} async hydrate(){const [o,l,a,ord,off,d,r]=await Promise.all([this.pool.query('select passport from objects'),this.pool.query('select payload from listings'),this.pool.query('select state from auctions'),this.pool.query('select payload from orders'),this.pool.query('select payload from offers'),this.pool.query('select payload from seller_drafts'),this.pool.query('select * from catalogue_reviews')]);return{objects:o.rows.map(x=>x.passport),listings:l.rows.map(x=>x.payload),auctions:a.rows.map(x=>x.state),orders:ord.rows.map(x=>x.payload),offers:off.rows.map(x=>x.payload),drafts:d.rows.map(x=>x.payload),reviews:r.rows.map(x=>({id:x.id,draftId:x.draft_id,objectId:x.object_id,assignedTo:x.assigned_to,catalogueStatus:x.catalogue_status,trustStatus:x.trust_status,riskFlags:x.risk_flags,requestedChanges:x.requested_changes,decisionNote:x.decision_note,createdAt:x.created_at.toISOString()}))}}
 }
 export async function createPersistence({requireDatabase=false}={}){if(!process.env.DATABASE_URL){if(requireDatabase)throw new Error('DATABASE_URL is required');return new MemoryStore()}const target=verifyDatabaseTarget(process.env.DATABASE_URL);
-const {Pool}=await import('pg'),pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:false},max:10}),p=new PgStore(pool);
+const {Pool}=await import('pg'),pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.PGSSL==='disable'?false:{rejectUnauthorized:true},max:10}),p=new PgStore(pool);
 try{
  await p.health();
  if(target.mode==='managed'){
