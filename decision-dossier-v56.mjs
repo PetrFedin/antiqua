@@ -69,7 +69,7 @@ function evidenceProjection(passport){
     :'EVIDENCE_INDEXED';
   return {
     status,
-    events,
+    events:data,
     eventCount:events.length,
     conflictCount:conflicts,
     unresolvedCount:unresolved,
