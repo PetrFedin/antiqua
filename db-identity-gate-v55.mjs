@@ -38,7 +38,7 @@ export function verifyDatabaseTarget(connectionString,env=process.env){
   if(url.port!=='5432')stop('SESSION_POOLER_PORT_5432_REQUIRED');
   if(username!=='postgres.'+ref)stop('POOLER_USERNAME_REF_MISMATCH');
   if(dbName!=='postgres')stop('DB_NAME_MISMATCH');
-  if(env.PGSSL==='disable'||['disable','allow','prefer'].includes(url.searchParams.get('sslmode')))stop('SSL_REQUIRED');
+  if(env.PGSSL==='disable'||(url.searchParams.has('sslmode')&&url.searchParams.get('sslmode')!=='verify-full'))stop('SSL_REQUIRED');
   return Object.freeze({mode:'managed',database:dbName,projectRef:ref});
 }
 
