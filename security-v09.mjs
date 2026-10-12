@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {verifyDatabaseTarget} from './db-identity-gate-v55.mjs';
 import {promisify} from 'node:util';
 const scryptAsync=promisify(crypto.scrypt),B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 export const ROLE_PERMISSIONS={BUYER:['catalog.read','collection.manage','auction.register','auction.bid','shop.buy','offer.create','service.request'],SELLER:['catalog.read','creator.profile.manage','seller.draft.manage','seller.offer.respond','seller.order.read','seller.analytics.read','seller.service.respond'],DEALER:['catalog.read','creator.profile.manage','seller.draft.manage','seller.offer.respond','seller.order.read','seller.analytics.read','seller.service.respond','dealer.profile.manage'],EXPERT:['catalog.read','expert.opinion.write'],CATALOGUER:['catalog.read','catalogue.queue.read','catalogue.review'],TRUST_REVIEWER:['catalog.read','catalogue.queue.read','trust.review','verification.review','audit.read'],ADMIN:['*']};
@@ -8,7 +9,16 @@ export function validatePassword(v){const p=String(v||'');return{ok:p.length>=12
 export async function hashPassword(password){const c=validatePassword(password);if(!c.ok)throw Object.assign(new Error(c.requirements),{status:400,code:'WEAK_PASSWORD'});const salt=crypto.randomBytes(16),key=await scryptAsync(password,salt,64,{N:16384,r:8,p:1});return`scrypt$16384$${salt.toString('base64url')}$${Buffer.from(key).toString('base64url')}`;}
 export async function verifyPassword(password,encoded){try{const [kind,n,salt,key]=String(encoded).split('$');if(kind!=='scrypt')return false;const actual=await scryptAsync(String(password),Buffer.from(salt,'base64url'),64,{N:Number(n),r:8,p:1});return crypto.timingSafeEqual(Buffer.from(key,'base64url'),Buffer.from(actual));}catch{return false;}}
 export const newToken=()=>crypto.randomBytes(32).toString('base64url');export const tokenHash=t=>crypto.createHash('sha256').update(String(t)).digest('hex');export const fingerprint=v=>crypto.createHash('sha256').update(String(v||'')).digest('hex').slice(0,32);export const uid=p=>`${p}-${crypto.randomUUID().replaceAll('-','').slice(0,18)}`;
-export function appSecret(){if(process.env.APP_SECRET)return process.env.APP_SECRET;if(process.env.PREVIEW_MODE==='false')throw new Error('APP_SECRET is required when PREVIEW_MODE=false');return 'antiqua-preview-secret-not-for-production';}
+export function appSecret(env=process.env){
+  const managed=Boolean(env.DATABASE_URL) &&
+    verifyDatabaseTarget(env.DATABASE_URL,env).mode==='managed';
+  const secret=String(env.APP_SECRET||'');
+  if(managed && (secret.length<32 || secret==='antiqua-preview-secret-not-for-production'))
+    throw new Error('ANTIQUA_DB_GATE: STRONG_APP_SECRET_REQUIRED');
+  if(secret)return secret;
+  if(env.PREVIEW_MODE==='false')throw new Error('APP_SECRET is required when PREVIEW_MODE=false');
+  return 'antiqua-preview-secret-not-for-production';
+}
 export const csrfFor=sid=>crypto.createHmac('sha256',appSecret()).update(String(sid)).digest('base64url');
 const secretKey=()=>crypto.createHash('sha256').update(appSecret()).digest();
 export function encryptSecret(text){const iv=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',secretKey(),iv),enc=Buffer.concat([c.update(String(text),'utf8'),c.final()]);return`${iv.toString('base64url')}.${c.getAuthTag().toString('base64url')}.${enc.toString('base64url')}`;}
