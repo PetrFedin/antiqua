@@ -34,6 +34,7 @@ fails(()=>verifyDatabaseTarget(managedUrl.replace(':5432/',':6543/'),managed),'S
 fails(()=>verifyDatabaseTarget(managedUrl.replace('postgres.'+ref,'postgres.other'),managed),'POOLER_USERNAME_REF_MISMATCH');
 fails(()=>verifyDatabaseTarget(managedUrl.replace('aws-0-eu-central-1.pooler.supabase.com','db.'+ref+'.supabase.co'),managed),'SUPAVISOR_SESSION_POOLER_REQUIRED');
 fails(()=>verifyDatabaseTarget(managedUrl,{...managed,PGSSL:'disable'}),'SSL_REQUIRED');
+fails(()=>verifyDatabaseTarget(managedUrl+'?sslmode=require',managed),'SSL_REQUIRED');
 const correct=verifyDatabaseTarget(managedUrl,managed);
 assert.equal(correct.mode,'managed');
 assert.equal(correct.projectRef,ref);
