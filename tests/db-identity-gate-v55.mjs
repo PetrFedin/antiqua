@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {
   verifyDatabaseTarget,
   inspectDatabaseLineage,
@@ -123,5 +125,19 @@ assert.doesNotMatch(serverSrc,/if\(PREVIEW&&\(url\.pathname/);
 assert.match(authSrc,/if\(!PREVIEW_DEMO\)return send\(res,404/);
 assert.match(authSrc,/currentPreviewCode:PREVIEW_DEMO\?totpCode\(secret\):undefined/);
 
+
+// Prove entrypoints fail before any DNS, pool connection or DDL against a
+// fake external Supabase DSN. The guard must not echo secrets in error output.
+for(const file of ['../scripts/start-v52.mjs','../scripts/migrate-v14.mjs']){
+  const child=spawnSync(process.execPath,[fileURLToPath(new URL(file,import.meta.url))],{
+    encoding:'utf8',timeout:12000,
+    env:{...process.env,DATABASE_URL:managedUrl,PREVIEW_MODE:'true',
+      ANTIQUA_CONFIRMED_SUPABASE_REF:'',ANTIQUA_DB_IDENTITY_APPROVED:'false',
+      ANTIQUA_EXTERNAL_MANAGED_SCHEMA:'true',ANTIQUA_MIGRATE_ON_START:'false'}
+  });
+  assert.equal(child.status,1,file+' must reject missing independent project proof');
+  assert.match(child.stderr,/ANTIQUA_DB_GATE: CONFIRMED_PROJECT_REF_REQUIRED/);
+  assert.doesNotMatch(child.stderr,/not-a-secret/,'never leak connection password');
+}
 
 console.log('ANTIQUA v55 database identity and schema-lineage fail-closed tests PASS');
