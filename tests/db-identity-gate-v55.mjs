@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {
   verifyDatabaseTarget,
   inspectDatabaseLineage,
   requireMigrationApproval,
-  summarizeDatabaseInspection
+  summarizeDatabaseInspection,
+  permitsDemoSeeding
 } from '../db-identity-gate-v55.mjs';
 import {migrationVersions} from '../migration-manifest-v16.mjs';
 
@@ -97,4 +99,19 @@ const complete=mockPg({
 });
 assert.deepEqual((await inspectDatabaseLineage(complete)).pendingVersions,[]);
 assert.equal(expected.length,33);
+// Managed Supabase must never receive seeded preview credentials or fake KYC.
+// A configured PostgreSQL that fails to connect must not downgrade to memory.
+assert.equal(permitsDemoSeeding(true,'MEMORY_FALLBACK',undefined,base),true);
+assert.equal(permitsDemoSeeding(true,'MEMORY_FALLBACK',testUrl,base),false);
+assert.equal(permitsDemoSeeding(false,'MEMORY_FALLBACK',undefined,base),false);
+assert.equal(permitsDemoSeeding(true,'POSTGRES',testUrl,base),true);
+assert.equal(permitsDemoSeeding(true,'POSTGRES',managedUrl,managed),false);
+assert.equal(permitsDemoSeeding(false,'POSTGRES',testUrl,base),false);
+const persistenceSrc=await readFile(new URL('../persistence-v09.mjs',import.meta.url),'utf8');
+const runtimeSrc=await readFile(new URL('../runtime-v09.mjs',import.meta.url),'utf8');
+assert.match(runtimeSrc,/permitsDemoSeeding\(PREVIEW,db\.kind,process\.env\.DATABASE_URL\)/);
+assert.doesNotMatch(runtimeSrc,/if\(PREVIEW\)await seedAccounts\(db\)/);
+assert.doesNotMatch(persistenceSrc,/Postgres unavailable; using preview memory fallback/);
+assert.match(persistenceSrc,/A connection failure MUST halt startup/);
+
 console.log('ANTIQUA v55 database identity and schema-lineage fail-closed tests PASS');
