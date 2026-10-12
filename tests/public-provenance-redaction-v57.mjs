@@ -70,6 +70,18 @@ reordered.provenanceEvents[0].event.ownerName='DIFFERENT_PRIVATE_OWNER';
 const publicChanged=projectPublicProvenanceEvidencePassport(reordered);
 assert.equal(publicChanged.evidencePackageSha256,publicView.evidencePackageSha256,
   'private-only changes must not modify hash of publicly disclosed fields');
+const untrusted=structuredClone(original);
+untrusted.provenanceEvents[0].id='private_owner@example.com';
+untrusted.provenanceEvents[0].evidenceStatus='PRIVATE_STATUS_OWNER';
+untrusted.evidenceSummary.gapIndex.eventGaps=[
+  {eventId:'private_owner@example.com',codes:['CONFLICTING_ASSERTION']}
+];
+const redacted=projectPublicProvenanceEvidencePassport(untrusted);
+assert.equal(redacted.provenanceEvents[0].evidenceStatus,'UNSPECIFIED');
+assert.equal(redacted.provenanceEvents[0].id,'public-event-1');
+assert.equal(redacted.evidenceSummary.gapIndex.eventGaps[0].eventId,'public-event-1');
+assert.doesNotMatch(JSON.stringify(redacted),/private_owner@example.com|PRIVATE_STATUS_OWNER/);
+
 const safeChanged=structuredClone(original);
 safeChanged.provenanceEvents[0].evidenceStatus='REJECTED';
 assert.notEqual(projectPublicProvenanceEvidencePassport(safeChanged).evidencePackageSha256,
