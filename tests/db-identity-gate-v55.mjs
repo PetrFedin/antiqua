@@ -44,7 +44,7 @@ assert.equal(correct.mode,'managed');
 assert.equal(correct.projectRef,ref);
 
 const expected=migrationVersions();
-function mockPg({tables=[],versions=[],username='postgres',database='postgres'}={}){
+function mockPg({tables=[],versions=[],username='postgres',database='postgres',structuralChange=''}={}){
   let begun=false,rolledBack=false;
   return {
     get rolledBack(){return rolledBack},
@@ -58,6 +58,16 @@ function mockPg({tables=[],versions=[],username='postgres',database='postgres'}=
         return{rows:tables.map(tablename=>({tablename}))};
       if(sql.includes('public.schema_migrations'))
         return{rows:versions.map(version=>({version}))};
+      if(sql.includes('pg_catalog.pg_attribute a'))
+        return{rows:tables.map(table_name=>({table_name,attnum:1,attname:'id',data_type:'text',not_null:true}))};
+      if(sql.includes('pg_catalog.pg_indexes'))
+        return{rows:tables.includes('objects')?[{tablename:'objects',indexname:'objects_pkey',indexdef:'CREATE INDEX '+structuralChange}]:[]};
+      if(sql.includes('pg_catalog.pg_constraint p'))
+        return{rows:[]};
+      if(sql.includes('c.relrowsecurity'))
+        return{rows:tables.map(table_name=>({table_name,relrowsecurity:false,relforcerowsecurity:false}))};
+      if(sql.includes('pg_catalog.pg_policies'))
+        return{rows:[]};
       throw new Error('unexpected SQL: '+sql);
     }
   };
@@ -100,6 +110,16 @@ const complete=mockPg({
   versions:expected
 });
 assert.deepEqual((await inspectDatabaseLineage(complete)).pendingVersions,[]);
+const altered=mockPg({
+  tables:['schema_migrations','accounts','objects','listings','auctions','media_assets'],
+  versions:expected,structuralChange:' ALTERED_COLUMN'
+});
+const stableFingerprint=(await inspectDatabaseLineage(mockPg({
+  tables:['schema_migrations','accounts','objects','listings','auctions','media_assets'],
+  versions:expected
+}))).fingerprint;
+const changedFingerprint=(await inspectDatabaseLineage(altered)).fingerprint;
+assert.notEqual(stableFingerprint,changedFingerprint,'schema changes must invalidate reviewed fingerprint');
 assert.equal(expected.length,33);
 // Managed Supabase must never receive seeded preview credentials or fake KYC.
 // A configured PostgreSQL that fails to connect must not downgrade to memory.
