@@ -46,9 +46,9 @@ try{
  return p;
 }catch(e){
  await pool.end().catch(()=>{});
- if(String(e?.message||'').startsWith('ANTIQUA_DB_GATE:'))throw e;
- if(requireDatabase)throw e;
- console.error('Postgres unavailable; using preview memory fallback:',e.message);
- return new MemoryStore();
+ // An explicitly configured DATABASE_URL is an authoritative data boundary.
+ // A connection failure MUST halt startup, never silently switch to memory.
+ // Memory preview is permitted only when DATABASE_URL was never supplied.
+ throw e;
 }}
 export async function seedAccounts(p){const defs=[['acct-buyer-demo','buyer@demo.antiqua','Demo Collector','BUYER',null,['BUYER'],'BuyerDemo!09','KYC','PERSON'],['acct-seller-demo','seller@demo.antiqua','Preview Dealer','SELLER','seller-preview',['BUYER','SELLER','DEALER'],'SellerDemo!09','KYB','ORGANIZATION'],['acct-operator-demo','operator@demo.antiqua','Catalogue & Trust Operator','STAFF',null,['CATALOGUER','TRUST_REVIEWER','ADMIN'],'OperatorDemo!09','KYC','PERSON']];for(const [id,email,displayName,accountType,sellerId,roles,password,caseType,subjectType] of defs){let a=await p.findAccountByEmail(email);if(!a)a=await p.createAccount({id,email,displayName,passwordHash:await hashPassword(password),accountType,status:'ACTIVE',sellerId,twofaStatus:'DISABLED',twofaSecretEnc:null,roles,createdAt:new Date().toISOString()});if(!await p.verificationFor(a.id,caseType)){const ts=new Date().toISOString();await p.putVerification({id:`ver-${id}`,accountId:id,subjectType,caseType,status:'VERIFIED',provider:'PREVIEW_INTERNAL',riskLevel:'LOW',decisionReason:'Seeded preview verification',submittedAt:ts,decidedAt:ts,expiresAt:new Date(Date.now()+31536000000).toISOString(),createdAt:ts,updatedAt:ts})}}}
