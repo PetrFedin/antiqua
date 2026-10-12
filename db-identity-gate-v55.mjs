@@ -42,6 +42,15 @@ export function verifyDatabaseTarget(connectionString,env=process.env){
   return Object.freeze({mode:'managed',database:dbName,projectRef:ref});
 }
 
+// Preview credentials and seeded VERIFIED KYC/KYB demo accounts must never
+// be written to a managed PostgreSQL, including while PREVIEW_MODE=true.
+export function permitsDemoSeeding(preview,dbKind,databaseUrl,env=process.env){
+  if(!preview)return false;
+  if(dbKind==='MEMORY_FALLBACK')return !databaseUrl;
+  if(dbKind!=='POSTGRES'||!databaseUrl)return false;
+  return verifyDatabaseTarget(databaseUrl,env).mode==='isolated-test';
+}
+
 export async function inspectDatabaseLineage(client){
   await client.query('BEGIN READ ONLY');
   try{
