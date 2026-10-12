@@ -47,6 +47,8 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run migrate
+      - name: Prove migration replay is a no-op
+        run: npm run migrate
       - run: npm run test:postgres
 
   object-storage:
@@ -99,5 +101,7 @@ jobs:
           docker logs antiqua-minio
           exit 1
       - run: npm run migrate
+      - name: Prove migration replay is a no-op
+        run: npm run migrate
       - run: node scripts/prepare-object-storage-v15.mjs
       - run: npm run test:storage
