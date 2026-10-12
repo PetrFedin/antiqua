@@ -113,5 +113,15 @@ assert.match(runtimeSrc,/permitsDemoSeeding\(PREVIEW,db\.kind,process\.env\.DATA
 assert.doesNotMatch(runtimeSrc,/if\(PREVIEW\)await seedAccounts\(db\)/);
 assert.doesNotMatch(persistenceSrc,/Postgres unavailable; using preview memory fallback/);
 assert.match(persistenceSrc,/A connection failure MUST halt startup/);
+assert.match(runtimeSrc,/export const PREVIEW_DEMO=permitsDemoSeeding/);
+assert.match(runtimeSrc,/if\(PREVIEW_DEMO\)\{for\(const l of lots\)/);
+assert.doesNotMatch(runtimeSrc,/if\(PREVIEW\)\{for\(const l of lots\)/);
+const serverSrc=await readFile(new URL('../server-v14.mjs',import.meta.url),'utf8');
+const authSrc=await readFile(new URL('../routes-auth-v09.mjs',import.meta.url),'utf8');
+assert.match(serverSrc,/if\(PREVIEW_DEMO&&\(url\.pathname/);
+assert.doesNotMatch(serverSrc,/if\(PREVIEW&&\(url\.pathname/);
+assert.match(authSrc,/if\(!PREVIEW_DEMO\)return send\(res,404/);
+assert.match(authSrc,/currentPreviewCode:PREVIEW_DEMO\?totpCode\(secret\):undefined/);
+
 
 console.log('ANTIQUA v55 database identity and schema-lineage fail-closed tests PASS');
