@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {appSecret} from '../security-v09.mjs';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -39,6 +40,11 @@ fails(()=>verifyDatabaseTarget(managedUrl.replace('postgres.'+ref,'postgres.othe
 fails(()=>verifyDatabaseTarget(managedUrl.replace('aws-0-eu-central-1.pooler.supabase.com','db.'+ref+'.supabase.co'),managed),'SUPAVISOR_SESSION_POOLER_REQUIRED');
 fails(()=>verifyDatabaseTarget(managedUrl,{...managed,PGSSL:'disable'}),'SSL_REQUIRED');
 fails(()=>verifyDatabaseTarget(managedUrl+'?sslmode=require',managed),'SSL_REQUIRED');
+fails(()=>appSecret({...managed,DATABASE_URL:managedUrl}),'STRONG_APP_SECRET_REQUIRED');
+fails(()=>appSecret({...managed,DATABASE_URL:managedUrl,APP_SECRET:'short'}),'STRONG_APP_SECRET_REQUIRED');
+fails(()=>appSecret({...managed,DATABASE_URL:managedUrl,APP_SECRET:'antiqua-preview-secret-not-for-production'}),'STRONG_APP_SECRET_REQUIRED');
+assert.equal(appSecret({...managed,DATABASE_URL:managedUrl,APP_SECRET:'dedicated-protected-not-reused-project-secret-2026'}),'dedicated-protected-not-reused-project-secret-2026');
+assert.equal(appSecret({...base,DATABASE_URL:testUrl}),'antiqua-preview-secret-not-for-production');
 const correct=verifyDatabaseTarget(managedUrl,managed);
 assert.equal(correct.mode,'managed');
 assert.equal(correct.projectRef,ref);
