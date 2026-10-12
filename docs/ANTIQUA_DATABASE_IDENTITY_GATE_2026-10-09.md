@@ -179,3 +179,13 @@ A production Supabase migration is not authorized merely because a connection st
 **Safety stop:** missing project identity, mismatched schema or failed TLS must prevent *all* external DB reads/writes used by the app, not merely the migration job. Code deployed in `main` remains unchanged until GitHub checks and independent review approve this proposal.
 
 **Post-P0 product priority:** Decision Dossier + Private Rooms as a rights-scoped projection of the existing painting/passport/provenance and inquiry/offer authorities. See `docs/ANTIQUA_DECISION_DOSSIER_PRIVATE_ROOMS_EPIC_2026-10-13.md`; no ARCOO-like homepage or additional filters before it.
+
+## Authentication-key and schema-drift safeguards (proposed v0.55)
+
+- When binding any externally managed PostgreSQL, supply a **unique secret** `APP_SECRET` (minimum 32 characters, generated with a cryptographically secure source) through private Render configuration. The known preview string `antiqua-preview-secret-not-for-production` and short values are rejected. The secret protects application session/CSRF and encrypted sensitive information; rotation requires a deliberate compatibility/reencryption plan, not an uncoordinated edit.
+- In managed preview mode, **do not seed demo buyer/seller/operator accounts or pretend KYC/KYB is verified**. Preview demo seeds are restricted to memory-only preview or explicitly isolated CI databases.
+- If `DATABASE_URL` is provided and PostgreSQL connection fails, runtime must stop; it must **not** silently fall back to `MEMORY_FALLBACK` and accept new non-durable data.
+- Reviewed schema fingerprint includes not only public table names and migration history, but also column definitions, indexes, check/FK/other constraints, RLS flags, policies and the active database/search path. The digest is printed without credentials or raw confidential field defaults. A changed fingerprint invalidates prior approval.
+- Keep TLS certificate validation; do not use `rejectUnauthorized:false` on the managed connection. Any custom trusted CA must be handled securely and tested prior to release.
+
+These safeguards are staged in [Draft PR #136](https://github.com/PetrFedin/antiqua/pull/136); their presence is NOT proof of managed PostgreSQL admission. Exact-head CI and independent review remain mandatory.
