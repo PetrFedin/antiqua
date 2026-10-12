@@ -156,3 +156,26 @@ Production admission remains blocked until the correct Antiqua Supabase project 
 Safe current state:
 
 `MEMORY_FALLBACK + PREVIEW_MODE=true + no database mutation`
+
+
+## v0.55 fail-closed software enforcement — proposed, pending CI and review (2026-10-13)
+
+**This appendix supersedes the older procedural migration instructions once PR hardening/db-identity-gate-v55 is reviewed and merged.** The identity itself is still UNKNOWN; the presence of new guards is not database admission.
+
+**Verified code-release state at proposal:** GitHub main and Render live deploy both point to `4f3e396ce6052ae8924235eab3ed4ad11cac470c`; runtime log remains `MEMORY_FALLBACK`. The correct Antiqua Supabase project is not visible in the current authenticated organization. No database was created or migrated.
+
+A production Supabase migration is not authorized merely because a connection string is present. To run migration with the v0.55 candidate:
+1. Restore Supabase access and independently collect management API metadata (organization, project ref, name, creation time, region, database host). Record non-secret evidence and assert exclusive Antiqua ownership. Never accept an old guessed ref.
+2. In a protected environment, set `ANTIQUA_CONFIRMED_SUPABASE_REF` to the freshly verified 20-character ref, `ANTIQUA_DB_IDENTITY_APPROVED=true` only after an accountable human review, `PREVIEW_MODE=true`, and `ANTIQUA_EXTERNAL_MANAGED_SCHEMA=true`. These flags are procedural attestations, not substitutes for primary-source proof.
+3. Provide the verified project's secret `DATABASE_URL` via protected credential storage. The guard permits only `postgres.<ref>` on the project's Supavisor session-pooler host, port `5432`, database `postgres`, with verified TLS. Do not paste the secret in PRs, logs or chat.
+4. Run `node scripts/audit-db-readonly-v55.mjs` from an authorized secure client. It **only inspects**, producing a source-table inventory, current database/user, expected migration prefix and SHA-256 inventory fingerprint without printing a DSN or password.
+5. Independently review the inventory; reject foreign tables, unexpected or gapped migrations, and empty/spoofed lineage. Set `ANTIQUA_REVIEWED_DB_FINGERPRINT` only to the exact reviewed fingerprint.
+6. Only after steps 1–5 and a verified backup/rollback plan, run the managed `001–033` runner in preview mode. It skips applied canonical versions and stops on wrong identity, schema drift or a changed fingerprint. Each migration plus its history marker is enclosed in one transaction.
+7. Immediately verify the completed migration set and capture the **new** read-only fingerprint. Disable `ANTIQUA_MIGRATE_ON_START` and update `ANTIQUA_REVIEWED_DB_FINGERPRINT` to the reviewed completed schema fingerprint for subsequent startups. A first-boot in-process fingerprint refresh never grants permission for future deployments.
+8. Only then consider `PREVIEW_MODE=false`, `/api/ready=200`, exact deployed SHA, controlled write/restart durability and restore from backup. No room/decision dossier schema until all P0 gates pass.
+
+**Isolated CI:** PostgreSQL test containers may set `ANTIQUA_ISOLATED_TEST_DB=true` together with `PREVIEW_MODE=true`, username `antiqua` and the specific `antiqua_test` / `antiqua_storage_test` local DB names. Never set this test bypass on Render or on any Supabase project.
+
+**Safety stop:** missing project identity, mismatched schema or failed TLS must prevent *all* external DB reads/writes used by the app, not merely the migration job. Code deployed in `main` remains unchanged until GitHub checks and independent review approve this proposal.
+
+**Post-P0 product priority:** Decision Dossier + Private Rooms as a rights-scoped projection of the existing painting/passport/provenance and inquiry/offer authorities. See `docs/ANTIQUA_DECISION_DOSSIER_PRIVATE_ROOMS_EPIC_2026-10-13.md`; no ARCOO-like homepage or additional filters before it.
