@@ -256,6 +256,14 @@ const PUBLIC_PROVENANCE_EVENT_KINDS=new Set([
   'EXHIBITION','PUBLICATION','OWNERSHIP','TRANSFER','SALE',
   'AUCTION','CONSERVATION','RESTORATION','ATTRIBUTION','OTHER'
 ]);
+const PUBLIC_EVIDENCE_STATUSES=new Set([
+  'VERIFIED','UNVERIFIED','PENDING','UNKNOWN','UNRESOLVED',
+  'DISPUTED','CANDIDATE','REJECTED','UNSPECIFIED'
+]);
+const publicEventId=(value,sequence)=>{
+  const id=String(value??'');
+  return /^[A-Za-z0-9_.:-]{1,120}$/.test(id)?id:'public-event-'+Number(sequence);
+};
 const publicText=value=>{
   if(typeof value==='string')return value.slice(0,500);
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
@@ -271,12 +279,13 @@ export function projectPublicProvenanceEvidencePassport(passport){
   const events=Array.isArray(passport.provenanceEvents)?passport.provenanceEvents:[];
   const normalized=events.map(entry=>{
     const kind=String(entry.event?.kind||'').toUpperCase();
+    const status=String(entry.evidenceStatus||'').toUpperCase();
     return {
-      id:String(entry.id),
+      id:publicEventId(entry.id,entry.sequenceNo),
       sequenceNo:Number(entry.sequenceNo),
       event:{kind:PUBLIC_PROVENANCE_EVENT_KINDS.has(kind)?kind:'OTHER'},
-      evidenceClass:entry.evidenceClass,
-      evidenceStatus:entry.evidenceStatus,
+      evidenceClass:evidenceClass(entry.evidenceClass),
+      evidenceStatus:PUBLIC_EVIDENCE_STATUSES.has(status)?status:'UNSPECIFIED',
       evidenceRef:null,
       evidenceReferenceRecorded:Boolean(entry.evidenceRef),
       unresolved:Boolean(entry.unresolved),
@@ -296,10 +305,14 @@ export function projectPublicProvenanceEvidencePassport(passport){
       totalGaps:Number(summary.gapIndex?.totalGaps||0),
       byCode:Object.fromEntries(codes.map(code=>[code,Number(byCode[code]||0)])),
       eventGaps:Array.isArray(summary.gapIndex?.eventGaps)
-        ?summary.gapIndex.eventGaps.map(x=>({
-          eventId:String(x.eventId),
-          codes:Array.isArray(x.codes)?x.codes.filter(code=>codes.includes(code)):[]
-        })):[],
+        ?summary.gapIndex.eventGaps.map(x=>{
+          const index=events.findIndex(e=>String(e.id)===String(x.eventId));
+          if(index<0)return null;
+          return {
+            eventId:normalized[index].id,
+            codes:Array.isArray(x.codes)?x.codes.filter(code=>codes.includes(code)):[]
+          };
+        }).filter(Boolean):[],
     }
   };
   const revision=passport.passportRevision;
