@@ -73,12 +73,53 @@ export async function inspectDatabaseLineage(client){
     if(applied.some((v,i)=>v!==expected[i]))stop('UNEXPECTED_OR_GAPPED_MIGRATION_HISTORY');
     if(applied.length&&FOUNDATIONAL_TABLES.some(t=>!tables.includes(t)))stop('FOUNDATION_TABLES_MISSING');
 
+    // A list of table names alone is not a schema fingerprint: changes to
+    // columns, constraints, indexes or policies could go undetected. Compare
+    // the structural catalog without printing potentially sensitive defaults.
+    const columns=(await client.query(`
+      SELECT c.relname AS table_name, a.attnum, a.attname, 
+        pg_catalog.format_type(a.atttypid,a.atttypmod) AS data_type,
+        a.attnotnull AS not_null, a.attidentity, a.attgenerated,
+        pg_catalog.pg_get_expr(d.adbin,d.adrelid) AS default_expr
+      FROM pg_catalog.pg_class c
+      JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+      JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid
+      LEFT JOIN pg_catalog.pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+      WHERE n.nspname='public' AND c.relkind IN ('r','p')
+        AND a.attnum>0 AND NOT a.attisdropped
+      ORDER BY c.relname,a.attnum
+    `)).rows;
+    const indexes=(await client.query(
+      "SELECT tablename,indexname,indexdef FROM pg_catalog.pg_indexes WHERE schemaname='public' ORDER BY tablename,indexname"
+    )).rows;
+    const constraints=(await client.query(`
+      SELECT c.relname AS table_name, p.conname, p.contype,
+        pg_catalog.pg_get_constraintdef(p.oid) AS definition
+      FROM pg_catalog.pg_constraint p
+      JOIN pg_catalog.pg_class c ON c.oid=p.conrelid
+      JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public'
+      ORDER BY c.relname,p.conname
+    `)).rows;
+    const rls=(await client.query(`
+      SELECT c.relname AS table_name,c.relrowsecurity,c.relforcerowsecurity
+      FROM pg_catalog.pg_class c
+      JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind IN ('r','p')
+      ORDER BY c.relname
+    `)).rows;
+    const policies=(await client.query(
+      "SELECT tablename,policyname,roles,cmd,qual,with_check FROM pg_catalog.pg_policies WHERE schemaname='public' ORDER BY tablename,policyname"
+    )).rows;
+    const structureDigest=createHash('sha256')
+      .update(JSON.stringify({columns,indexes,constraints,rls,policies})).digest('hex');
     const inventory={
       database:identity.database,
       username:identity.username,
       searchPath:identity.search_path,
       publicTables:tables,
-      appliedVersions:applied
+      appliedVersions:applied,
+      structureDigest
     };
     const fingerprint=createHash('sha256').update(JSON.stringify(inventory)).digest('hex');
     return Object.freeze({
@@ -111,6 +152,7 @@ export function summarizeDatabaseInspection(target,inventory){
     appliedVersions:inventory.appliedVersions,
     pendingVersions:inventory.pendingVersions,
     publicTables:inventory.publicTables,
+    structureDigest:inventory.structureDigest,
     schemaFingerprint:inventory.fingerprint
   };
 }
