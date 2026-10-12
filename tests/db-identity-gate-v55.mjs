@@ -160,4 +160,14 @@ for(const file of ['../scripts/start-v52.mjs','../scripts/migrate-v14.mjs']){
   assert.doesNotMatch(child.stderr,/not-a-secret/,'never leak connection password');
 }
 
+// Old v09/v10 entrypoints are intentionally tombstoned: no alternate path to DDL.
+for(const file of ['../scripts/migrate-v09.mjs','../scripts/migrate-v10.mjs']){
+  const child=spawnSync(process.execPath,[fileURLToPath(new URL(file,import.meta.url))],{
+    encoding:'utf8',timeout:12000,env:{...process.env,DATABASE_URL:managedUrl}
+  });
+  assert.equal(child.status,1,'legacy migration must fail');
+  assert.match(child.stderr,/ANTIQUA_DB_GATE: LEGACY_MIGRATION_ENTRYPOINT_DISABLED/);
+  assert.doesNotMatch(child.stderr,/not-a-secret/);
+}
+
 console.log('ANTIQUA v55 database identity and schema-lineage fail-closed tests PASS');
