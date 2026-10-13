@@ -78,6 +78,13 @@ function mockPg({tables=[],versions=[],username='postgres',database='postgres',s
       if(sql.includes('ANTIQUA_API_RELATIONS_V56'))return{rows:[]};
       if(sql.includes('ANTIQUA_API_FUNCTIONS_V56'))return{rows:[]};
       if(sql.includes('ANTIQUA_API_SEQUENCES_V56'))return{rows:[]};
+      if(sql.includes('ANTIQUA_API_SCHEMA_V57'))return{rows:[
+        {role_name:'anon',can_use:false,can_create:false},
+        {role_name:'authenticated',can_use:false,can_create:false}
+      ]};
+      if(sql.includes('ANTIQUA_API_DEFAULT_ACL_V57'))return{rows:[
+        {owner_role:'postgres',schema_name:'<global>',object_type:'f',api_grants:false}
+      ]};
       throw new Error('unexpected SQL: '+sql);
     }
   };
