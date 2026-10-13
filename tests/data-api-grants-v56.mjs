@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {evaluateDataApiGrants,enforceDataApiGrants} from '../data-api-grants-v56.mjs';
 const roles=['anon','authenticated'];
-const empty={roles,relations:[],functions:[],sequences:[]};
+const empty={roles,relations:[],functions:[],sequences:[],schemas:[],defaultPrivileges:[{owner_role:'postgres',schema_name:'<global>',object_type:'f',api_grants:false}]};
 const accepted=evaluateDataApiGrants(empty);
 assert.deepEqual(accepted.unsafeTables,[]);
 enforceDataApiGrants(accepted,'managed');
@@ -38,4 +38,17 @@ const scoped=evaluateDataApiGrants({...empty,
   policies:[{tablename:'sessions',policyname:'self_only',roles:['anon'],qual:'account_id = auth.uid()'}]
 });
 assert.throws(()=>enforceDataApiGrants(scoped,'managed'),/UNAUTHORIZED_DATA_API_ACCESS/);
+reject({functions:[{role_name:'anon',signature:'public.anonymous_helper()',security_definer:false,can_execute:true}]},'UNAUTHORIZED_DATA_API_FUNCTION');
+reject({schemas:[{role_name:'anon',can_use:true,can_create:false}]},'UNAUTHORIZED_PUBLIC_SCHEMA_ACCESS');
+reject({schemas:[{role_name:'authenticated',can_use:false,can_create:true}]},'UNAUTHORIZED_PUBLIC_SCHEMA_ACCESS');
+reject({defaultPrivileges:[
+  {owner_role:'postgres',schema_name:'<global>',object_type:'f',api_grants:false},
+  {owner_role:'postgres',schema_name:'public',object_type:'r',api_grants:true}
+]},'UNSAFE_DEFAULT_PRIVILEGES');
+reject({defaultPrivileges:[]},'FUNCTION_DEFAULTS_NOT_LOCKED');
+reject({defaultPrivileges:[{owner_role:'postgres',schema_name:'<global>',object_type:'f',api_grants:true}]},'UNSAFE_DEFAULT_PRIVILEGES');
+const locked=evaluateDataApiGrants(empty);
+assert.deepEqual(locked.missingLockedFunctionDefaults,[]);
+assert.deepEqual(locked.unexpectedSchemaAccess,[]);
+enforceDataApiGrants(locked,'managed');
 console.log('ANTIQUA v56 Data API negative grant/RLS tests PASS');
