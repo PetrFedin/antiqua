@@ -42,6 +42,10 @@ export const DATA_API_SEQUENCE_SQL=[
 const truth=v=>v===true||v==='t'||v==='true';
 const any=(row,keys)=>keys.some(key=>truth(row[key]));
 const relationAccess=['can_select','can_insert','can_update','can_delete'];
+// This service uses the Node API and its own authenticated sessions, not
+// Supabase browser Data API tokens. No direct public-schema data grants are
+// permitted for these roles until a separately reviewed API contract exists.
+const DATA_API_EXPOSURE_ALLOWED=false;
 export async function inspectDataApiGrants(client){
   // Caller already owns a BEGIN READ ONLY transaction.
   const roles=(await client.query(DATA_API_ROLE_SQL)).rows.map(x=>x.rolname);
@@ -61,6 +65,7 @@ export function evaluateDataApiGrants(evidence){
   const policies=evidence?.policies||[];
   const exposedRelations=relations.filter(r=>ROLE_NAMES.includes(r.role_name)&&any(r,relationAccess));
   const broadPolicies=exposedRelations.filter(r=>r.rls_enabled).flatMap(r=>policies.filter(p=>p.tablename===r.object_name && (p.roles||[]).some(role=>role==='public'||role===r.role_name) && ['true','(true)'].includes(String(p.qual||'').toLowerCase().trim())).map(p=>r.object_name+':'+p.policyname));
+  const unexpectedDirectAccess=DATA_API_EXPOSURE_ALLOWED?[]:exposedRelations;
   const unsafeTables=exposedRelations.filter(r=>['r','p','f'].includes(r.relation_kind)&&!truth(r.rls_enabled));
   // Postgres views normally run with owner permissions and can bypass RLS.
   const unsafeViews=exposedRelations.filter(r=>['v','m'].includes(r.relation_kind)&&!truth(r.security_invoker));
@@ -72,6 +77,7 @@ export function evaluateDataApiGrants(evidence){
     tablesWithoutRls:rlsNotEnabled,
     exposedWithRls:exposedRelations.filter(r=>truth(r.rls_enabled)).length,
     broadPolicies,
+    unexpectedDirectAccess:unexpectedDirectAccess.map(r=>r.role_name+':'+r.object_name),
     unsafeTables:unsafeTables.map(r=>r.role_name+':'+r.object_name),
     unsafeViews:unsafeViews.map(r=>r.role_name+':'+r.object_name),
     privilegedFunctions:privilegedFunctions.map(r=>r.role_name+':'+r.signature),
@@ -84,6 +90,7 @@ export function enforceDataApiGrants(report,mode){
     throw new Error('ANTIQUA_DB_GATE: DATA_API_ROLES_NOT_VERIFIED');
   for(const [field,code] of [
     ['unsafeTables','UNPROTECTED_DATA_API_TABLE'],
+    ['unexpectedDirectAccess','UNAUTHORIZED_DATA_API_ACCESS'],
     ['broadPolicies','BROAD_DATA_API_POLICY'],
     ['unsafeViews','UNSAFE_DATA_API_VIEW'],
     ['privilegedFunctions','EXPOSED_DEFINER_FUNCTION'],
