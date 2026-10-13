@@ -19,8 +19,12 @@ does not authorize creation of new databases or changes to other projects.
    schema fingerprint, existing API grants, policies, sequences, callable
    functions, schema USAGE/CREATE and default privileges for future objects.
 5. Antiqua's customer access runs through its Node backend, not browser
-   Supabase Data API tokens. Review all effective grants, including inherited
-   PUBLIC grants, to anon and authenticated. Unsafe entries prevent admission.
+   Supabase Data API tokens. Review effective object privileges for anon
+   and authenticated, including privileges inherited through other roles
+   and PUBLIC. USAGE on public schema is recorded for review but is not
+   by itself evidence of object access. CREATE on public is disallowed;
+   actual table/view/function/sequence grants are evaluated separately.
+   Unsafe privileges prevent admission.
 6. In an independent DBA-reviewed change only, correct conflicting grants,
    defaults and schema exposure, with rollback proof. Do not automatically
    execute blanket REVOKE statements without assessing Supabase dependencies.
