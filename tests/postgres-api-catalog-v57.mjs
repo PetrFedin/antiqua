@@ -23,7 +23,10 @@ try{
     await client.query('CREATE SEQUENCE public._antiqua_api_sequence_v57');
     await client.query('GRANT USAGE ON SEQUENCE public._antiqua_api_sequence_v57 TO anon');
     await client.query("CREATE FUNCTION public._antiqua_api_function_v57() RETURNS INTEGER LANGUAGE SQL AS 'SELECT 1'");
-    await client.query('ALTER DEFAULT PRIVILEGES FOR ROLE antiqua IN SCHEMA public GRANT SELECT ON TABLES TO authenticated');
+    // An intermediate inherited role is as effective as a direct grant.
+    await client.query('CREATE ROLE _antiqua_api_inherited_v57 NOLOGIN');
+    await client.query('GRANT _antiqua_api_inherited_v57 TO authenticated');
+    await client.query('ALTER DEFAULT PRIVILEGES FOR ROLE antiqua IN SCHEMA public GRANT SELECT ON TABLES TO _antiqua_api_inherited_v57');
 
     const evidence=await inspectDataApiGrants(client);
     assert.ok(evidence.roles.includes('anon'));
