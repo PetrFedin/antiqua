@@ -1,6 +1,7 @@
 import {readFile} from 'node:fs/promises';
 import {Pool} from 'pg';
 import {migrationManifest} from '../migration-manifest-v16.mjs';
+import {enforceDataApiGrants} from '../data-api-grants-v56.mjs';
 import {
   verifyDatabaseTarget,
   inspectDatabaseLineage,
@@ -70,6 +71,7 @@ try{
   const complete=await inspectDatabaseLineage(client);
   if(complete.pendingVersions.length!==0)
     throw new Error('ANTIQUA_DB_GATE: POST_MIGRATION_LINEAGE_INCOMPLETE');
+  enforceDataApiGrants(complete.dataApiReport,target.mode);
   // The same process may start the runtime immediately after migration. Its
   // inventory has legitimately changed; refresh only this process's approved
   // fingerprint. Subsequent deployments still require an independent review.
