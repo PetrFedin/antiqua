@@ -89,12 +89,14 @@ export function enforceDataApiGrants(report,mode){
   if(!ROLE_NAMES.every(role=>report?.roles?.includes(role)))
     throw new Error('ANTIQUA_DB_GATE: DATA_API_ROLES_NOT_VERIFIED');
   for(const [field,code] of [
+    // Specific findings precede the general Node-only authority boundary.
+    // Otherwise negative tests and admission diagnostics obscure the cause.
     ['unsafeTables','UNPROTECTED_DATA_API_TABLE'],
-    ['unexpectedDirectAccess','UNAUTHORIZED_DATA_API_ACCESS'],
-    ['broadPolicies','BROAD_DATA_API_POLICY'],
     ['unsafeViews','UNSAFE_DATA_API_VIEW'],
+    ['broadPolicies','BROAD_DATA_API_POLICY'],
     ['privilegedFunctions','EXPOSED_DEFINER_FUNCTION'],
-    ['exposedSequences','EXPOSED_API_SEQUENCE']
+    ['exposedSequences','EXPOSED_API_SEQUENCE'],
+    ['unexpectedDirectAccess','UNAUTHORIZED_DATA_API_ACCESS']
   ]){
     if(report[field]?.length)throw new Error('ANTIQUA_DB_GATE: '+code);
   }
