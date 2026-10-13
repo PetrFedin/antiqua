@@ -39,7 +39,10 @@ const scoped=evaluateDataApiGrants({...empty,
 });
 assert.throws(()=>enforceDataApiGrants(scoped,'managed'),/UNAUTHORIZED_DATA_API_ACCESS/);
 reject({functions:[{role_name:'anon',signature:'public.anonymous_helper()',security_definer:false,can_execute:true}]},'UNAUTHORIZED_DATA_API_FUNCTION');
-reject({schemas:[{role_name:'anon',can_use:true,can_create:false}]},'UNAUTHORIZED_PUBLIC_SCHEMA_ACCESS');
+const usageOnly=evaluateDataApiGrants({...empty,schemas:[{role_name:'anon',can_use:true,can_create:false}]});
+assert.deepEqual(usageOnly.unexpectedSchemaAccess,[]);
+assert.deepEqual(usageOnly.schemaUsageForReview,['anon:public']);
+enforceDataApiGrants(usageOnly,'managed');
 reject({schemas:[{role_name:'authenticated',can_use:false,can_create:true}]},'UNAUTHORIZED_PUBLIC_SCHEMA_ACCESS');
 reject({defaultPrivileges:[
   {owner_role:'postgres',schema_name:'<global>',object_type:'f',api_grants:false},
