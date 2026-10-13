@@ -55,8 +55,9 @@ export const DATA_API_DEFAULT_ACL_SQL=[
   "COALESCE(n.nspname,'<global>') AS schema_name,",
   "pg_catalog.pg_get_userbyid(d.defaclrole) AS owner_role,",
   "EXISTS (SELECT 1 FROM pg_catalog.aclexplode(d.defaclacl) a",
-  "LEFT JOIN pg_catalog.pg_roles granted ON granted.oid=a.grantee",
-  "WHERE a.grantee=0 OR granted.rolname IN ('anon','authenticated')) AS api_grants",
+  "WHERE a.grantee=0 OR EXISTS (SELECT 1 FROM pg_catalog.pg_roles target",
+  "WHERE target.rolname IN ('anon','authenticated')",
+  "AND pg_catalog.pg_has_role(target.oid,a.grantee,'USAGE'))) AS api_grants",
   "FROM pg_catalog.pg_default_acl d",
   "LEFT JOIN pg_catalog.pg_namespace n ON n.oid=d.defaclnamespace",
   "WHERE n.nspname='public' OR d.defaclnamespace=0",
@@ -91,8 +92,13 @@ export function evaluateDataApiGrants(evidence){
   const policies=evidence?.policies||[];
   const schemas=evidence?.schemas||[];
   const defaultPrivileges=evidence?.defaultPrivileges||[];
-  const unexpectedSchemaAccess=schemas.filter(r=>ROLE_NAMES.includes(r.role_name)&&
-    (truth(r.can_use)||truth(r.can_create)));
+  // USAGE on the public schema alone does not expose a table or routine.
+  // Effective object privileges are audited separately. CREATE would allow
+  // the API role to introduce new public objects and is always forbidden.
+  const unexpectedSchemaAccess=schemas.filter(r=>
+    ROLE_NAMES.includes(r.role_name)&&truth(r.can_create));
+  const schemaUsage=schemas.filter(r=>
+    ROLE_NAMES.includes(r.role_name)&&truth(r.can_use));
   const unsafeDefaultPrivileges=defaultPrivileges.filter(r=>truth(r.api_grants));
   // Postgres grants EXECUTE on future functions to PUBLIC by default.
   // Only a reviewed, explicit global revoke by the migration owner seals it.
@@ -114,6 +120,7 @@ export function evaluateDataApiGrants(evidence){
     tablesWithoutRls:rlsNotEnabled,
     exposedWithRls:exposedRelations.filter(r=>truth(r.rls_enabled)).length,
     broadPolicies,
+    schemaUsageForReview:schemaUsage.map(r=>r.role_name+':public'),
     unexpectedSchemaAccess:unexpectedSchemaAccess.map(r=>r.role_name+':public'),
     unsafeDefaultPrivileges:unsafeDefaultPrivileges.map(r=>r.owner_role+':'+r.schema_name+':'+r.object_type),
     missingLockedFunctionDefaults:hasLockedFunctionDefaults?[]:['postgres:global:functions'],
