@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, hardening/db-identity-gate-v55]
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -17,6 +17,7 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm test
       - run: node tests/db-identity-gate-v55.mjs
+      - run: node tests/data-api-grants-v56.mjs
 
   postgres-durability:
     runs-on: ubuntu-latest
