@@ -18,6 +18,7 @@ try{
     }
     await client.query('CREATE TABLE public._antiqua_api_probe_v57(id INTEGER)');
     await client.query('GRANT USAGE ON SCHEMA public TO anon');
+    await client.query('GRANT CREATE ON SCHEMA public TO anon');
     await client.query('GRANT SELECT ON TABLE public._antiqua_api_probe_v57 TO anon');
     await client.query('CREATE SEQUENCE public._antiqua_api_sequence_v57');
     await client.query('GRANT USAGE ON SEQUENCE public._antiqua_api_sequence_v57 TO anon');
@@ -31,6 +32,7 @@ try{
     assert.ok(evidence.sequences.some(r=>r.sequence_name==='_antiqua_api_sequence_v57'&&r.role_name==='anon'&&r.can_use));
     assert.ok(evidence.functions.some(r=>r.signature.includes('_antiqua_api_function_v57')&&r.role_name==='anon'&&r.can_execute));
     assert.ok(evidence.schemas.some(r=>r.role_name==='anon'&&r.can_use));
+    assert.ok(evidence.schemas.some(r=>r.role_name==='anon'&&r.can_create));
     assert.ok(evidence.defaultPrivileges.some(r=>r.schema_name==='public'&&r.owner_role==='antiqua'&&r.api_grants));
 
     const report=evaluateDataApiGrants(evidence);
