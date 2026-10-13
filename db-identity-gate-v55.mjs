@@ -113,7 +113,7 @@ export async function inspectDatabaseLineage(client){
       "SELECT tablename,policyname,roles,cmd,qual,with_check FROM pg_catalog.pg_policies WHERE schemaname='public' ORDER BY tablename,policyname"
     )).rows;
     const dataApiEvidence=await inspectDataApiGrants(client);
-    const dataApiReport=evaluateDataApiGrants(dataApiEvidence);
+    const dataApiReport=evaluateDataApiGrants({...dataApiEvidence,policies});
     const structureDigest=createHash('sha256')
       .update(JSON.stringify({columns,indexes,constraints,rls,policies,dataApiEvidence})).digest('hex');
     const inventory={
