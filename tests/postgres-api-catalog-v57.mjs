@@ -28,6 +28,31 @@ try{
     await client.query('GRANT _antiqua_api_inherited_v57 TO authenticated');
     await client.query('ALTER DEFAULT PRIVILEGES FOR ROLE antiqua IN SCHEMA public GRANT SELECT ON TABLES TO _antiqua_api_inherited_v57');
 
+    // Validate the distinction between a real role's allowed probe and a
+    // different table with no SELECT grant. Errors occur only in savepoints,
+    // so this test never leaves the parent transaction aborted.
+    await client.query('CREATE TABLE public._antiqua_private_probe_v57(id INTEGER)');
+    await client.query('SAVEPOINT negative_role_probe');
+    try {
+      await client.query('SET LOCAL ROLE anon');
+      await assert.rejects(
+        ()=>client.query('SELECT * FROM public._antiqua_private_probe_v57'),
+        e=>e?.code==='42501',
+        'anon must not read ungranted private data'
+      );
+    } finally {
+      await client.query('ROLLBACK TO SAVEPOINT negative_role_probe');
+      await client.query('RELEASE SAVEPOINT negative_role_probe');
+    }
+    await client.query('SAVEPOINT allowed_role_probe');
+    try {
+      await client.query('SET LOCAL ROLE anon');
+      await client.query('SELECT * FROM public._antiqua_api_probe_v57');
+    } finally {
+      await client.query('ROLLBACK TO SAVEPOINT allowed_role_probe');
+      await client.query('RELEASE SAVEPOINT allowed_role_probe');
+    }
+
     const evidence=await inspectDataApiGrants(client);
     assert.ok(evidence.roles.includes('anon'));
     assert.ok(evidence.roles.includes('authenticated'));
