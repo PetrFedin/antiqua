@@ -25,4 +25,17 @@ const rlsGranted=evaluateDataApiGrants({...empty,relations:[{...openTable,rls_en
 enforceDataApiGrants(rlsGranted,'managed');
 assert.equal(rlsGranted.exposedWithRls,1);
 enforceDataApiGrants(evaluateDataApiGrants({...empty,roles:[]}), 'isolated-test');
+reject({
+  relations:[{...openTable,rls_enabled:true}],
+  policies:[{tablename:'sessions',policyname:'public_all_rows',roles:['public'],qual:'true'}]
+},'BROAD_DATA_API_POLICY');
+reject({
+  relations:[{...openTable,role_name:'authenticated',rls_enabled:true}],
+  policies:[{tablename:'sessions',policyname:'all_authenticated',roles:['authenticated'],qual:'(true)'}]
+},'BROAD_DATA_API_POLICY');
+const scoped=evaluateDataApiGrants({...empty,
+  relations:[{...openTable,rls_enabled:true}],
+  policies:[{tablename:'sessions',policyname:'self_only',roles:['anon'],qual:'account_id = auth.uid()'}]
+});
+enforceDataApiGrants(scoped,'managed');
 console.log('ANTIQUA v56 Data API negative grant/RLS tests PASS');
