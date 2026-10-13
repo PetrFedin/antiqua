@@ -58,7 +58,9 @@ export function evaluateDataApiGrants(evidence){
   const relations=evidence?.relations||[];
   const functions=evidence?.functions||[];
   const sequences=evidence?.sequences||[];
+  const policies=evidence?.policies||[];
   const exposedRelations=relations.filter(r=>ROLE_NAMES.includes(r.role_name)&&any(r,relationAccess));
+  const broadPolicies=exposedRelations.filter(r=>r.rls_enabled).flatMap(r=>policies.filter(p=>p.tablename===r.object_name && (p.roles||[]).some(role=>role==='public'||role===r.role_name) && ['true','(true)'].includes(String(p.qual||'').toLowerCase().trim())).map(p=>r.object_name+':'+p.policyname));
   const unsafeTables=exposedRelations.filter(r=>['r','p','f'].includes(r.relation_kind)&&!truth(r.rls_enabled));
   // Postgres views normally run with owner permissions and can bypass RLS.
   const unsafeViews=exposedRelations.filter(r=>['v','m'].includes(r.relation_kind)&&!truth(r.security_invoker));
@@ -69,6 +71,7 @@ export function evaluateDataApiGrants(evidence){
     roles,
     tablesWithoutRls:rlsNotEnabled,
     exposedWithRls:exposedRelations.filter(r=>truth(r.rls_enabled)).length,
+    broadPolicies,
     unsafeTables:unsafeTables.map(r=>r.role_name+':'+r.object_name),
     unsafeViews:unsafeViews.map(r=>r.role_name+':'+r.object_name),
     privilegedFunctions:privilegedFunctions.map(r=>r.role_name+':'+r.signature),
@@ -81,6 +84,7 @@ export function enforceDataApiGrants(report,mode){
     throw new Error('ANTIQUA_DB_GATE: DATA_API_ROLES_NOT_VERIFIED');
   for(const [field,code] of [
     ['unsafeTables','UNPROTECTED_DATA_API_TABLE'],
+    ['broadPolicies','BROAD_DATA_API_POLICY'],
     ['unsafeViews','UNSAFE_DATA_API_VIEW'],
     ['privilegedFunctions','EXPOSED_DEFINER_FUNCTION'],
     ['exposedSequences','EXPOSED_API_SEQUENCE']
