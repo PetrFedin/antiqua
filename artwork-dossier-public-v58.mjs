@@ -24,6 +24,9 @@ function publicClosedSale(row,objectId){
   // The collector must never interpret a pending bid/settlement as an actual
   // realized sale. Both status and canonical finality must agree.
   if(row.final!==true||row.auctionState!=='CLOSED')return null;
+  // A completed auction is NOT automatically public. A separately verified
+  // sale-publication authority must approve disclosure of its result.
+  if(row.publicDisclosureApproved!==true)return null;
   const sold=status==='SOLD';
   const realizedAmount=sold?safeNum(row.realizedAmountMinor):null;
   if(sold&&(row.realized!==true||realizedAmount===null))return null;
