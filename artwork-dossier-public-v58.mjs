@@ -21,15 +21,20 @@ function publicClosedSale(row,objectId){
   const status=String(row.status||'').toUpperCase();
   const auctionId=String(row.auctionId||'');
   if(!FINAL_STATES.has(status)||!PUBLIC_ID.test(auctionId))return null;
-  const currency=String(row.currency||'').toUpperCase();
+  // The collector must never interpret a pending bid/settlement as an actual
+  // realized sale. Both status and canonical finality must agree.
+  if(row.final!==true||row.auctionState!=='CLOSED')return null;
   const sold=status==='SOLD';
+  const realizedAmount=sold?safeNum(row.realizedAmountMinor):null;
+  if(sold&&(row.realized!==true||realizedAmount===null))return null;
+  const currency=String(row.currency||'').toUpperCase();
   return {
     auctionId,objectId,
     status,final:true,realized:sold,
     currency:ISO_CURRENCY.test(currency)?currency:null,
     endedAt:safeDate(row.endedAt),
     hammerAmountMinor:sold?safeNum(row.hammerAmountMinor):null,
-    realizedAmountMinor:sold?safeNum(row.realizedAmountMinor):null
+    realizedAmountMinor:realizedAmount
   };
 }
 
