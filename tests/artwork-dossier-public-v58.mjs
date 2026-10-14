@@ -39,7 +39,8 @@ const raw=buildArtworkResearchProjection({
   }],
   marketHistory:[
     {auctionId:'pub-auction-58',objectId:'public-art-58',status:'SOLD',
-      auctionState:'CLOSED',final:true,realized:true,hammerAmountMinor:240000,
+      auctionState:'CLOSED',final:true,realized:true,
+      publicDisclosureApproved:true,hammerAmountMinor:240000,
       realizedAmountMinor:240000,currency:'EUR',
       endedAt:'2026-10-12T13:00:00.000Z',
       buyerName:'PRIVATE_BUYER_58',
@@ -68,6 +69,10 @@ assert.equal(out.marketHistory.length,1);
 assert.equal(out.marketHistory[0].auctionId,'pub-auction-58');
 assert.equal(out.marketHistory[0].status,'SOLD');
 assert.equal(out.marketHistory[0].realizedAmountMinor,240000);
+const notAuthorized=structuredClone(raw);
+delete notAuthorized.marketHistory[0].publicDisclosureApproved;
+assert.deepEqual(projectPublicArtworkResearchDossier(notAuthorized).marketHistory,[],
+  'closed settlement without explicit publication grant must stay private');
 assert.equal(out.marketHistory[0].buyerName,undefined);
 assert.equal(out.publicDossierSha256.length,64);
 
