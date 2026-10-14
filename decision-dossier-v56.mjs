@@ -49,6 +49,7 @@ const natural=(v,cap)=>{
 const revisionNumber=v=>{
   const n=Number(v);return Number.isSafeInteger(n)&&n>0?n:null;
 };
+const minorUnits=v=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:null;
 const safeDate=v=>{
   if(typeof v!=='string'||!(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/).test(v))return null;
   const d=new Date(v);return Number.isFinite(d.getTime())?d.toISOString():null;
@@ -99,22 +100,24 @@ function marketProjection(dossier,objectId){
   // Never infer approval from a 'SOLD' string alone. The only acceptable
   // producer is the already redacted, publication-authorized v58 authority.
   const rows=Array.isArray(dossier.marketHistory)?dossier.marketHistory:[];
-  return rows.filter(row=>
-    row?.final===true&&row?.objectId===objectId&&
-    MARKET_STATUSES.has(String(row.status||'').toUpperCase())&&
-    (row.status!=='SOLD'||row.realized===true))
-    .map((row,i)=>{
-      const sold=row.status==='SOLD';
-      const realized=sold?natural(row.realizedAmountMinor,Number.MAX_SAFE_INTEGER):null;
-      return {
-        id:'public-sale-'+(i+1),
-        status:row.status,
-        endedAt:safeDate(row.endedAt),
-        currency:/^[A-Z]{3}$/.test(String(row.currency||''))?row.currency:null,
-        hammerAmountMinor:sold?natural(row.hammerAmountMinor,Number.MAX_SAFE_INTEGER):null,
-        realizedAmountMinor:realized
-      };
-    });
+  return rows.filter(row=>{
+    if(row?.final!==true||row.objectId!==objectId)return false;
+    const status=String(row.status||'');
+    if(!MARKET_STATUSES.has(status))return false;
+    if(status==='SOLD')return row.realized===true&&
+      minorUnits(row.realizedAmountMinor)!==null;
+    return row.realized===false;
+  }).map((row,i)=>{
+    const sold=row.status==='SOLD';
+    return {
+      id:'public-sale-'+(i+1),
+      status:row.status,
+      endedAt:safeDate(row.endedAt),
+      currency:/^[A-Z]{3}$/.test(String(row.currency||''))?row.currency:null,
+      hammerAmountMinor:sold?minorUnits(row.hammerAmountMinor):null,
+      realizedAmountMinor:sold?minorUnits(row.realizedAmountMinor):null
+    };
+  });
 }
 
 /**
