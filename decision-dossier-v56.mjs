@@ -1,167 +1,193 @@
 import {createHash} from 'node:crypto';
 
-// DD-01 (pre-release contract only): pure projection of the existing v51
-// research dossier. No route, database, HTML or access-token handling.
-// Caller MUST enforce published Artwork authority before providing this input.
-// Do not use this for a private document without room-level authorization.
-export const DECISION_DOSSIER_SCHEMA='antiqua-decision-dossier-contract-v1';
+// DD-01 remains a PURE pre-release contract, not a route, a permission grant,
+// or a substitute for verified Artwork/Room authorities.
+// Only a v58 PUBLIC_REDACTED Artwork Dossier may be projected. Never accept
+// the raw v51 source: it may contain private provenance, contributor and sales.
+export const DECISION_DOSSIER_SCHEMA='antiqua-decision-dossier-contract-v2';
+export const DECISION_DOSSIER_PUBLIC_SOURCE='antiqua-artwork-dossier-public-v58';
+
 const EVIDENCE_CLASSES=new Set([
   'PRIMARY_DOCUMENT','INSTITUTIONAL_RECORD','AUCTION_DEALER_RECORD',
   'SCHOLARLY_PUBLICATION','OWNER_DEALER_STATEMENT','EXPERT_INTERPRETATION',
   'MACHINE_CANDIDATE','UNSPECIFIED'
 ]);
 const EVENT_KINDS=new Set([
-  'EXHIBITION','PUBLICATION','OWNERSHIP','TRANSFER','AUCTION',
-  'SALE','CONSERVATION','RESTORATION','ATTRIBUTION','OTHER'
+  'EXHIBITION','PUBLICATION','OWNERSHIP','TRANSFER','AUCTION','SALE',
+  'CONSERVATION','RESTORATION','ATTRIBUTION','OTHER'
 ]);
 const EVIDENCE_STATUSES=new Set([
   'VERIFIED','UNVERIFIED','DISPUTED','PENDING','UNKNOWN',
   'UNRESOLVED','REJECTED','CANDIDATE','UNSPECIFIED'
 ]);
-const MARKET_STATUSES=new Set(['SOLD','UNSOLD','WITHDRAWN','CLOSED','PASSED','NOT_SOLD']);
-
-const failure=(code)=>{throw Object.assign(new Error('DECISION_DOSSIER: '+code),{code})};
-const token=(v,allowed,fallback)=>allowed.has(String(v??'').toUpperCase())
-  ?String(v).toUpperCase():fallback;
+const ATTRIBUTION_STATUSES=new Set([
+  'ATTRIBUTED','CONFIRMED','DISPUTED','PENDING','UNSPECIFIED','UNKNOWN',
+  'SIGNED','SCHOOL_OF','CIRCLE_OF','FOLLOWER_OF','AFTER','WORKSHOP_OF'
+]);
+const MARKET_STATUSES=new Set(['SOLD','UNSOLD','REOFFERED','VOID']);
+const GAP_CODES=[
+  'NO_PROVENANCE_EVENTS','MISSING_EVIDENCE_REFERENCE',
+  'UNRESOLVED_EVIDENCE_STATUS','UNCLASSIFIED_EVIDENCE','CONFLICTING_ASSERTION'
+];
+const fail=code=>{throw Object.assign(new Error('DECISION_DOSSIER: '+code),{code})};
+const token=(v,set,fallback='UNSPECIFIED')=>{
+  const t=String(v??'').trim().toUpperCase();
+  return set.has(t)?t:fallback;
+};
 const boundedText=(v,length=240)=>typeof v==='string'?v.slice(0,length):null;
-const localized=(v)=>{
+const localized=v=>{
   if(typeof v==='string')return boundedText(v);
   if(!v||typeof v!=='object'||Array.isArray(v))return null;
   const out={};
-  for(const key of ['ru','en','it'])if(typeof v[key]==='string')out[key]=boundedText(v[key]);
+  for(const k of ['ru','en','it'])if(typeof v[k]==='string')out[k]=boundedText(v[k]);
   return Object.keys(out).length?out:null;
 };
-const natural=v=>Number.isSafeInteger(Number(v))&&Number(v)>=0?Number(v):0;
-const isoOrNull=v=>{
-  if(typeof v!=='string'||!v.trim())return null;
-  const n=Date.parse(v);
-  return Number.isFinite(n)?new Date(n).toISOString():null;
+const natural=(v,cap)=>{
+  const n=Number(v);
+  return Number.isSafeInteger(n)&&n>=0?Math.min(n,cap):0;
 };
-function stable(x){
+const revisionNumber=v=>{
+  const n=Number(v);return Number.isSafeInteger(n)&&n>0?n:null;
+};
+const safeDate=v=>{
+  if(typeof v!=='string'||!(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/).test(v))return null;
+  const d=new Date(v);return Number.isFinite(d.getTime())?d.toISOString():null;
+};
+const isSha=v=>typeof v==='string'&&/^[0-9a-f]{64}$/i.test(v);
+const stable=x=>{
   if(x===null||typeof x!=='object')return JSON.stringify(x);
   if(Array.isArray(x))return '['+x.map(stable).join(',')+']';
   return '{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+stable(x[k])).join(',')+'}';
-}
+};
+
 function evidenceProjection(passport){
   const events=Array.isArray(passport.provenanceEvents)?passport.provenanceEvents:[];
-  const data=events.map((e,i)=>({
-    id:boundedText(e.id,120)||'unidentified-'+i,
-    sequenceNo:natural(e.sequenceNo),
-    eventKind:token(e.event?.kind,EVENT_KINDS,'OTHER'),
-    evidenceClass:token(e.evidenceClass,EVIDENCE_CLASSES,'UNSPECIFIED'),
-    evidenceStatus:token(e.evidenceStatus,EVIDENCE_STATUSES,'UNSPECIFIED'),
-    evidenceReferenceExists:Boolean(e.evidenceRef),
-    unresolved:Boolean(e.unresolved),
-    conflict:Boolean(e.conflict)
-    // Intentionally no raw event JSON, owner data, location, narrative,
-    // evidenceRef, contact details, document paths or signed read URLs.
-  })).sort((a,b)=>a.sequenceNo-b.sequenceNo||a.id.localeCompare(b.id));
-  const summary=passport.evidenceSummary||{};
-  const rawGaps=summary.gapIndex?.byCode||{};
-  const gapCodes=['NO_PROVENANCE_EVENTS','MISSING_EVIDENCE_REFERENCE',
-    'UNRESOLVED_EVIDENCE_STATUS','UNCLASSIFIED_EVIDENCE','CONFLICTING_ASSERTION'];
-  const gaps=Object.fromEntries(gapCodes.map(key=>[key,natural(rawGaps[key])]));
-  const conflicts=events.filter(e=>e.conflict).length;
-  const unresolved=events.filter(e=>e.unresolved).length;
-  const status=events.length===0?'NO_PROVENANCE_EVIDENCE'
-    :conflicts||String(summary.completeness)==='CONFLICTED'?'CONFLICTED'
-    :unresolved||Object.values(gaps).some(Boolean)?'INCOMPLETE'
-    :'EVIDENCE_INDEXED';
+  const sorted=events.map((event,index)=>({event,index}))
+    .sort((a,b)=>{
+      const an=revisionNumber(a.event?.sequenceNo)??(a.index+1);
+      const bn=revisionNumber(b.event?.sequenceNo)??(b.index+1);
+      return an-bn||a.index-b.index;
+    });
+  const publicEvents=sorted.map(({event},index)=>({
+    id:'public-event-'+(index+1),
+    sequenceNo:index+1,
+    eventKind:token(event?.event?.kind,EVENT_KINDS,'OTHER'),
+    evidenceClass:token(event?.evidenceClass,EVIDENCE_CLASSES),
+    evidenceStatus:token(event?.evidenceStatus,EVIDENCE_STATUSES),
+    evidenceReferenceExists:event?.evidenceReferenceRecorded===true,
+    unresolved:Boolean(event?.unresolved),
+    conflict:Boolean(event?.conflict)
+  }));
+  const sourceGaps=passport.evidenceSummary?.gapIndex?.byCode||{};
+  const gaps=Object.fromEntries(GAP_CODES.map(code=>
+    [code,natural(sourceGaps[code],Math.max(1,publicEvents.length))]));
+  if(publicEvents.length===0)gaps.NO_PROVENANCE_EVENTS=1;
+  const unresolved=publicEvents.filter(x=>x.unresolved).length;
+  const conflicting=publicEvents.filter(x=>x.conflict).length;
+  const status=publicEvents.length===0?'NO_PROVENANCE_EVIDENCE':
+    conflicting?'CONFLICTED':
+    unresolved||Object.values(gaps).some(Boolean)?'INCOMPLETE':'EVIDENCE_INDEXED';
   return {
-    status,
-    events:data,
-    eventCount:events.length,
-    conflictCount:conflicts,
-    unresolvedCount:unresolved,
+    status,events:publicEvents,eventCount:publicEvents.length,
+    conflictCount:conflicting,unresolvedCount:unresolved,
     gapCodes:gaps,
-    warning:'Evidence-index state is not proof of authenticity or legal title.'
+    warning:'Indexed evidence does not certify authenticity or legal title.'
   };
 }
-function scholarlyProjection(dossier){
-  const rows=Array.isArray(dossier.scholarlyContributions)?dossier.scholarlyContributions:[];
-  return rows.filter(row=>row.assertions?.contributionPublished===true).map(row=>({
-    contributionId:boundedText(row.id,120),
-    contributionType:boundedText(row.contributionType,80),
-    publishedAt:isoOrNull(row.publishedAt),
-    reviewedAt:isoOrNull(row.reviewedAt),
-    evidenceLinkCount:Array.isArray(row.evidenceLinks)?row.evidenceLinks.length:0,
-    reviewerCredentialRecorded:Boolean(row.credentialsAtReview?.length),
-    credentialDoesNotCertifyConclusion:true
-    // No user IDs, account contacts, raw review disclosures or evidence URLs.
-  }));
-}
-function marketProjection(dossier){
+
+function marketProjection(dossier,objectId){
+  // Never infer approval from a 'SOLD' string alone. The only acceptable
+  // producer is the already redacted, publication-authorized v58 authority.
   const rows=Array.isArray(dossier.marketHistory)?dossier.marketHistory:[];
-  return rows.filter(row=>MARKET_STATUSES.has(String(row.status||'').toUpperCase()))
-    .map(row=>({
-      auctionId:boundedText(row.auctionId,120),
-      status:token(row.status,MARKET_STATUSES,'CLOSED'),
-      endedAt:isoOrNull(row.endedAt),
-      currency:/^[A-Z]{3}$/.test(String(row.currency||''))?row.currency:null,
-      hammerAmountMinor:Number.isSafeInteger(row.hammerAmountMinor)&&row.hammerAmountMinor>=0
-        ?row.hammerAmountMinor:null,
-      realizedAmountMinor:Number.isSafeInteger(row.realizedAmountMinor)&&row.realizedAmountMinor>=0
-        ?row.realizedAmountMinor:null
-    }));
+  return rows.filter(row=>
+    row?.final===true&&row?.objectId===objectId&&
+    MARKET_STATUSES.has(String(row.status||'').toUpperCase())&&
+    (row.status!=='SOLD'||row.realized===true))
+    .map((row,i)=>{
+      const sold=row.status==='SOLD';
+      const realized=sold?natural(row.realizedAmountMinor,Number.MAX_SAFE_INTEGER):null;
+      return {
+        id:'public-sale-'+(i+1),
+        status:row.status,
+        endedAt:safeDate(row.endedAt),
+        currency:/^[A-Z]{3}$/.test(String(row.currency||''))?row.currency:null,
+        hammerAmountMinor:sold?natural(row.hammerAmountMinor,Number.MAX_SAFE_INTEGER):null,
+        realizedAmountMinor:realized
+      };
+    });
 }
 
 /**
- * Only accept the already-authorized PUBLIC v51 research dossier.
- * External API integration and customer publication are deliberately absent.
- * This is not a substitute for checking Artwork publication state and access.
+ * Caller must first prove Artwork publication and retrieve the v58 public
+ * Dossier from the approved source authority. The boolean is a pre-release
+ * contract parameter, NEVER a replacement for server authorization.
  */
 export function buildPublicDecisionDossierContract(researchDossier,{
   publicVisibilityConfirmed=false
 }={}){
-  if(!publicVisibilityConfirmed)failure('PUBLIC_ARTWORK_AUTHORITY_REQUIRED');
-  if(researchDossier?.schemaVersion!=='antiqua-artwork-dossier-v51'
-      ||researchDossier?.boundaries?.readModelOnly!==true)
-    failure('V51_RESEARCH_AUTHORITY_REQUIRED');
+  if(publicVisibilityConfirmed!==true)fail('PUBLIC_ARTWORK_AUTHORITY_REQUIRED');
+  if(researchDossier?.schemaVersion!==DECISION_DOSSIER_PUBLIC_SOURCE||
+      researchDossier?.boundaries?.readModelOnly!==true||
+      researchDossier?.boundaries?.publicationScope!=='PUBLIC_REDACTED'||
+      researchDossier?.boundaries?.evidenceHashScope!=='DISCLOSED_FIELDS_ONLY'||
+      researchDossier?.boundaries?.authenticityCertified!==false)
+    fail('REDACTED_V58_RESEARCH_AUTHORITY_REQUIRED');
+  if(Array.isArray(researchDossier.scholarlyContributions)&&
+      researchDossier.scholarlyContributions.length>0)
+    fail('UNREDACTED_SCHOLARLY_SOURCE');
   const objectId=researchDossier.objectId;
   const passport=researchDossier.provenancePassport;
-  if(!objectId||passport?.work?.objectId!==objectId)
-    failure('ARTWORK_IDENTITY_MISMATCH');
+  if(typeof objectId!=='string'||objectId.length===0||objectId.length>150||
+      passport?.work?.objectId!==objectId)
+    fail('ARTWORK_IDENTITY_MISMATCH');
+  if(passport?.disclosureBoundary?.scope!=='PUBLIC_REDACTED'||
+      passport?.disclosureBoundary?.evidenceHashScope!=='DISCLOSED_FIELDS_ONLY'||
+      passport?.disclosureBoundary?.rawEvidenceReferenceIncluded!==false)
+    fail('PUBLIC_PROVENANCE_DISCLOSURE_REQUIRED');
+  if(passport?.assertions?.authenticityCertified!==false||
+      passport?.assertions?.attributionCertified!==false)
+    fail('UNSUPPORTED_AUTHENTICITY_ASSERTION');
   const sourceSha=passport.evidencePackageSha256;
-  if(!/^[0-9a-f]{64}$/i.test(String(sourceSha||'')))
-    failure('EVIDENCE_PACKAGE_HASH_REQUIRED');
-  if(passport.assertions?.authenticityCertified!==false
-      ||passport.assertions?.attributionCertified!==false)
-    failure('UNSUPPORTED_AUTHENTICITY_ASSERTION');
+  if(!isSha(sourceSha))fail('PUBLIC_EVIDENCE_HASH_REQUIRED');
+  const no=revisionNumber(passport.passportRevision?.revisionNo);
   const provenance=evidenceProjection(passport);
   const canonical={
     schemaVersion:DECISION_DOSSIER_SCHEMA,
-    objectId:String(objectId),
+    objectId,
     work:{
       objectCode:boundedText(passport.work.objectCode,120),
       title:localized(passport.work.title),
       artist:localized(passport.work.maker),
-      attributionStatus:boundedText(passport.work.attributionStatus,80)
+      attributionStatus:token(passport.work.attributionStatus,ATTRIBUTION_STATUSES)
     },
     provenance,
-    scholarship:scholarlyProjection(researchDossier),
-    marketHistory:marketProjection(researchDossier),
+    scholarship:[],
+    scholarlyDisclosureStatus:'REQUIRES_EXPLICIT_PUBLICATION_GRANT',
+    marketHistory:marketProjection(researchDossier,objectId),
     condition:{status:'NOT_ASSESSED',assessment:null},
     currentSale:{status:'NOT_ASSESSED',askingPrice:null,offerEnabled:false},
     source:{
-      authority:'antiqua-artwork-dossier-v51',
-      passportRevisionId:boundedText(passport.passportRevision?.revisionId,120),
-      passportRevisionNo:passport.passportRevision?.revisionNo??null,
-      evidencePackageSha256:sourceSha
+      authority:DECISION_DOSSIER_PUBLIC_SOURCE,
+      passportRevisionId:no===null?null:'public-revision-'+no,
+      passportRevisionNo:no,
+      publicEvidenceProjectionSha256:sourceSha,
+      evidenceHashScope:'DISCLOSED_FIELDS_ONLY'
     },
     disclosure:{
       scope:'PUBLIC_ONLY',
       privateOwnerIdentityIncluded:false,
+      privateEventIdsIncluded:false,
       exactStorageLocationIncluded:false,
       privateDocumentsIncluded:false,
+      scholarlyCredentialsIncluded:false,
       confidentialValuationIncluded:false,
+      privateSaleIdentityIncluded:false,
       authenticityCertified:false,
       attributionCertified:false,
       investmentReturnProjected:false,
       immutableSourceAuthority:'ARTWORK_PASSPORT'
     }
   };
-  return {
-    ...canonical,
-    projectionSha256:createHash('sha256').update(stable(canonical)).digest('hex')
-  };
+  return {...canonical,
+    projectionSha256:createHash('sha256').update(stable(canonical)).digest('hex')};
 }
