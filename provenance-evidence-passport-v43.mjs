@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {db,lot} from './runtime-v09.mjs';
+import {db,lot,lots} from './runtime-v09.mjs';
 
 export const PROVENANCE_PASSPORT_VERSION='antiqua-provenance-evidence-passport-v1';
 export const EVIDENCE_CLASSES=Object.freeze([
