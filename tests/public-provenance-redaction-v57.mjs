@@ -135,6 +135,12 @@ internalFields.evidenceSummary.completeness='SECRET_PRIVATE_COMPLETENESS';
 internalFields.evidenceSummary.byClass={SECRET_PRIVATE_CLASS:12345};
 internalFields.evidenceSummary.gapIndex.totalGaps=999;
 internalFields.evidenceSummary.gapIndex.byCode={SECRET_PRIVATE_GAP:99};
+// The canonical summary must refer to the same event ID. Otherwise the
+// event-gap linkage is invalid and cannot be reconstructed from a PII-free ID.
+internalFields.evidenceSummary.gapIndex.eventGaps=
+  internalFields.evidenceSummary.gapIndex.eventGaps.map(row=>({
+    ...row,eventId:row.eventId==='evt-1'?'SECRET_OWNER_61':row.eventId
+  }));
 const internalRedacted=projectPublicProvenanceEvidencePassport(internalFields);
 const internalSerialized=JSON.stringify(internalRedacted);
 for(const confidential of ['SECRET_RESEARCH_REVISION','SECRET_UNSAFE_DATE',
