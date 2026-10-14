@@ -107,6 +107,19 @@ assert.equal(result.condition.status,'NOT_ASSESSED');
 assert.equal(result.disclosure.authenticityCertified,false);
 assert.equal(result.disclosure.investmentReturnProjected,false);
 assert.equal(result.disclosure.privateEventIdsIncluded,false);
+const missingMoney=structuredClone(base);
+missingMoney.marketHistory[0].realizedAmountMinor=null;
+assert.equal(buildPublicDecisionDossierContract(missingMoney,
+  {publicVisibilityConfirmed:true}).marketHistory.length,0,
+  'missing realized amount must never become synthetic zero');
+const nonFinal=structuredClone(base);
+nonFinal.marketHistory[0].final=false;
+assert.equal(buildPublicDecisionDossierContract(nonFinal,
+  {publicVisibilityConfirmed:true}).marketHistory.length,0);
+const nonCanonicalStatus=structuredClone(base);
+nonCanonicalStatus.marketHistory[0].status='sold';
+assert.equal(buildPublicDecisionDossierContract(nonCanonicalStatus,
+  {publicVisibilityConfirmed:true}).marketHistory.length,0);
 
 const serialized=JSON.stringify(result);
 for(const sensitive of [
