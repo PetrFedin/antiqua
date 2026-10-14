@@ -39,7 +39,7 @@ const raw=buildArtworkResearchProjection({
   }],
   marketHistory:[
     {auctionId:'pub-auction-58',objectId:'public-art-58',status:'SOLD',
-      final:true,realized:true,hammerAmountMinor:240000,
+      auctionState:'CLOSED',final:true,realized:true,hammerAmountMinor:240000,
       realizedAmountMinor:240000,currency:'EUR',
       endedAt:'2026-10-12T13:00:00.000Z',
       buyerName:'PRIVATE_BUYER_58',
