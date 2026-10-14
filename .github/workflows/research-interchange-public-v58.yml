@@ -1,0 +1,31 @@
+name: ANTIQUA Research Interchange Public Privacy
+on:
+  pull_request:
+    branches: [main, security/public-provenance-redaction-v57]
+    paths:
+      - research-interchange-public-v58.mjs
+      - research-interchange-profile-v47.mjs
+      - routes-research-interchange-v47.mjs
+      - provenance-evidence-passport-v43.mjs
+      - tests/research-interchange-public-v58.mjs
+      - .github/workflows/research-interchange-public-v58.yml
+jobs:
+  public-interchange-privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Verify read models and public redaction
+        run: |
+          node --check research-interchange-public-v58.mjs
+          node --check research-interchange-profile-v47.mjs
+          node --check routes-research-interchange-v47.mjs
+          node tests/provenance-passport-v43.mjs
+          node tests/research-interchange-v47.mjs
+          node tests/synthetic-reference-catalogue-v48.mjs
+          node tests/public-provenance-redaction-v57.mjs
+          node tests/research-interchange-public-v58.mjs
