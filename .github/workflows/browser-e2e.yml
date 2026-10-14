@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, hardening/v015-provider-webhook-security]
+    branches: [main, hardening/v015-provider-webhook-security, security/public-provenance-redaction-v57]
 jobs:
   chromium-e2e:
     runs-on: ubuntu-latest

@@ -74,7 +74,8 @@ try{
 
   await assert.rejects(()=>db.pool.query('UPDATE object_passport_revisions SET change_reason=$2 WHERE id=$1',[rows[1].id,'tampered']),e=>e.code==='55000');
   assert.equal((await db.pool.query('SELECT change_reason FROM object_passport_revisions WHERE id=$1',[rows[1].id])).rows[0].change_reason,rows[1].change_reason);
-  const evidenceRow=(await db.pool.query('SELECT revision_id,evidence_type,evidence_id FROM object_passport_revision_evidence WHERE revision_id=$1 LIMIT 1',[rows[2].id])).rows[0];assert.ok(evidenceRow);
+  const conditionEvidenceRevision=rows.find(r=>r.change_kind==='CONDITION_UPDATE');assert.ok(conditionEvidenceRevision,'concurrent revisions may commit in either order');
+   const evidenceRow=(await db.pool.query('SELECT revision_id,evidence_type,evidence_id FROM object_passport_revision_evidence WHERE revision_id=$1 AND evidence_type=$2 AND evidence_id=$3 LIMIT 1',[conditionEvidenceRevision.id,'MEDIA',mediaId])).rows[0];assert.ok(evidenceRow,'condition revision must retain its scoped media evidence');
   await assert.rejects(()=>db.pool.query('DELETE FROM object_passport_revision_evidence WHERE revision_id=$1 AND evidence_type=$2 AND evidence_id=$3',[evidenceRow.revision_id,evidenceRow.evidence_type,evidenceRow.evidence_id]),e=>e.code==='55000');
   await assert.rejects(()=>db.pool.query('DELETE FROM object_passport_revisions WHERE id=$1',[rows[1].id]),e=>e.code==='55000');
   assert.equal(Number((await db.pool.query('SELECT count(*)::int n FROM object_passport_revisions WHERE object_id=$1',[objectId])).rows[0].n),4);

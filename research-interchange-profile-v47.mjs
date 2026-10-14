@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {db} from './runtime-v09.mjs';
 import {provenanceEvidencePassport} from './provenance-evidence-passport-v43.mjs';
+import {projectPublicResearchInterchangeProfile} from './research-interchange-public-v58.mjs';
 
 export const ANTIQUA_RESEARCH_INTERCHANGE_PROFILE='antiqua-research-interchange-profile-v1';
 
@@ -102,46 +103,16 @@ export function buildResearchInterchangeProfile({
 
 export async function researchInterchangeProfile(objectId){
   if(db.kind!=='POSTGRES')return null;
-  const row=(await db.pool.query("SELECT id,passport FROM objects WHERE id=$1 AND publication_status='PUBLIC'",[objectId])).rows[0];
+  const row=(await db.pool.query(
+    "SELECT id FROM objects WHERE id=$1 AND publication_status='PUBLIC'",
+    [objectId]
+  )).rows[0];
   if(!row)return null;
   const passport=await provenanceEvidencePassport(objectId,{publicOnly:true});
   if(!passport)return null;
-  const p=row.passport||{};
-  const exhibitions=arr(p.exhibitions);
-  const bibliography=arr(p.bibliography||p.references);
-  const institutionalIdentifiers=arr(p.institutionalIdentifiers||p.identifiers);
-  const media=arr(p.media||p.images);
-  const contributions=(await db.pool.query(`SELECT id,
-    contributor_account_id AS "contributorAccountId",
-    contributor_organization_id AS "contributorOrganizationId",
-    contribution_type AS "contributionType",
-    subject_type AS "subjectType",
-    subject_id AS "subjectId",
-    summary,
-    reviewed_at AS "reviewedAt",
-    published_at AS "publishedAt"
-    FROM scholarly_contributions
-    WHERE status='PUBLISHED'
-      AND ((subject_type='OBJECT' AND subject_id=$1)
-        OR (subject_type='PROVENANCE_EVENT' AND subject_id IN (SELECT id FROM provenance_entries WHERE object_id=$1)))
-    ORDER BY published_at,id`,[objectId])).rows;
-  const accountIds=[...new Set(contributions.map(x=>x.contributorAccountId).filter(Boolean))];
-  let credentials=[];
-  if(accountIds.length){
-    credentials=(await db.pool.query(`SELECT id,
-      issuer_organization_id AS "issuerOrganizationId",
-      subject_account_id AS "subjectAccountId",
-      subject_organization_id AS "subjectOrganizationId",
-      credential_type AS "credentialType",
-      project_ref AS "projectRef",
-      role_label AS "roleLabel",
-      scope,status,
-      valid_from AS "validFrom",
-      valid_until AS "validUntil",
-      issued_at AS "issuedAt"
-      FROM scholarly_credentials
-      WHERE status='ACTIVE' AND subject_account_id=ANY($1::text[])
-      ORDER BY issued_at,id`,[accountIds])).rows;
-  }
-  return buildResearchInterchangeProfile({passport,objectMetadata:p,exhibitions,bibliography,institutionalIdentifiers,media,scholarlyContributions:contributions,scopedCredentials:credentials});
+  // Public exchange must not query private scholar accounts, credential
+  // scopes, full media, confidential catalogue notes or document locators.
+  // Explicit per-record publication grants are a separate future authority.
+  const source=buildResearchInterchangeProfile({passport});
+  return projectPublicResearchInterchangeProfile(source);
 }

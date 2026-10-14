@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, security/public-provenance-redaction-v57]
 jobs:
   smoke:
     runs-on: ubuntu-latest
