@@ -3,7 +3,8 @@ import {readFile} from 'node:fs/promises';
 import {
   buildProvenanceEvidencePassport,
   buildPortableProvenanceBundle,
-  projectPublicProvenanceEvidencePassport
+  projectPublicProvenanceEvidencePassport,
+  provenanceEvidenceOverview
 } from '../provenance-evidence-passport-v43.mjs';
 import {buildArtworkResearchProjection} from '../artwork-dossier-v51.mjs';
 
@@ -159,4 +160,12 @@ const projectedAgain=projectPublicProvenanceEvidencePassport(publicView);
 assert.equal(projectedAgain.evidencePackageSha256,publicView.evidencePackageSha256);
 assert.deepEqual(projectedAgain.provenanceEvents,publicView.provenanceEvents);
 
+// Use the real preview aggregate entrypoint, not just a builder fixture.
+// This would have caught the undefined `lots` regression despite green E2E.
+if(!process.env.DATABASE_URL&&process.env.PREVIEW_MODE!=='false'){
+  const overview=await provenanceEvidenceOverview();
+  assert.equal(overview.schemaVersion,'antiqua-provenance-evidence-overview-v1');
+  assert.ok(overview.publicWorks>0,'preview must have actual artwork records');
+  assert.equal(overview.works.length,overview.publicWorks);
+}
 console.log('ANTIQUA P0 public provenance: redaction and no-leak regression PASS');
