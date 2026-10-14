@@ -238,13 +238,18 @@ export function buildPortableProvenanceBundle(passport){
     evidenceSummary:released.evidenceSummary,
     provenanceEvents:released.provenanceEvents,
     lineage:released.lineage,
+    // Compatibility alias: sourcePassportSha256 identifies PUBLIC projection
+    // only, never the undisclosed canonical scholarly evidence package.
     sourcePassportSha256:released.evidencePackageSha256,
+    sourcePublicProjectionSha256:released.evidencePackageSha256,
     disclosureBoundary:{
       ownerIdentityIncluded:false,
       accountDataIncluded:false,
       commercialTermsIncluded:false,
       authenticityCertified:false,
-      attributionCertified:false
+      attributionCertified:false,
+      sourceHashScope:'DISCLOSED_FIELDS_ONLY',
+      canonicalPrivatePassportHashIncluded:false
     },
     signature:{status:'unsigned',issuer:null}
   };
