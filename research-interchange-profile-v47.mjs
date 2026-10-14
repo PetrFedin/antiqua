@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {db} from './runtime-v09.mjs';
 import {provenanceEvidencePassport} from './provenance-evidence-passport-v43.mjs';
+import {projectPublicResearchInterchangeProfile} from './research-interchange-public-v58.mjs';
 
 export const ANTIQUA_RESEARCH_INTERCHANGE_PROFILE='antiqua-research-interchange-profile-v1';
 
@@ -143,5 +144,12 @@ export async function researchInterchangeProfile(objectId){
       WHERE status='ACTIVE' AND subject_account_id=ANY($1::text[])
       ORDER BY issued_at,id`,[accountIds])).rows;
   }
-  return buildResearchInterchangeProfile({passport,objectMetadata:p,exhibitions,bibliography,institutionalIdentifiers,media,scholarlyContributions:contributions,scopedCredentials:credentials});
+  const source=buildResearchInterchangeProfile({
+    passport,objectMetadata:p,exhibitions,bibliography,
+    institutionalIdentifiers,media,scholarlyContributions:contributions,
+    scopedCredentials:credentials
+  });
+  // Public routes return ONLY the separately hashed, allowlisted projection.
+  // Keep the canonical scholarly/evidence sources untouched and private.
+  return projectPublicResearchInterchangeProfile(source);
 }
