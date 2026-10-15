@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {db,lot} from './runtime-v09.mjs';
+import {db,lot,lots} from './runtime-v09.mjs';
 
 export const PROVENANCE_PASSPORT_VERSION='antiqua-provenance-evidence-passport-v1';
 export const EVIDENCE_CLASSES=Object.freeze([
@@ -222,30 +222,166 @@ function mapEntry(row){
 
 export function buildPortableProvenanceBundle(passport){
   if(!passport?.work?.objectId)throw Object.assign(new Error('Passport required'),{code:'PROVENANCE_BUNDLE_PASSPORT_REQUIRED'});
+  // Portable bundles are always public/redacted projections, even when a
+  // caller accidentally passes a privileged source passport.
+  const released=projectPublicProvenanceEvidencePassport(passport);
   const canonical={
     schemaVersion:'antiqua-provenance-partner-bundle-v1',
     work:{
-      objectId:passport.work.objectId,
-      objectCode:passport.work.objectCode,
-      title:passport.work.title,
-      maker:passport.work.maker,
-      attributionStatus:passport.work.attributionStatus
+      objectId:released.work.objectId,
+      objectCode:released.work.objectCode,
+      title:released.work.title,
+      maker:released.work.maker,
+      attributionStatus:released.work.attributionStatus
     },
-    passportRevision:passport.passportRevision,
-    evidenceSummary:passport.evidenceSummary,
-    provenanceEvents:passport.provenanceEvents,
-    lineage:passport.lineage,
-    sourcePassportSha256:passport.evidencePackageSha256,
+    passportRevision:released.passportRevision,
+    evidenceSummary:released.evidenceSummary,
+    provenanceEvents:released.provenanceEvents,
+    lineage:released.lineage,
+    // Compatibility alias: sourcePassportSha256 identifies PUBLIC projection
+    // only, never the undisclosed canonical scholarly evidence package.
+    sourcePassportSha256:released.evidencePackageSha256,
+    sourcePublicProjectionSha256:released.evidencePackageSha256,
     disclosureBoundary:{
       ownerIdentityIncluded:false,
       accountDataIncluded:false,
       commercialTermsIncluded:false,
       authenticityCertified:false,
-      attributionCertified:false
+      attributionCertified:false,
+      sourceHashScope:'DISCLOSED_FIELDS_ONLY',
+      canonicalPrivatePassportHashIncluded:false
     },
     signature:{status:'unsigned',issuer:null}
   };
   return {...canonical,bundleSha256:sha(canonical)};
+}
+
+// v0.57 security boundary: PUBLIC object status does not automatically
+// authorize the disclosure of arbitrary provenance event JSON or evidenceRef.
+// A published painting can still contain private ownership and storage evidence.
+// Preserve the canonical research assessment, but emit only whitelisted fields.
+const PUBLIC_PROVENANCE_EVENT_KINDS=new Set([
+  'EXHIBITION','PUBLICATION','OWNERSHIP','TRANSFER','SALE',
+  'AUCTION','CONSERVATION','RESTORATION','ATTRIBUTION','OTHER'
+]);
+const PUBLIC_EVIDENCE_STATUSES=new Set([
+  'VERIFIED','UNVERIFIED','PENDING','UNKNOWN','UNRESOLVED',
+  'DISPUTED','CANDIDATE','REJECTED','UNSPECIFIED'
+]);
+// Internal event IDs may contain names, private file locators, or tokens even
+// if they look like valid ordinary identifiers. Never echo them publicly.
+const publicEventId=index=>'public-event-'+(index+1);
+const safePublicStatus=(value,allowed,fallback)=>
+  allowed.has(String(value??'').trim().toUpperCase())?String(value).trim().toUpperCase():fallback;
+const PUBLIC_ATTRIBUTION_STATUSES=new Set([
+  'UNSPECIFIED','UNKNOWN','ATTRIBUTED','CONFIRMED','DISPUTED','PENDING',
+  'SIGNED','SCHOOL_OF','CIRCLE_OF','FOLLOWER_OF','AFTER','WORKSHOP_OF'
+]);
+const publicRevisionNo=value=>{
+  const n=Number(value);
+  return Number.isSafeInteger(n)&&n>0?n:null;
+};
+const publicDate=value=>{
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value))return null;
+  const d=new Date(value);
+  return Number.isFinite(d.getTime())?d.toISOString():null;
+};
+const publicText=value=>{
+  if(typeof value==='string')return value.slice(0,500);
+  if(!value||typeof value!=='object'||Array.isArray(value))return null;
+  const translations={};
+  for(const language of ['ru','en','it'])
+    if(typeof value[language]==='string')
+      translations[language]=value[language].slice(0,500);
+  return Object.keys(translations).length?translations:null;
+};
+export function projectPublicProvenanceEvidencePassport(passport){
+  if(!passport?.work?.objectId)
+    throw new Error('PUBLIC_PROVENANCE_SOURCE_REQUIRED');
+  const events=Array.isArray(passport.provenanceEvents)?passport.provenanceEvents:[];
+  const normalized=events.map((entry,index)=>{
+    const kind=String(entry.event?.kind||'').toUpperCase();
+    const status=String(entry.evidenceStatus||'').toUpperCase();
+    const seq=Number(entry.sequenceNo);
+    return {
+      id:publicEventId(index),
+      sequenceNo:Number.isSafeInteger(seq)&&seq>0?seq:index+1,
+      event:{kind:PUBLIC_PROVENANCE_EVENT_KINDS.has(kind)?kind:'OTHER'},
+      evidenceClass:evidenceClass(entry.evidenceClass),
+      evidenceStatus:PUBLIC_EVIDENCE_STATUSES.has(status)?status:'UNSPECIFIED',
+      evidenceRef:null,
+      evidenceReferenceRecorded:Boolean(entry.evidenceRef||entry.evidenceReferenceRecorded),
+      unresolved:Boolean(entry.unresolved),
+      conflict:Boolean(entry.conflict)
+    };
+  });
+  const summary=passport.evidenceSummary||{};
+  const allowedGapCodes=EVIDENCE_GAP_CODES;
+  const eventGaps=Array.isArray(summary.gapIndex?.eventGaps)
+    ?summary.gapIndex.eventGaps.map(x=>{
+      const index=events.findIndex(e=>String(e.id)===String(x.eventId));
+      if(index<0)return null;
+      const codes=[...new Set(Array.isArray(x.codes)?x.codes.filter(code=>allowedGapCodes.includes(code)):[])];
+      return codes.length?{eventId:normalized[index].id,codes}:null;
+    }).filter(Boolean):[];
+  const byCode=Object.fromEntries(allowedGapCodes.map(code=>[code,0]));
+  if(!normalized.length)byCode.NO_PROVENANCE_EVENTS=1;
+  for(const item of eventGaps)for(const code of item.codes)byCode[code]++;
+  const safeSummary={
+    totalEvents:normalized.length,
+    byClass:Object.fromEntries(EVIDENCE_CLASSES.map(c=>[c,normalized.filter(x=>x.evidenceClass===c).length])),
+    unresolvedEventIds:normalized.filter(x=>x.unresolved).map(x=>x.id),
+    conflictEventIds:normalized.filter(x=>x.conflict).map(x=>x.id),
+    completeness:!normalized.length?'EMPTY':normalized.some(x=>x.conflict)?'CONFLICTED':
+      normalized.some(x=>x.unresolved)?'INCOMPLETE':'EVIDENCED',
+    gapIndex:{
+      totalGaps:Object.values(byCode).reduce((a,b)=>a+b,0),
+      byCode,
+      eventGaps
+    }
+  };
+  const revision=passport.passportRevision;
+  const released={
+    schemaVersion:PROVENANCE_PASSPORT_VERSION,
+    work:{
+      objectId:String(passport.work.objectId),
+      objectCode:publicText(passport.work.objectCode),
+      title:publicText(passport.work.title),
+      maker:publicText(passport.work.maker),
+      attributionStatus:safePublicStatus(passport.work.attributionStatus,PUBLIC_ATTRIBUTION_STATUSES,'UNSPECIFIED')
+    },
+    passportRevision:revision?{
+      revisionId:publicRevisionNo(revision.revisionNo)==null?null:'public-revision-'+publicRevisionNo(revision.revisionNo),
+      revisionNo:publicRevisionNo(revision.revisionNo),
+      createdAt:publicDate(revision.createdAt)
+    }:null,
+    provenanceEvents:normalized,
+    evidenceSummary:safeSummary,
+    assertions:{
+      authenticityCertified:false,
+      attributionCertified:false,
+      provenanceComplete:Boolean(passport.assertions?.provenanceComplete)
+    },
+    lineage:{
+      objectAuthority:'objects',
+      provenanceAuthority:'provenance_entries',
+      revisionAuthority:'object_passport_revisions'
+    },
+    disclosureBoundary:{
+      scope:'PUBLIC_REDACTED',
+      arbitraryEventJSONIncluded:false,
+      ownerIdentityIncluded:false,
+      exactStorageLocationIncluded:false,
+      rawEvidenceReferenceIncluded:false,
+      privateDocumentIncluded:false,
+      evidenceHashScope:'DISCLOSED_FIELDS_ONLY',
+      sourceEventIdsIncluded:false,
+      sourceRevisionIdIncluded:false
+    }
+  };
+  // This is a SHA-256 of released fields. It does NOT attest the unredacted
+  // evidence package or the artwork's authenticity.
+  return {...released,evidencePackageSha256:sha(released)};
 }
 
 export async function portableProvenanceBundle(objectId,{publicOnly=true}={}){
@@ -268,7 +404,8 @@ export async function provenanceEvidencePassport(objectId,{publicOnly=true}={}){
       'SELECT id,revision_no,passport_hash,previous_hash,change_kind,created_at FROM object_passport_revisions WHERE object_id=$1 ORDER BY revision_no DESC LIMIT 1',
       [objectId]
     )).rows[0]||null;
-    return buildProvenanceEvidencePassport({object:mapObject(objectRow),latestRevision:latest,entries});
+    const source=buildProvenanceEvidencePassport({object:mapObject(objectRow),latestRevision:latest,entries});
+    return publicOnly?projectPublicProvenanceEvidencePassport(source):source;
   }
   const object=lot(objectId);
   if(!object)return null;
@@ -283,5 +420,6 @@ export async function provenanceEvidencePassport(objectId,{publicOnly=true}={}){
     evidenceRef:null,
     createdAt:null
   }));
-  return buildProvenanceEvidencePassport({object:{id:object.id,objectCode:object.objectCode||object.id,passport:object},entries});
+  const sourcePassport=buildProvenanceEvidencePassport({object:{id:object.id,objectCode:object.objectCode||object.id,passport:object},entries});
+  return publicOnly?projectPublicProvenanceEvidencePassport(sourcePassport):sourcePassport;
 }

@@ -4,6 +4,14 @@
 **Date:** 2026-10-01  
 **Canonical file:** `docs/ANTIQUA_INTEGRATION_MASTER_PLAN_2026-10-01.md`
 
+## Current authority and first commercial epic — decision 2026-10-13
+
+**P0 remains absolute:** dedicated Supabase Antiqua PostgreSQL must be rediscovered by fresh project/organization metadata, schema lineage reviewed read-only, canonical migrations 001–033 exact, and exact-SHA Render deployment must prove `persistence=POSTGRES`, `/api/ready=200`, restart durability and backup/restore. The P0 identity gate is authoritative in `docs/ANTIQUA_DATABASE_IDENTITY_GATE_2026-10-09.md` and [Issue #135](https://github.com/PetrFedin/antiqua/issues/135).
+
+**The first new product epic AFTER P0 is Decision Dossier + Private Rooms** ([Issue #137](https://github.com/PetrFedin/antiqua/issues/137), existing Rooms workstream [#103](https://github.com/PetrFedin/antiqua/issues/103)). These are read/permissioned projections of existing Artwork, scholarly evidence, provenance, media, inquiry and offer authorities. The buyer-facing dossier and invitation-only room must not duplicate immutable evidence or transactional truth. Implementation detail and acceptance are in `docs/ANTIQUA_DECISION_DOSSIER_PRIVATE_ROOMS_EPIC_2026-10-13.md` (Draft PR #136 until merged).
+
+This priority supersedes older suggestions to implement a broad general-art/antique marketplace homepage, more filters, or speculative media features ahead of the Dossier/Rooms journey. This is a sequencing decision, not evidence of P1 feature deployment. Historical phase plans below remain useful for already defined technical dependencies, but do not override the new P0→P1 release gate.
+
 ## Purpose
 Strengthen Antiqua after the real dealer-pilot foundation without creating a second evidence authority or bypassing v0.37-v0.40 governance.
 

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "antiqua-p0-ux-security-source-policy-v62",
+  "mainBaseline": "4f3e396ce6052ae8924235eab3ed4ad11cac470c",
+  "repository": "PetrFedin/antiqua",
+  "sourceSecurity": {
+    "pr": 145,
+    "sha": "e82f402f02ef47708c5d0ec9a70cb03b03583518"
+  },
+  "sourceMuseum": {
+    "pr": 146,
+    "sha": "0a40c12844b8c85391150073c01a9378eb5ed667"
+  },
+  "preservedMuseumFiles": [
+    "docs/BROWSER_TOOLCHAIN_ADMISSION_2026-10-15.md",
+    "docs/MUSEUM_RESILIENCE_V61_2026-10-15.md",
+    "public/index.html",
+    "public/modules/museum-open-access.js",
+    "public/museum-resilience.css",
+    "public/styles.css",
+    "tests/browser/museum-open-access-v53.spec.mjs",
+    "tests/browser/museum-resilience-v61.spec.mjs",
+    "tests/browser/visual-gallery-proof-v54.spec.mjs",
+    "tests/frontend-consolidation-v16.mjs",
+    "tests/museum-open-access-v53.mjs"
+  ],
+  "sharedWorkflow": {
+    "path": ".github/workflows/browser-e2e.yml",
+    "securitySource": "937cd7b2080409e923f8c2d777e0b683afedcf50",
+    "museumSource": "ae146160dcfb60ca973117fa0f02d0f789e173f0",
+    "resolution": "PRESERVE_SECURITY_PR_TARGET_AND_AUDITED_BROWSER_RUNNER"
+  },
+  "reviewed": false,
+  "productionAdmitted": false,
+  "originalDatabaseAccess": false,
+  "externalGates": [
+    "independent-cross-functional-review",
+    "original-antiqua-supabase-identity",
+    "migrations-001-033-dedicated-database",
+    "backup-restore-and-restart",
+    "protected-object-storage",
+    "live-render-sha-and-rollback"
+  ]
+}
