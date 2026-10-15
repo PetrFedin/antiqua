@@ -57,10 +57,17 @@ for(const locale of ['ru','en']){
      h1Viewport:hero?.querySelector('.culture-hero-copy')?.getBoundingClientRect().right??0,
      imageFit:artwork?getComputedStyle(artwork).objectFit:null,
      museumColumns:getComputedStyle(museum).gridTemplateColumns.split(' ').length,
-     pathways:one?.tagName
+     pathways:one?.tagName,
+     mastheadScroll:document.querySelector('.site-header .masthead')?.scrollWidth,
+     mastheadWidth:document.querySelector('.site-header .masthead')?.clientWidth,
+     offenders:[...document.body.querySelectorAll('*')]
+       .map(el=>({el,rect:el.getBoundingClientRect(),computed:getComputedStyle(el)}))
+       .filter(({rect,computed})=>rect.width>0 && rect.right>innerWidth+2 && computed.position!=='fixed' && computed.display!=='none')
+       .slice(0,14)
+       .map(({el,rect})=>({tag:el.tagName,cls:String(el.className||'').slice(0,80),id:el.id,left:Math.round(rect.left),right:Math.round(rect.right)}))
     };
    });
-   expect(dims.overflow).toBeLessThanOrEqual(2);
+   expect(dims.overflow,'320/390px horizontal offenders: '+JSON.stringify(dims)).toBeLessThanOrEqual(2);
    expect(dims.rootOverflow).toBeLessThanOrEqual(2);
    expect(dims.h1Right).toBeLessThanOrEqual(dims.h1Viewport+2);
    expect(dims.imageFit).toBe('contain');

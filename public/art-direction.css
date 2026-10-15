@@ -291,3 +291,41 @@ body{background:var(--aq-paper)}
  .culture-art-study p{font-size:18px}
  .museum-open-access{scroll-margin-top:75px}
 }
+
+
+/* v65 / narrow phones: preserve the real persona and locale controls, split
+ * the masthead into deliberate typographic rows instead of shrinking hit areas. */
+@media(max-width:360px){
+ .site-header .masthead{
+   display:grid;
+   grid-template-columns:minmax(0,1fr);
+   grid-template-rows:auto auto;
+   gap:0;
+   min-width:0;
+   padding:9px 12px 8px;
+ }
+ .site-header .wordmark{
+   grid-row:1;
+   grid-column:1;
+   justify-self:center;
+   font-size:20px;
+   min-width:0;
+   padding-bottom:5px;
+ }
+ .site-header .header-actions{
+   grid-row:2;
+   grid-column:1;
+   justify-self:center;
+   justify-content:center;
+   gap:5px;
+   width:100%;
+   min-width:0;
+   min-height:44px;
+ }
+ .site-header .language-switch{min-width:80px}
+ .site-header .header-button{min-width:44px;padding-inline:9px;font-size:11px}
+ .culture-hero-copy .culture-hero-title{font-size:clamp(41px,12.5vw,47px);max-width:100%}
+ .culture-hero-line{max-width:100%;overflow-wrap:break-word}
+ .culture-hero-line-em{font-size:.84em}
+ .culture-art-study h2{font-size:46px}
+}
