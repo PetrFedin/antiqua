@@ -24,6 +24,11 @@ does not authorize creation of new databases or changes to other projects.
    and PUBLIC. USAGE on public schema is recorded for review but is not
    by itself evidence of object access. CREATE on public is disallowed;
    actual table/view/function/sequence grants are evaluated separately.
+   **Column-level** SELECT/INSERT/UPDATE privileges also count as real
+   Data API exposure: a role may read a single private column while
+   has_table_privilege returns false. Audit with has_any_column_privilege
+   for both direct and inherited role membership; reject this before
+   real database admission. Runtime cannot assume RLS blocks grants.
    Unsafe privileges prevent admission.
 6. In an independent DBA-reviewed change only, correct conflicting grants,
    defaults and schema exposure, with rollback proof. Do not automatically
