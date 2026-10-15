@@ -39,6 +39,26 @@ const scoped=evaluateDataApiGrants({...empty,
 });
 assert.throws(()=>enforceDataApiGrants(scoped,'managed'),/UNAUTHORIZED_DATA_API_ACCESS/);
 reject({functions:[{role_name:'anon',signature:'public.anonymous_helper()',security_definer:false,can_execute:true}]},'UNAUTHORIZED_DATA_API_FUNCTION');
+// A column-only GRANT bypasses table-level privilege booleans. The same
+// fail-closed rule must also cover inherited per-column role access.
+const columnOnly={...openTable,object_name:'owner_private_email',
+  rls_enabled:true,can_select:false,can_insert:false,can_update:false,
+  can_delete:false,can_select_any_column:true};
+const columnLeak=reject({relations:[columnOnly]},'UNAUTHORIZED_DATA_API_ACCESS');
+assert.deepEqual(columnLeak.unexpectedDirectAccess,['anon:owner_private_email']);
+assert.equal(columnLeak.exposedWithRls,1);
+const unprotectedColumn=reject({relations:[{...columnOnly,rls_enabled:false}]},'UNPROTECTED_DATA_API_TABLE');
+assert.deepEqual(unprotectedColumn.unsafeTables,['anon:owner_private_email']);
+reject({relations:[{...columnOnly,object_name:'owner_updatable',
+  role_name:'authenticated',can_select_any_column:false,
+  can_update_any_column:true}]},'UNAUTHORIZED_DATA_API_ACCESS');
+reject({relations:[{...columnOnly,object_name:'owner_insertable',
+  can_select_any_column:false,can_insert_any_column:true}]},'UNAUTHORIZED_DATA_API_ACCESS');
+enforceDataApiGrants(evaluateDataApiGrants({...empty,relations:[{
+  ...columnOnly,can_select_any_column:false,can_insert_any_column:false,
+  can_update_any_column:false
+}]}),'managed');
+
 const usageOnly=evaluateDataApiGrants({...empty,schemas:[{role_name:'anon',can_use:true,can_create:false}]});
 assert.deepEqual(usageOnly.unexpectedSchemaAccess,[]);
 assert.deepEqual(usageOnly.schemaUsageForReview,['anon:public']);
