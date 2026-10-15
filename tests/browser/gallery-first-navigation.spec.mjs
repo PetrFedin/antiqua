@@ -26,7 +26,10 @@ test('Gallery-first mobile tab bar exposes the core art journey',async({page})=>
  await page.setViewportSize({width:390,height:844});
  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
  const tabs=page.locator('.mobile-tabbar');
- for(const key of ['gallery','creators','collections','learn','auctions','account'])await expect(tabs.locator(`[data-nav="${key}"]`)).toBeVisible();
+ for(const key of ['gallery','creators','collections','account'])await expect(tabs.locator(`[data-nav="${key}"]`)).toBeVisible();
+ const more=tabs.locator('[data-mobile-more]');await expect(more).toBeVisible();await more.click();
+ const menu=page.locator('#mobileMoreDialog[open]');for(const key of ['network','learn','events','auctions'])await expect(menu.locator(`[data-nav="${key}"]`)).toBeVisible();
+ await menu.locator('[data-nav="learn"]').click();await expect(page).toHaveURL(/#learn/);
  await expect(tabs.locator('[data-nav="dealers"]')).toHaveCount(0);
 });
 
