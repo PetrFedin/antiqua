@@ -928,20 +928,23 @@ html.museum-modal-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){.museum-artwork-image img{transition:none}}
 
 
-/* museum v60: compact missing-image hero, without hiding provenance links. */
+/* museum v60: a failed image must not reserve a giant empty painting area. */
 .culture-hero-media.culture-hero-media-unavailable{
-  min-height:280px;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
   aspect-ratio:auto;
 }
 .culture-hero-media.culture-hero-media-unavailable>button{
   display:flex;
+  flex:1 1 auto;
   align-items:center;
   justify-content:center;
   box-sizing:border-box;
   width:100%;
   height:auto;
-  min-height:280px;
-  padding:20px 20px 124px;
+  min-height:128px;
+  padding:18px;
 }
 .culture-hero-media.culture-hero-media-unavailable .museum-image-fallback{
   max-width:38ch;
@@ -950,13 +953,24 @@ html.museum-modal-open{overflow:hidden}
   background:rgba(246,243,237,.88);
   border:1px solid var(--line);
 }
+.culture-hero-media.culture-hero-media-unavailable .culture-hero-caption{
+  position:static;
+  left:auto;
+  right:auto;
+  bottom:auto;
+  margin:0 14px 14px;
+  width:auto;
+}
 @media(max-width:540px){
   .culture-hero-media.culture-hero-media-unavailable{
-    min-height:260px;
+    min-height:0;
     aspect-ratio:auto;
   }
   .culture-hero-media.culture-hero-media-unavailable>button{
-    min-height:260px;
-    padding:18px 14px 116px;
+    min-height:120px;
+    padding:14px;
+  }
+  .culture-hero-media.culture-hero-media-unavailable .culture-hero-caption{
+    margin:0 12px 12px;
   }
 }
