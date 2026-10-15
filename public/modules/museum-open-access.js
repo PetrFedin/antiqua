@@ -89,6 +89,20 @@ const OPTIONAL = Object.freeze([
   {id: 25865, ru: 'Сеть для сельди', artistRu: 'Уинслоу Хомер', genre: 'landscape'}
 ]);
 
+// Translate only techniques with an exact reviewed equivalence. A longer or
+// unknown museum description keeps its original English authority on EN,
+// while RU links to the source instead of inventing an interpretation.
+const REVIEWED_MEDIUM_RU = Object.freeze({
+  'Oil on canvas': 'Холст, масло',
+  'Oil on panel': 'Дерево, масло',
+  'Oil on wood': 'Дерево, масло',
+  'Oil on board': 'Картон, масло',
+  'Watercolor on paper': 'Бумага, акварель',
+  'Tempera on board': 'Картон, темпера'
+});
+const reviewedMediumRu = medium => REVIEWED_MEDIUM_RU[String(medium || '').trim()]
+  || 'Техника — в музейной записи';
+
 let supplementary = [];
 let supplementalPromise = null;
 const ru = () => document.documentElement.lang !== 'en';
@@ -202,6 +216,9 @@ function imageUnavailable(img) {
   if (!media) return;
   img.remove();
   media.classList.add('museum-image-unavailable');
+  // Avoid the original full-screen painting aspect ratio when its bitmap is
+  // unavailable. Keep the source-linked fallback and caption both readable.
+  media.closest('.culture-hero-media')?.classList.add('culture-hero-media-unavailable');
   const note = document.createElement('span');
   note.className = 'museum-image-fallback';
   note.textContent = copy('Изображение временно недоступно — откройте музейный источник',
@@ -255,13 +272,14 @@ async function loadOptionalPaintings() {
             record.artwork_type_title !== 'Painting' ||
             !ID_PATTERN.test(String(record.image_id || ''))) return [];
         const artistEn = String(record.artist_display || '').split(' (')[0].trim();
+        const mediumEn = String(record.medium_display || 'Painting');
         return [{
           id: record.id, imageId: record.image_id,
-          en: String(record.title || ''), ru: String(record.title || ''),
-          artistEn, artistRu: artistEn,
+          en: String(record.title || ''), ru: hint.ru,
+          artistEn, artistRu: hint.artistRu,
           date: String(record.date_display || '—'),
-          medium: String(record.medium_display || 'Painting'),
-          mediumRu: String(record.medium_display || 'Живопись'),
+          medium: mediumEn,
+          mediumRu: reviewedMediumRu(mediumEn),
           dimensions: String(record.dimensions || '—'),
           accession: String(record.main_reference_number || '—'),
           genre: hint.genre
