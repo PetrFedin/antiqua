@@ -39,5 +39,16 @@
     "backup-restore-and-restart",
     "protected-object-storage",
     "live-render-sha-and-rollback"
-  ]
+  ],
+  "presentationExtension": {
+    "version": "v63",
+    "path": "public/art-direction.css",
+    "changedPinnedPresentationFiles": [
+      "public/index.html",
+      "tests/frontend-consolidation-v16.mjs"
+    ],
+    "otherMuseumSourceBlobsUnchanged": true,
+    "independentReviewReceived": false,
+    "productionAdmitted": false
+  }
 }

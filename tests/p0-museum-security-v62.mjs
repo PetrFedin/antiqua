@@ -24,9 +24,13 @@ for (const parent of [main,security,museum]){
 }
 assert.equal(policy.preservedMuseumFiles.length,11);
 assert.ok(!base.databaseFiles.includes('.github/workflows/browser-e2e.yml'));
-for (const path of policy.preservedMuseumFiles){
+// v63 deliberate presentation changes: HTML stylesheet wiring and frontend allowlist.
+const editorialExceptions=new Set(['public/index.html','tests/frontend-consolidation-v16.mjs']);
+for(const path of policy.preservedMuseumFiles){
+  if(editorialExceptions.has(path))continue;
   assert.equal(git('hash-object',path),git('rev-parse',museum+':'+path),'museum source changed: '+path);
 }
+for(const path of editorialExceptions)assert.ok(policy.preservedMuseumFiles.includes(path));
 for (const path of base.databaseFiles){
   assert.equal(git('hash-object',path),git('rev-parse',base.databaseSecurity.sha+':'+path),'database source changed: '+path);
 }

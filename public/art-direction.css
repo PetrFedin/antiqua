@@ -1,0 +1,193 @@
+/* ANTIQUA — editorial art direction v63.
+   Painting-first exhibition architecture. Only local fonts and CSS geometry. */
+:root{
+ --aq-forest:#192620;
+ --aq-paper:#f3eee5;
+ --aq-ink:#242822;
+ --aq-rust:#a44936;
+ --aq-copper:#c9947b;
+ --aq-hairline:rgba(36,40,34,.21);
+ --aq-serif:"Iowan Old Style",Baskerville,"Palatino Linotype",Georgia,serif;
+}
+body{background:var(--aq-paper)}
+.utility-bar{background:var(--aq-forest);letter-spacing:.14em}
+.utility-inner{color:#e0d7c8}
+.site-header{background:rgba(243,238,229,.96);border-bottom:1px solid var(--aq-hairline)}
+.site-header .wordmark{display:inline-flex;align-items:center;gap:10px;font:500 27px/1 var(--aq-serif);letter-spacing:.12em}
+.site-header .wordmark::before{content:"";width:21px;height:21px;flex:none;background:var(--aq-rust);clip-path:polygon(50% 0,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%)}
+.site-header .main-nav{gap:2px}
+.site-header .main-nav a{border-radius:0;font-size:12px}
+.site-header .main-nav a[aria-current="page"]{border-bottom:2px solid var(--aq-rust)}
+.site-header .main-nav a:focus-visible,.culture-path:focus-visible,.museum-artwork-open:focus-visible,.culture-hero-media>button:focus-visible{outline:3px solid var(--aq-rust);outline-offset:4px}
+.culture-discovery-root{color:var(--aq-ink)}
+/* A typographic cover story instead of a two-column template banner. */
+.culture-hero{max-width:1540px;min-height:690px;padding:26px 32px 0;grid-template-columns:minmax(0,.96fr) minmax(0,1.04fr)}
+.culture-hero-copy{position:relative;isolation:isolate;border:0;background:var(--aq-forest);color:#f6efe4;padding:clamp(40px,5.6vw,83px)}
+.culture-hero-copy::before{content:"";position:absolute;pointer-events:none;inset:18px;z-index:-1;border:1px solid #ffffff1a}
+.culture-hero-copy::after{content:"";position:absolute;right:29px;top:29px;width:56px;height:56px;pointer-events:none;border-radius:50%;border:1px solid #ffffff55;background:radial-gradient(circle,var(--aq-copper) 0 3px,transparent 4px)}
+.culture-hero-copy .eyebrow{color:#d5a28a;font-size:10px;font-weight:600;letter-spacing:.18em}
+.culture-hero-copy .culture-hero-title{max-width:none;margin:38px 0 29px;font:400 clamp(57px,5.4vw,88px)/.96 var(--aq-serif);letter-spacing:-.055em;color:#fff4e7}
+.culture-hero-line{display:block}
+.culture-hero-line-em{font-size:.86em;line-height:1.13;font-style:italic;color:#d5a58b;padding-left:clamp(0px,1vw,18px)}
+.culture-hero-copy>p{max-width:42ch;margin-bottom:16px;font:400 clamp(19px,1.8vw,25px)/1.45 var(--aq-serif);color:#e9decf}
+.culture-hero-copy>small{max-width:46ch;color:#cbc0b0;font-size:12px;line-height:1.65}
+.culture-hero-actions{gap:12px;margin-top:29px}
+.culture-hero-actions .primary-button{min-height:50px;border:1px solid #f2e8d9;border-radius:0;padding:0 22px;background:#f2e8d9;color:var(--aq-forest)}
+.culture-hero-actions .secondary-button{min-height:50px;border-radius:0;border:1px solid #ede2d095;color:#eee5d9;background:transparent}
+.culture-hero-actions .primary-button:hover{background:#dbc5ac}
+.culture-hero-media{position:relative;display:flex;flex-direction:column;min-height:690px;border:0;background:#d4c6af}
+.culture-hero-media>button{display:block;height:100%;padding:clamp(20px,3.5vw,49px)}
+.culture-hero-media img{object-fit:contain;filter:drop-shadow(0 15px 25px #2c241e3a)}
+.culture-hero-media::before{content:"COLLECTION / 01";position:absolute;top:19px;left:26px;z-index:1;pointer-events:none;color:#302a22;font-size:9px;font-weight:600;letter-spacing:.15em}
+.culture-hero-caption{left:clamp(12px,2vw,28px);right:clamp(12px,2vw,28px);bottom:clamp(12px,2vw,28px);border:0;padding:14px 18px;background:rgba(25,38,32,.96);color:#f9f2e8;backdrop-filter:none}
+.culture-hero-caption span,.culture-hero-caption small{color:#d1c4b3}
+.culture-hero-caption strong{font:italic 400 23px/1.15 var(--aq-serif);color:#fff6e9}
+/* A human-scale choice for first-time visitors, readers and collectors. */
+.culture-pathways{display:grid;grid-template-columns:minmax(195px,1.25fr) repeat(3,minmax(0,1fr));width:min(1476px,100%);margin:0 auto;padding:0 32px}
+.culture-pathways-intro{display:flex;flex-direction:column;justify-content:center;gap:13px;padding:27px 20px 27px 0;border-bottom:1px solid var(--aq-hairline)}
+.culture-pathways-eyebrow{font-size:9px;font-weight:700;letter-spacing:.14em;color:var(--aq-rust)}
+.culture-pathways-intro strong{max-width:24ch;font:400 23px/1.16 var(--aq-serif)}
+.culture-path{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-content:center;gap:7px 2px;min-height:144px;padding:23px;border-left:1px solid var(--aq-hairline);border-bottom:1px solid var(--aq-hairline);color:var(--aq-ink);text-decoration:none;transition:background .22s ease}
+.culture-path:hover,.culture-path:focus-visible{background:#e6dace}
+.culture-path-number{grid-column:1/-1;color:var(--aq-rust);font:600 10px/1 Arial,sans-serif;letter-spacing:.14em}
+.culture-path strong{font:400 clamp(22px,2.3vw,35px)/1 var(--aq-serif)}
+.culture-path small{grid-row:3;grid-column:1;color:#6f675e;font-size:11px}
+.culture-path-arrow{grid-row:2/4;grid-column:2;color:var(--aq-rust);font-size:19px}
+/* Source-led museum wall with asymmetry and uncropped painting images. */
+.museum-open-access{padding-top:93px;padding-bottom:106px}
+.museum-open-head{position:relative;padding-top:40px;border-top:2px solid var(--aq-forest)}
+.museum-open-head::before{content:"01 / EXPLORE";position:absolute;top:12px;left:0;color:var(--aq-rust);font-size:9px;font-weight:700;letter-spacing:.17em}
+.museum-open-head .eyebrow{color:var(--aq-rust)}
+.museum-open-head h2{max-width:14ch;font:400 clamp(43px,5.3vw,78px)/.98 var(--aq-serif);letter-spacing:-.05em}
+.museum-open-head p{color:#605b54}
+.museum-open-head>a{display:inline-flex;align-items:center;min-height:44px;white-space:normal;color:var(--aq-rust)}
+.museum-open-filters{margin-top:28px;gap:3px;border-bottom:1px solid var(--aq-hairline)}
+.museum-open-filters button{min-height:46px;border:1px solid transparent;border-bottom:2px solid transparent;border-radius:0;color:#635c53}
+.museum-open-filters button[aria-pressed="true"]{border-color:transparent;border-bottom-color:var(--aq-rust);background:transparent;color:var(--aq-forest);font-weight:700}
+.museum-open-count{margin:21px 0}
+.museum-open-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:46px 25px;counter-reset:aq-curation}
+.museum-artwork-card{grid-column:span 4;position:relative;counter-increment:aq-curation}
+.museum-artwork-card:first-child{grid-column:span 7}
+.museum-artwork-card:nth-child(2){grid-column:span 5}
+.museum-artwork-card::before{content:counter(aq-curation,decimal-leading-zero);position:absolute;z-index:2;top:15px;left:15px;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#f5ede0;color:var(--aq-forest);font:500 11px/1 Arial,sans-serif}
+.museum-artwork-image{aspect-ratio:4/4.2;padding:clamp(15px,3vw,31px);border:1px solid #ddd0c1;background:#ddd0bb}
+.museum-artwork-card:first-child .museum-artwork-image{aspect-ratio:6/4.5;padding:clamp(23px,4vw,50px)}
+.museum-artwork-card:nth-child(2) .museum-artwork-image{aspect-ratio:5/5.5}
+.museum-artwork-image img{object-fit:contain;filter:drop-shadow(0 9px 12px #362e2540)}
+.museum-artwork-image .museum-artwork-badge{max-width:calc(100% - 16px);left:8px;bottom:8px;border-radius:0;font-size:8px;line-height:1.45}
+.museum-artwork-info{gap:8px;padding:16px 0 13px}
+.museum-artwork-creator{color:var(--aq-rust);font-size:11px}
+.museum-artwork-info strong{font:400 clamp(22px,2.5vw,35px)/1.08 var(--aq-serif)}
+.museum-artwork-facts{color:#665f56}
+.museum-artwork-source{padding:11px 0}
+.museum-open-terms{max-width:75ch;padding-left:16px;border-left:2px solid var(--aq-rust)}
+/* Magazine cadence: public research first; demo recommendations afterwards. */
+.culture-editorial{background:#e9dfd2;padding-top:77px;padding-bottom:84px}
+.culture-editorial .culture-section-head h2,.culture-collections .culture-section-head h2,.culture-taste .culture-section-head h2{font:400 clamp(42px,4.8vw,68px)/1 var(--aq-serif);letter-spacing:-.04em}
+.culture-editorial-grid{grid-template-columns:1.35fr .8fr .8fr;gap:24px}
+.culture-editorial-card{border-color:#aaa091}
+.culture-editorial-media{background:#d8c5ae}
+.culture-editorial-grid .culture-editorial-card:first-child .culture-editorial-media{aspect-ratio:1.25}
+.culture-editorial-copy h3{font:400 clamp(24px,2.7vw,38px)/1.06 var(--aq-serif)}
+.culture-editorial-grid .culture-editorial-card:first-child h3{font-size:clamp(34px,3.5vw,51px)}
+.culture-editorial-media>span{border-radius:0}
+.culture-drop{margin-top:80px;margin-bottom:80px;border:0;background:var(--aq-forest);color:#f4ecdf}
+.culture-drop-copy h2{font-family:var(--aq-serif);font-size:clamp(45px,5.3vw,75px)}
+.culture-drop-copy .eyebrow{color:#d5a28b}
+.culture-drop-copy p{color:#d6c8b7}
+.culture-drop-copy .primary-button{border-radius:0;background:#f5ecde;color:var(--aq-forest)}
+.culture-collections{padding-top:81px;padding-bottom:100px}
+.culture-collection-card{border-top:2px solid var(--aq-forest)}
+.culture-collection-card h3{font-family:var(--aq-serif);font-size:33px}
+.culture-collection-cover{background:#ddcfba}
+.culture-taste{padding-top:92px;padding-bottom:106px;background:#e8dfd4;border-top:1px solid #c7b9a7}
+.culture-taste-tags span{border-radius:0;background:#f2e9dc}
+.culture-object-media{background:#d6c6b1}
+.culture-object-copy h3{font-family:var(--aq-serif);font-size:25px}
+.culture-catalogue{border-top:2px solid var(--aq-forest)}
+.museum-work-dialog{background:#f3eee5;box-shadow:0 30px 110px #14221d66}
+.museum-work-canvas{background:#dcd0bd}
+.museum-work-details h2{font-family:var(--aq-serif)}
+.footer{background:var(--aq-forest);color:#eee2d1}
+.footer .wordmark{color:#fff4e7;font-family:var(--aq-serif)}
+.footer a,.footer .footer-partner-link{color:#dba98b}
+.footer span,.footer small,.footer #footerPromise{color:#c9beb0}
+@media(max-width:1100px){
+ .culture-hero{min-height:570px;grid-template-columns:.97fr 1.03fr}
+ .culture-hero-copy{padding:42px}
+ .culture-hero-copy .culture-hero-title{font-size:clamp(56px,5.8vw,74px)}
+ .culture-hero-media{min-height:570px}
+ .culture-path{padding:19px 14px}
+ .museum-open-grid{gap:34px 19px}
+}
+@media(max-width:800px){
+ .culture-hero{display:flex;flex-direction:column;min-height:0;padding:0}
+ .culture-hero-media{order:1;aspect-ratio:6/4.6;min-height:0}
+ .culture-hero-media>button{padding:36px;min-height:0}
+ .culture-hero-copy{order:2;padding:43px 29px 50px}
+ .culture-hero-copy .culture-hero-title{font-size:clamp(58px,10.5vw,89px)}
+ .culture-pathways{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 16px}
+ .culture-pathways-intro{grid-column:1/-1;min-height:115px;padding:24px 0}
+ .culture-path{min-height:124px}
+ .museum-open-access{padding-top:72px;padding-bottom:79px}
+ .museum-open-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:34px 17px}
+ .museum-artwork-card,.museum-artwork-card:first-child,.museum-artwork-card:nth-child(2){grid-column:span 1}
+ .museum-artwork-card:first-child .museum-artwork-image,.museum-artwork-card:nth-child(2) .museum-artwork-image{aspect-ratio:4/4.3;padding:24px}
+ .culture-editorial{padding-top:65px;padding-bottom:65px}
+ .culture-drop{margin-top:55px;margin-bottom:55px}
+}
+@media(max-width:520px){
+ .site-header .wordmark{font-size:22px;gap:7px;letter-spacing:.08em}
+ .site-header .wordmark::before{width:16px;height:16px}
+ .culture-hero-media{aspect-ratio:1/1.04}
+ .culture-hero-media>button{padding:18px}
+ .culture-hero-media::before{top:11px;left:14px;font-size:8px}
+ .culture-hero-caption{bottom:10px;left:11px;right:11px;padding:11px 13px}
+ .culture-hero-caption strong{font-size:18px}
+ .culture-hero-copy{padding:43px 22px 47px}
+ .culture-hero-copy::before{inset:11px}
+ .culture-hero-copy::after{width:40px;height:40px;right:20px;top:20px}
+ .culture-hero-copy .culture-hero-title{margin:24px 0 20px;font-size:clamp(47px,10.1vw,66px)}
+ .culture-hero-line-em{padding-left:0}
+ .culture-hero-copy>p{font-size:20px}
+ .culture-hero-actions{display:grid;grid-template-columns:1fr}
+ .culture-hero-actions>*{width:100%}
+ .culture-pathways{grid-template-columns:repeat(3,minmax(0,1fr));padding:0 14px}
+ .culture-pathways-intro{min-height:0}
+ .culture-pathways-intro strong{font-size:22px}
+ .culture-path{gap:7px;min-height:121px;padding:17px 9px}
+ .culture-path strong{font-size:clamp(17px,4.2vw,23px);overflow-wrap:anywhere}
+ .culture-path small{font-size:10px;line-height:1.3}
+ .culture-path-arrow{font-size:14px}
+ .museum-open-head{display:block}
+ .museum-open-head h2{font-size:clamp(40px,11vw,58px)}
+ .museum-open-head>a{margin-top:15px}
+ .museum-open-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:31px 12px}
+ .museum-artwork-card:first-child{grid-column:1/-1}
+ .museum-artwork-card:first-child .museum-artwork-image{aspect-ratio:6/5}
+ .museum-artwork-image,.museum-artwork-card:nth-child(2) .museum-artwork-image{aspect-ratio:4/5.3;padding:12px}
+ .museum-artwork-card::before{top:9px;left:9px;width:26px;height:26px;font-size:9px}
+ .museum-artwork-image .museum-artwork-badge{left:5px;bottom:5px;max-width:calc(100% - 10px);padding:5px;font-size:8px}
+ .museum-artwork-info strong{font-size:clamp(18px,5vw,25px)}
+ .culture-editorial-grid{display:flex}
+ .culture-collections{padding-top:64px;padding-bottom:73px}
+ .culture-taste{padding-top:69px;padding-bottom:72px}
+ .footer{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){
+ .culture-hero-copy{padding-inline:19px}
+ .culture-hero-copy .culture-hero-title{font-size:47px}
+ .culture-pathways{grid-template-columns:1fr}
+ .culture-pathways-intro{grid-column:auto}
+ .culture-path{min-height:78px;grid-template-columns:auto 1fr auto}
+ .culture-path-number{grid-column:1;grid-row:1/3;align-self:center}
+ .culture-path strong{grid-column:2;grid-row:1}
+ .culture-path small{grid-column:2;grid-row:2}
+ .culture-path-arrow{grid-column:3;grid-row:1/3}
+ .museum-open-grid{grid-template-columns:1fr}
+ .museum-artwork-card,.museum-artwork-card:first-child,.museum-artwork-card:nth-child(2){grid-column:1}
+ .museum-artwork-image,.museum-artwork-card:nth-child(2) .museum-artwork-image{aspect-ratio:5/4.7;padding:23px}
+}
+@media(prefers-reduced-motion:reduce){
+ .culture-path,.culture-hero-media img,.museum-artwork-image img{transition:none}
+}

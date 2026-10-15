@@ -16,13 +16,13 @@ async function listFiles(dir=ROOT){
 }
 const publicFiles=(await listFiles()).sort();
 for(const p of publicFiles){const parts=p.split('/');const versioned=parts.some(part=>/^v\\d+$/.test(part))||/(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/.test(p);assert.equal(versioned,false,'legacy versioned frontend asset remains: '+p)}
-for(const p of ['index.html','styles.css','museum-resilience.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
+for(const p of ['index.html','styles.css','museum-resilience.css','art-direction.css','main.js','app.js','operations.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
 const scripts=[...index.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)].map(x=>x[1]);
 // One canonical base cascade plus one explicitly scoped museum failure-state
 // companion. Keep an exact ordered allowlist: unknown/remote/legacy sheets fail.
-assert.deepEqual(styles,['/styles.css','/museum-resilience.css']);
+assert.deepEqual(styles,['/styles.css','/museum-resilience.css','/art-direction.css']);
 assert.deepEqual(scripts,['/main.js']);
 assert.doesNotMatch(index,/(?:styles|app|operations)(?:-addon)?-v\d+/);
 const museumCss=await read('museum-resilience.css');
@@ -41,6 +41,11 @@ for(const [,raw] of scopedRules){
   }
 }
 
+const editorialCss=await read('art-direction.css');
+assert.ok(editorialCss.length>2500 && Buffer.byteLength(editorialCss,'utf8')<20000,'editorial sheet must be bounded');
+assert.doesNotMatch(editorialCss,/@import\\b|url\\s*\\(|!important|@font-face/i,'editorial sheet must be local and auditable');
+assert.match(editorialCss,/\\.culture-pathways\\s*\\{/);
+assert.match(editorialCss,/\\.museum-open-grid\\s*\\{/);
 const seen=new Set();
 async function walk(rel){
   rel=rel.replace(/^\.\//,'');

@@ -66,9 +66,36 @@ function feature(data){
 
 function hero(data){
  const f=feature(data),section=make('section','culture-hero');section.dataset.cultureHero='';
- const copyBox=make('div','culture-hero-copy');copyBox.append(make('div','eyebrow','ANTIQUA'));copyBox.append(make('h1','',copy('Мир искусства','World of Art')));copyBox.append(make('p','',copy('Живопись — через художников, историю, происхождение, коллекции, выставки и новые открытия.','Painting through artists, history, provenance, collections, exhibitions and discovery.')));copyBox.append(make('small','',copy('Открывайте произведения, изучайте художников, собирайте собственный взгляд на искусство и находите события вокруг него.','Discover works, explore artists, build your own view of art and find the events around it.')));
- const actions=make('div','culture-hero-actions'),discover=make('button','primary-button',copy('Открывать искусство','Discover art'));discover.type='button';discover.addEventListener('click',()=>q('#cultureCatalogue')?.scrollIntoView({behavior:'smooth',block:'start'}));actions.append(discover);if(f.live){const link=make('a','secondary-button culture-hero-link',copy('Кураторская история','Curated story'));link.href='#exhibition/'+f.live.id;actions.append(link)}copyBox.append(actions);section.append(copyBox);
+ const copyBox=make('div','culture-hero-copy');copyBox.append(make('div','eyebrow',copy('ANTIQUA · ИСКУССТВО ДЛЯ КАЖДОГО','ANTIQUA · ART FOR EVERYONE')));
+ const heading=make('h1','culture-hero-title');
+ for(const [ru,en,accent] of [['Искусство','Art',false],['ближе, чем','is closer',true],['кажется.','than you think.',false]]){
+  heading.append(make('span','culture-hero-line'+(accent?' culture-hero-line-em':''),copy(ru,en)));
+ }
+ copyBox.append(heading);copyBox.append(make('p','',copy('Каждая картина — начало истории. Смотрите, узнавайте художников, исследуйте происхождение произведений и находите то, что откликается вам.','Every painting begins a story. Look closer, meet the artists, explore provenance and discover what resonates with you.')));copyBox.append(make('small','',copy('Начните с открытой музейной подборки. Эти картины не продаются на ANTIQUA.','Begin with an open-access museum selection. These paintings are not offered for sale by ANTIQUA.')));
+ const actions=make('div','culture-hero-actions'),discover=make('button','primary-button',copy('Смотреть картины','Explore paintings'));discover.type='button';discover.addEventListener('click',()=>q('#museumOpenAccess')?.scrollIntoView({behavior:'smooth',block:'start'}));actions.append(discover);if(f.live){const link=make('a','secondary-button culture-hero-link',copy('Кураторская история','Curated story'));link.href='#exhibition/'+f.live.id;actions.append(link)}copyBox.append(actions);section.append(copyBox);
  const media=make('div','culture-hero-media');const museum=featuredMuseumPainting;const open=make('button');open.type='button';open.dataset.museumOpen=String(museum.id);const img=make('img');bindMuseumImage(img,museum,843);img.alt=copy(museum.artistRu,museum.artistEn)+' — '+copy(museum.ru,museum.en);img.decoding='async';img.fetchPriority='high';open.append(img);media.append(open);const caption=make('div','culture-hero-caption');caption.append(make('span','',copy(museum.artistRu,museum.artistEn)+' · ART INSTITUTE OF CHICAGO · CC0'));caption.append(make('strong','',copy(museum.ru,museum.en)));caption.append(make('small','',museum.date+' · '+copy('Музейная коллекция · не продаётся','Museum collection · not for sale')));media.append(caption);section.append(media);return section
+}
+
+function pathways(){
+ const nav=make('nav','culture-pathways');
+ nav.setAttribute('aria-label',copy('Пути к искусству','Ways to explore art'));
+ const intro=make('div','culture-pathways-intro');
+ intro.append(make('span','culture-pathways-eyebrow',copy('НАЧНИТЕ С ИНТЕРЕСА','FOLLOW YOUR CURIOSITY')));
+ intro.append(make('strong','',copy('У каждого — свой путь к искусству.','Everyone finds their own way into art.')));
+ nav.append(intro);
+ for(const [number,ru,en,detailRu,detailEn,target] of [
+   ['01','Смотреть','Look','Музейные картины','Museum paintings','#museumOpenAccess'],
+   ['02','Узнавать','Learn','Художники и истории','Artists and stories','#creators'],
+   ['03','Собирать','Collect','Личная коллекция','Your collection','#collections']
+ ]){
+   const a=make('a','culture-path');a.href=target;
+   a.append(make('span','culture-path-number',number));
+   a.append(make('strong','',copy(ru,en)));
+   a.append(make('small','',copy(detailRu,detailEn)));
+   const arrow=make('span','culture-path-arrow','↗');arrow.setAttribute('aria-hidden','true');a.append(arrow);
+   nav.append(a);
+ }
+ return nav;
 }
 
 function tasteDimensionLabel(d){return({maker:copy('Художник / автор','Artist / creator'),department:copy('Категория','Category'),period:copy('Эпоха','Period'),origin:copy('Происхождение','Origin')})[d]||d}
@@ -114,7 +141,7 @@ async function decorate(){
  updateBrandShell();if(route()!=='gallery'||q('[data-culture-root]'))return;const catalogue=q('#app > .page.section');if(!catalogue)return;const ticket=++sequence;
  const [catalog,collectionsData,exhibitionsData,client,tasteData,editorialData]=await Promise.all([safe('/api/catalog'),safe('/api/collections'),safe('/api/exhibitions'),safe('/api/client-state'),safe('/api/taste/recommendations?limit=8'),safe('/api/editorial?limit=3')]);if(ticket!==sequence||route()!=='gallery'||!catalog)return;
  const data={catalog,collections:collectionsData?.collections||[],exhibitions:exhibitionsData?.exhibitions||[],client:client||{},taste:tasteData||null,editorial:editorialData||null};refineCatalogue(catalogue);
- const root=make('div','culture-discovery-root');root.dataset.cultureRoot='';root.append(hero(data));root.append(museumGalleryPanel());root.append(taste(data));const e=editorial(data);if(e)root.append(e);const d=drop(data);if(d)root.append(d);const c=collections(data);if(c)root.append(c);catalogue.before(root)
+ const root=make('div','culture-discovery-root');root.dataset.cultureRoot='';root.append(hero(data));root.append(pathways());root.append(museumGalleryPanel());const e=editorial(data);if(e)root.append(e);const d=drop(data);if(d)root.append(d);const c=collections(data);if(c)root.append(c);root.append(taste(data));catalogue.before(root)
 }
 
 const observer=new MutationObserver(()=>{queueMicrotask(()=>decorate().catch(console.error))});
