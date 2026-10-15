@@ -12,7 +12,7 @@ for(const locale of ['ru','en'])for(const width of [320,390,800]){
   const dialog=page.locator('#mobileMoreDialog[open]');
   await expect(dialog.locator('a[data-nav]')).toHaveCount(4);
   await expect(dialog.locator('[data-mobile-more-close]')).toBeFocused();
-  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);
+  await page.keyboard.press('Escape');await expect(page.locator('#mobileMoreDialog[open]')).toHaveCount(0);
   await more.click();await dialog.locator('[data-nav="auctions"]').click();
   await expect(page).toHaveURL(/#auctions/);await expect(more).toHaveAttribute('aria-current','page');
   await bar.locator('[data-nav="gallery"]').click();await expect(more).not.toHaveAttribute('aria-current','page');
