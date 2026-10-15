@@ -926,3 +926,37 @@ html.museum-modal-open{overflow:hidden}
 @media(max-width:360px){.museum-open-grid{grid-template-columns:1fr}}
 
 @media(prefers-reduced-motion:reduce){.museum-artwork-image img{transition:none}}
+
+
+/* museum v60: compact missing-image hero, without hiding provenance links. */
+.culture-hero-media.culture-hero-media-unavailable{
+  min-height:280px;
+  aspect-ratio:auto;
+}
+.culture-hero-media.culture-hero-media-unavailable>button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100%;
+  height:auto;
+  min-height:280px;
+  padding:20px 20px 124px;
+}
+.culture-hero-media.culture-hero-media-unavailable .museum-image-fallback{
+  max-width:38ch;
+  margin:auto;
+  padding:14px 18px;
+  background:rgba(246,243,237,.88);
+  border:1px solid var(--line);
+}
+@media(max-width:540px){
+  .culture-hero-media.culture-hero-media-unavailable{
+    min-height:260px;
+    aspect-ratio:auto;
+  }
+  .culture-hero-media.culture-hero-media-unavailable>button{
+    min-height:260px;
+    padding:18px 14px 116px;
+  }
+}
