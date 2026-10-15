@@ -9,7 +9,12 @@ export const DATA_API_RELATION_SQL=[
   "pg_catalog.has_table_privilege(r.oid,c.oid,'SELECT') AS can_select,",
   "pg_catalog.has_table_privilege(r.oid,c.oid,'INSERT') AS can_insert,",
   "pg_catalog.has_table_privilege(r.oid,c.oid,'UPDATE') AS can_update,",
-  "pg_catalog.has_table_privilege(r.oid,c.oid,'DELETE') AS can_delete",
+  "pg_catalog.has_table_privilege(r.oid,c.oid,'DELETE') AS can_delete,",
+  // A per-column GRANT can expose sensitive data while table-level checks
+  // return false. Audit effective grants inherited through role membership.
+  "pg_catalog.has_any_column_privilege(r.oid,c.oid,'SELECT') AS can_select_any_column,",
+  "pg_catalog.has_any_column_privilege(r.oid,c.oid,'INSERT') AS can_insert_any_column,",
+  "pg_catalog.has_any_column_privilege(r.oid,c.oid,'UPDATE') AS can_update_any_column",
   "FROM pg_catalog.pg_class c",
   "JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace",
   "CROSS JOIN (SELECT oid,rolname FROM pg_catalog.pg_roles WHERE rolname IN ('anon','authenticated')) r",
@@ -66,7 +71,10 @@ export const DATA_API_DEFAULT_ACL_SQL=[
 
 const truth=v=>v===true||v==='t'||v==='true';
 const any=(row,keys)=>keys.some(key=>truth(row[key]));
-const relationAccess=['can_select','can_insert','can_update','can_delete'];
+const relationAccess=[
+  'can_select','can_insert','can_update','can_delete',
+  'can_select_any_column','can_insert_any_column','can_update_any_column'
+];
 // This service uses the Node API and its own authenticated sessions, not
 // Supabase browser Data API tokens. No direct public-schema data grants are
 // permitted for these roles until a separately reviewed API contract exists.
