@@ -29,6 +29,20 @@ Existing `toBeVisible()` assertions were not a viewport-intersection proof.
   specific support from an unreviewed value; unknown medium stays source-qualified
   in RU and unaltered in EN.
 
+## Frontend asset-contract change requiring review
+
+The first continuation commit `a1cb67a` failed Smoke on the pre-existing assertion
+that index.html loads exactly one stylesheet. It intentionally introduces a small
+component-scoped companion rather than another historical version of the base
+cascade. This follow-up retains an exact ordered stylesheet allowlist, now
+`/styles.css`, `/museum-resilience.css`, and the unchanged `/main.js` entrypoint.
+It adds checks that the companion stays below 8 KiB, contains only museum-scoped
+selectors (plus the exact hero keyboard-focus selector), only width media queries,
+and no external asset imports, URLs or `!important`. Unknown/remote/additional
+stylesheets still fail. Existing canonical base CSS size/markers and module-graph
+checks remain in force. This is an explicit asset architecture adjustment, not a
+claim that the original failed check passed. Independent review must cover it.
+
 ## New executable acceptance
 
 `tests/browser/museum-resilience-v61.spec.mjs` defines 11 scenarios, run by the
@@ -40,10 +54,9 @@ source popup with noopener. All external source responses in these new tests are
 synthetic or aborted; they do not certify museum rights. Existing live-image
 visual tests remain.
 
-These new changes have not yet been executed at the time of writing this file.
-Full exact-head CI and screenshot review must be recorded on the PR after this
-commit runs; they are not asserted by this document. Screenshots are emitted
-under `artifacts/visual-proof/v61-*`.
+Full exact-head CI and screenshot review must be recorded on the PR after the
+latest commit runs; they are not asserted by this document. Screenshots are
+emitted under `artifacts/visual-proof/v61-*`.
 
 ## Boundaries and next gates
 
