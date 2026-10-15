@@ -89,6 +89,22 @@ const OPTIONAL = Object.freeze([
   {id: 25865, ru: 'Сеть для сельди', artistRu: 'Уинслоу Хомер', genre: 'landscape'}
 ]);
 
+// Translate only techniques with an exact reviewed equivalence. A longer or
+// unknown museum description keeps its original English authority on EN,
+// while RU links to the source instead of inventing an interpretation.
+// In particular, "board" alone does not establish a cardboard support.
+const REVIEWED_MEDIUM_RU = Object.freeze({
+  'Oil on canvas': 'Холст, масло',
+  'Oil on panel': 'Дерево, масло',
+  'Oil on wood': 'Дерево, масло',
+  'Watercolor on paper': 'Бумага, акварель'
+});
+const reviewedMediumRu = medium => {
+  const key = String(medium || '').trim();
+  return Object.hasOwn(REVIEWED_MEDIUM_RU, key)
+    ? REVIEWED_MEDIUM_RU[key] : 'Техника — в музейной записи';
+};
+
 let supplementary = [];
 let supplementalPromise = null;
 const ru = () => document.documentElement.lang !== 'en';
@@ -202,11 +218,25 @@ function imageUnavailable(img) {
   if (!media) return;
   img.remove();
   media.classList.add('museum-image-unavailable');
+  // Avoid the original full-screen painting aspect ratio when its bitmap is
+  // unavailable. Keep the source-linked fallback and caption both readable.
+  media.closest('.culture-hero-media')?.classList.add('culture-hero-media-unavailable');
   const note = document.createElement('span');
   note.className = 'museum-image-fallback';
   note.textContent = copy('Изображение временно недоступно — откройте музейный источник',
     'Image unavailable — visit the museum record');
   media.prepend(note);
+  const dialog = media.closest('dialog[data-museum-dialog]');
+  if (dialog && media.classList.contains('museum-work-canvas')) {
+    dialog.classList.add('museum-work-dialog-unavailable');
+    // Move the one canonical source link into the visible failure panel.
+    // Never duplicate it or nest an anchor inside the gallery/hero buttons.
+    const source = dialog.querySelector('[data-museum-record]');
+    if (source) {
+      source.classList.add('museum-image-source-link');
+      media.append(source);
+    }
+  }
 }
 
 function updateCards(section) {
@@ -214,12 +244,20 @@ function updateCards(section) {
   if (!grid) return;
   const genre = section.dataset.museumFilter || 'all';
   const items = allPaintings().filter(item => genre === 'all' || item.genre === genre);
-  // Do not destroy already decoded images when the optional AIC metadata arrives.
-  // Replacing all children re-started the CDN requests and created blank captures.
+  // Preserve connected core nodes during optional hydration. replaceChildren
+  // detaches even reused nodes, losing keyboard focus and image continuity.
   const previous = new Map(Array.from(grid.querySelectorAll('[data-museum-artwork]'),
     card => [card.dataset.museumArtwork, card]));
-  grid.replaceChildren(...items.map(item =>
-    previous.get(String(item.id)) || paintingCard(item)));
+  const desired = items.map(item => previous.get(String(item.id)) || paintingCard(item));
+  const retained = new Set(desired);
+  for (const card of Array.from(grid.children)) {
+    if (!retained.has(card)) card.remove();
+  }
+  let cursor = grid.firstElementChild;
+  for (const card of desired) {
+    if (card === cursor) cursor = cursor.nextElementSibling;
+    else grid.insertBefore(card, cursor);
+  }
   const count = section.querySelector('[data-museum-count]');
   if (count) count.textContent = String(items.length) + copy(' произведений', ' paintings');
 }
@@ -249,19 +287,29 @@ async function loadOptionalPaintings() {
       if (!response.ok) return [];
       const payload = await response.json();
       const records = Array.isArray(payload?.data) ? payload.data : [];
+      const identityCounts = new Map();
+      for (const record of records) {
+        if (record && typeof record === 'object' && !Array.isArray(record) && Number.isSafeInteger(record.id)) {
+          identityCounts.set(record.id, (identityCounts.get(record.id) || 0) + 1);
+        }
+      }
       supplementary = records.flatMap(record => {
+        // A malformed neighbour must not discard valid records; contradictory
+        // duplicate identities are withheld instead of choosing a rights claim.
+        if (!record || typeof record !== 'object' || Array.isArray(record)) return [];
         const hint = OPTIONAL.find(x => x.id === record.id);
-        if (!hint || record.is_public_domain !== true ||
+        if (!hint || identityCounts.get(record.id) !== 1 || record.is_public_domain !== true ||
             record.artwork_type_title !== 'Painting' ||
             !ID_PATTERN.test(String(record.image_id || ''))) return [];
         const artistEn = String(record.artist_display || '').split(' (')[0].trim();
+        const mediumEn = String(record.medium_display || 'Painting');
         return [{
           id: record.id, imageId: record.image_id,
-          en: String(record.title || ''), ru: String(record.title || ''),
-          artistEn, artistRu: artistEn,
+          en: String(record.title || ''), ru: hint.ru,
+          artistEn, artistRu: hint.artistRu,
           date: String(record.date_display || '—'),
-          medium: String(record.medium_display || 'Painting'),
-          mediumRu: String(record.medium_display || 'Живопись'),
+          medium: mediumEn,
+          mediumRu: reviewedMediumRu(mediumEn),
           dimensions: String(record.dimensions || '—'),
           accession: String(record.main_reference_number || '—'),
           genre: hint.genre
@@ -319,6 +367,9 @@ export function museumGalleryPanel() {
   const count = document.createElement('div');
   count.className = 'museum-open-count';
   count.dataset.museumCount = '';
+  count.setAttribute('role', 'status');
+  count.setAttribute('aria-live', 'polite');
+  count.setAttribute('aria-atomic', 'true');
   section.append(count);
   const grid = document.createElement('div');
   grid.className = 'museum-open-grid';
@@ -327,7 +378,7 @@ export function museumGalleryPanel() {
   note.className = 'museum-open-terms';
   note.textContent = copy(
     'Источник изображений: Art Institute of Chicago · Public Domain / CC0. Атрибуция, музейное хранение и права приведены по источнику. Эти картины не принадлежат ANTIQUA, не выставлены на продажу и не подтверждают происхождение других объектов.',
-    'Image source: Art Institute of Chicago · Public Domain / CC0. Museum attribution and rights derive from the source. These works are not owned, listed or sold by ANTIQUA and do not establish provenance for other objects.'
+    'Image source: Art Institute of Chicago · Public Domain / CC0. Attribution and rights derive from the source. These works are not owned, listed or sold by ANTIQUA and do not establish provenance for other objects.'
   );
   section.append(note);
   applyFilter(section, 'all');
@@ -340,9 +391,12 @@ export function museumGalleryPanel() {
   return section;
 }
 
-function workModal(item) {
-  document.querySelector('dialog[data-museum-dialog]')?.remove();
+function workModal(item, opener) {
+  const previous = document.querySelector('dialog[data-museum-dialog]');
+  if (previous?.open) previous.close();
+  previous?.remove();
   document.documentElement.classList.remove('museum-modal-open');
+  const openingHash = window.location.hash;
   const dialog = document.createElement('dialog');
   dialog.className = 'museum-work-dialog';
   dialog.dataset.museumDialog = '';
@@ -388,6 +442,7 @@ function workModal(item) {
   const links = document.createElement('div');
   links.className = 'museum-work-links';
   const source = document.createElement('a');
+  source.dataset.museumRecord = '';
   source.href = sourceFor(item);
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
@@ -408,9 +463,20 @@ function workModal(item) {
   copyPane.append(top, artist, heading, facts, accession, explanation, links);
   dialog.append(close, canvas, copyPane);
   document.body.append(dialog);
+  const onNavigation = () => { if (dialog.open) dialog.close(); };
+  window.addEventListener('hashchange', onNavigation);
   dialog.addEventListener('close', () => {
-    document.documentElement.classList.remove('museum-modal-open');
+    window.removeEventListener('hashchange', onNavigation);
     dialog.remove();
+    if (!document.querySelector('dialog[data-museum-dialog][open]')) {
+      document.documentElement.classList.remove('museum-modal-open');
+    }
+    // Closing an older dialog must not steal focus or unlock a newer dialog.
+    if (!document.querySelector('dialog[open]')) {
+      const target = window.location.hash === openingHash && opener?.isConnected
+        ? opener : document.getElementById('app');
+      target?.focus({preventScroll: true});
+    }
   }, {once: true});
   dialog.addEventListener('click', event => {
     if (event.target === dialog) dialog.close();
@@ -426,6 +492,6 @@ document.addEventListener('click', event => {
   const painting = allPaintings().find(item => String(item.id) === button.dataset.museumOpen);
   if (painting) {
     event.preventDefault();
-    workModal(painting);
+    workModal(painting, button);
   }
 });

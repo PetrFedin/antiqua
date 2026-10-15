@@ -1,7 +1,7 @@
 {
   "schemaVersion": "antiqua-p0-integration-manifest-v1",
   "repository": "PetrFedin/antiqua",
-  "status": "UNREVIEWED_TEST_CANDIDATE",
+  "status": "TWO_PARENT_MUSEUM_SECURITY_CANDIDATE_NOT_ADMITTED",
   "productionAdmitted": false,
   "main": "4f3e396ce6052ae8924235eab3ed4ad11cac470c",
   "databaseSecurity": {
@@ -42,8 +42,7 @@
     "tests/db-identity-gate-v55.mjs",
     "tests/data-api-grants-v56.mjs",
     "tests/postgres-api-catalog-v57.mjs",
-    ".github/workflows/ci.yml",
-    ".github/workflows/browser-e2e.yml"
+    ".github/workflows/ci.yml"
   ],
   "externalGates": [
     "independent-security-review",
@@ -53,5 +52,13 @@
     "private-media-authorization",
     "protected-main",
     "exact-live-release"
-  ]
+  ],
+  "sharedWorkflowResolution": {
+    "path": ".github/workflows/browser-e2e.yml",
+    "securityParent": "e82f402f02ef47708c5d0ec9a70cb03b03583518",
+    "museumParent": "0a40c12844b8c85391150073c01a9378eb5ed667",
+    "reason": "Conflicting workflow is explicitly resolved: retain database gate PR trigger from security; adopt audited pinned browser runner and all-screen checks from museum.",
+    "verifiedBy": "tests/p0-museum-security-v62.mjs",
+    "independentReviewReceived": false
+  }
 }

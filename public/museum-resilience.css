@@ -1,0 +1,47 @@
+/* Failure-state layout only. Decoded museum paintings keep their existing layout. */
+.museum-work-dialog-unavailable .museum-work-canvas.museum-image-unavailable {
+  box-sizing: border-box;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+  gap: 10px;
+  padding: max(66px, calc(env(safe-area-inset-top) + 56px)) 18px 18px;
+}
+.museum-work-dialog-unavailable .museum-image-fallback {
+  padding: 0;
+  margin: 0;
+  max-width: 40ch;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.museum-image-source-link {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.museum-work-dialog :focus-visible,
+.museum-open-access button:focus-visible,
+.culture-hero-media [data-museum-open]:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+@media (min-width: 881px) {
+  .museum-work-dialog-unavailable[open] { grid-template-columns: 1fr; }
+  .museum-work-dialog-unavailable .museum-work-canvas.museum-image-unavailable {
+    padding: 24px 74px 18px;
+  }
+  .museum-work-dialog-unavailable .museum-work-details {
+    max-height: min(calc(94dvh - 150px), 680px);
+  }
+}
