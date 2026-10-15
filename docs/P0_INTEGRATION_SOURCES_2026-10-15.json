@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "antiqua-p0-integration-manifest-v1",
+  "repository": "PetrFedin/antiqua",
+  "status": "UNREVIEWED_TEST_CANDIDATE",
+  "productionAdmitted": false,
+  "main": "4f3e396ce6052ae8924235eab3ed4ad11cac470c",
+  "databaseSecurity": {
+    "pr": 143,
+    "includesParent": 136,
+    "sha": "5a6a61b8da6022992fe1f6de9b47c3d9a83fdb6b"
+  },
+  "publicPrivacy": {
+    "pr": 144,
+    "includesParent": 142,
+    "sha": "6b5f5c0e38c3b7c441b2178f19829ab173716f1e"
+  },
+  "privacyFiles": {
+    ".github/workflows/public-provenance-redaction-v57.yml": "28582cd41e7a5c0cbae1b6d0dcc8f560371f6dfe",
+    ".github/workflows/research-interchange-public-v58.yml": "d22eebcea2db9546849be645deec10af657d9432",
+    "artwork-dossier-public-v58.mjs": "4b8f347a08e35abda4c9a8220808e6f19db2b7e6",
+    "artwork-dossier-v51.mjs": "a26a740f166746fafa305917ad584bd3a5678768",
+    "provenance-evidence-passport-v43.mjs": "674f42c039575919d99e1f53406594cf0262d802",
+    "research-interchange-profile-v47.mjs": "34cd737a0062347aba360cba83c1cb4e885fc2ca",
+    "research-interchange-public-v58.mjs": "6377ffda55b278a574e4e9b4d59b283ee790dfa6",
+    "routes-research-interchange-v47.mjs": "d2c3bac3de7ecd8c7fe9369346d3466a1dd7eba2",
+    "tests/artwork-dossier-public-v58.mjs": "de44f03b0668ba92f3b11cf51d101339c8b72212",
+    "tests/browser/artwork-dossier-v51.spec.mjs": "78d28c1e8e1a9f5589d43addd3ab7ab671f97597",
+    "tests/postgres-passport-revisions-v16.mjs": "fda397fa7a9876debca7a06b52d530d61b9bce1c",
+    "tests/public-provenance-redaction-v57.mjs": "6839c4a256f68af74c3ea35c23cbd3b58f6acd89",
+    "tests/research-interchange-public-v58.mjs": "04bf41ac01c2a9960c2b7a5658eab93ecac31957",
+    "tests/synthetic-reference-catalogue-v48.mjs": "3aa727b97c2302d4b0fb5290c6156e2aa490bcee"
+  },
+  "databaseFiles": [
+    "db-identity-gate-v55.mjs",
+    "data-api-grants-v56.mjs",
+    "persistence-v09.mjs",
+    "runtime-v09.mjs",
+    "security-v09.mjs",
+    "scripts/migrate-v14.mjs",
+    "scripts/start-v52.mjs",
+    "scripts/audit-db-readonly-v55.mjs",
+    "tests/db-identity-gate-v55.mjs",
+    "tests/data-api-grants-v56.mjs",
+    "tests/postgres-api-catalog-v57.mjs",
+    ".github/workflows/ci.yml",
+    ".github/workflows/browser-e2e.yml"
+  ],
+  "externalGates": [
+    "independent-security-review",
+    "dedicated-database-identity",
+    "real-001-033-admission",
+    "restart-and-backup-restore",
+    "private-media-authorization",
+    "protected-main",
+    "exact-live-release"
+  ]
+}
