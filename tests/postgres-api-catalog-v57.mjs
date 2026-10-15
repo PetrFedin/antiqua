@@ -20,6 +20,9 @@ try{
     await client.query('GRANT USAGE ON SCHEMA public TO anon');
     await client.query('GRANT CREATE ON SCHEMA public TO anon');
     await client.query('GRANT SELECT ON TABLE public._antiqua_api_probe_v57 TO anon');
+    // A table-level privilege audit alone misses column-only grants.
+    await client.query('CREATE TABLE public._antiqua_column_probe_v58(id INTEGER, private_email TEXT)');
+    await client.query('GRANT SELECT(private_email) ON TABLE public._antiqua_column_probe_v58 TO authenticated');
     await client.query('CREATE SEQUENCE public._antiqua_api_sequence_v57');
     await client.query('GRANT USAGE ON SEQUENCE public._antiqua_api_sequence_v57 TO anon');
     await client.query("CREATE FUNCTION public._antiqua_api_function_v57() RETURNS INTEGER LANGUAGE SQL AS 'SELECT 1'");
@@ -44,6 +47,19 @@ try{
       await client.query('ROLLBACK TO SAVEPOINT negative_role_probe');
       await client.query('RELEASE SAVEPOINT negative_role_probe');
     }
+    await client.query('SAVEPOINT column_only_role_probe');
+    try {
+      await client.query('SET LOCAL ROLE authenticated');
+      await client.query('SELECT private_email FROM public._antiqua_column_probe_v58');
+      await assert.rejects(
+        ()=>client.query('SELECT id FROM public._antiqua_column_probe_v58'),
+        e=>e?.code==='42501',
+        'authenticated must not read a column without a grant'
+      );
+    } finally {
+      await client.query('ROLLBACK TO SAVEPOINT column_only_role_probe');
+      await client.query('RELEASE SAVEPOINT column_only_role_probe');
+    }
     await client.query('SAVEPOINT allowed_role_probe');
     try {
       await client.query('SET LOCAL ROLE anon');
@@ -56,6 +72,10 @@ try{
     const evidence=await inspectDataApiGrants(client);
     assert.ok(evidence.roles.includes('anon'));
     assert.ok(evidence.roles.includes('authenticated'));
+    const columnRow=evidence.relations.find(r=>r.object_name==='_antiqua_column_probe_v58'&&r.role_name==='authenticated');
+    assert.ok(columnRow,'read-only catalog must observe column-grant fixture');
+    assert.equal(columnRow.can_select,false,'table-level SELECT must be denied');
+    assert.equal(columnRow.can_select_any_column,true,'column-level SELECT must be visible');
     assert.ok(evidence.relations.some(r=>r.object_name==='_antiqua_api_probe_v57'&&r.role_name==='anon'&&r.can_select));
     assert.ok(evidence.sequences.some(r=>r.sequence_name==='_antiqua_api_sequence_v57'&&r.role_name==='anon'&&r.can_use));
     assert.ok(evidence.functions.some(r=>r.signature.includes('_antiqua_api_function_v57')&&r.role_name==='anon'&&r.can_execute));
@@ -65,6 +85,7 @@ try{
 
     const report=evaluateDataApiGrants(evidence);
     assert.ok(report.unsafeTables.includes('anon:_antiqua_api_probe_v57'));
+    assert.ok(report.unexpectedDirectAccess.includes('authenticated:_antiqua_column_probe_v58'));
     assert.ok(report.exposedFunctions.some(s=>s.includes('_antiqua_api_function_v57')));
     assert.ok(report.exposedSequences.includes('anon:_antiqua_api_sequence_v57'));
     assert.ok(report.unexpectedSchemaAccess.includes('anon:public'));
