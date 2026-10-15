@@ -43,9 +43,11 @@ for(const [,raw] of scopedRules){
 
 const editorialCss=await read('art-direction.css');
 assert.ok(editorialCss.length>2500 && Buffer.byteLength(editorialCss,'utf8')<20000,'editorial sheet must be bounded');
-assert.doesNotMatch(editorialCss,/@import\\b|url\\s*\\(|!important|@font-face/i,'editorial sheet must be local and auditable');
-assert.match(editorialCss,/\\.culture-pathways\\s*\\{/);
-assert.match(editorialCss,/\\.museum-open-grid\\s*\\{/);
+assert.doesNotMatch(editorialCss,/@import\b|url\s*\(|!important|@font-face/i,'editorial sheet must be local and auditable');
+assert.match(editorialCss,/\.culture-pathways\s*\{/);
+assert.match(editorialCss,/\.museum-open-grid\s*\{/);
+assert.match(editorialCss,/\.culture-art-study\s*\{/);
+assert.doesNotMatch(editorialCss,/https?:\/\//i,'no third-party assets in visual layer');
 const seen=new Set();
 async function walk(rel){
   rel=rel.replace(/^\.\//,'');

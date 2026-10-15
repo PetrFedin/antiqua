@@ -46,6 +46,6 @@ test('Private Collection feeds explainable Taste without leaking or rediscoverin
 
   await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
   await expect(page.locator('[data-culture-root]')).toBeVisible();
-  await expect(page.locator('[data-culture-root]')).toContainText(/Мир искусства|World of Art/i);
+  await expect(page.locator('[data-culture-hero] h1')).toHaveAttribute('aria-label',/Искусство ближе, чем кажется|Art is closer than you think/i);
   await expect(page.locator('[data-culture-feed]')).toContainText(/вашим действиям|your actions/i);
 });

@@ -191,3 +191,103 @@ body{background:var(--aq-paper)}
 @media(prefers-reduced-motion:reduce){
  .culture-path,.culture-hero-media img,.museum-artwork-image img{transition:none}
 }
+
+
+/* v64 — an art-magazine interlude replaces unreviewed antiques demo content. */
+.culture-art-study{
+  display:grid;
+  grid-template-columns:minmax(150px,.27fr) minmax(0,1fr);
+  gap:0;
+  width:min(1440px,100%);
+  padding-top:0;
+  padding-bottom:0;
+  margin-block:12px 72px;
+  color:#f1eadf;
+  background:#263b32;
+}
+.culture-art-study-index{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:370px;
+  padding:35px 29px;
+  border-right:1px solid #f4eddf36;
+  color:#cfb6a1;
+}
+.culture-art-study-index span{
+  max-width:17ch;
+  font-size:10px;
+  letter-spacing:.18em;
+  line-height:1.7;
+}
+.culture-art-study-index strong{
+  font:400 46px/1 var(--aq-serif);
+  letter-spacing:-.05em;
+}
+.culture-art-study-text{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  padding:49px clamp(30px,8vw,120px);
+}
+.culture-art-study .eyebrow{color:#d9a48e}
+.culture-art-study h2{
+  margin:19px 0 20px;
+  white-space:pre-line;
+  font:italic 400 clamp(55px,6.2vw,100px)/.96 var(--aq-serif);
+  letter-spacing:-.055em;
+  color:#f7eddd;
+}
+.culture-art-study p{
+  max-width:54ch;
+  margin:0 0 27px;
+  font:400 clamp(17px,1.6vw,21px)/1.55 var(--aq-serif);
+  color:#d6d1c5;
+}
+.culture-art-study-action{
+  min-height:48px;
+  padding:10px 0;
+  border:0;
+  border-bottom:1px solid #dcae94;
+  background:transparent;
+  color:#f4e6d7;
+  font-size:13px;
+  text-align:left;
+  cursor:pointer;
+}
+.culture-art-study-action:hover{color:#ebb798}
+.culture-art-study-action:focus-visible{outline:3px solid #e0a081;outline-offset:6px}
+.culture-art-study small{
+  display:block;
+  margin-top:18px;
+  font-size:10px;
+  line-height:1.5;
+  color:#c9c1b3;
+}
+.culture-path[type="button"]{
+  border-top:0;
+  border-right:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--aq-ink);
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.culture-path[type="button"]:hover,.culture-path[type="button"]:focus-visible{background:#e6dace}
+.museum-open-access{scroll-margin-top:120px}
+@media(max-width:800px){
+ .culture-art-study{grid-template-columns:1fr;margin-block:8px 54px}
+ .culture-art-study-index{min-height:0;padding:25px 29px;border-right:0;border-bottom:1px solid #f4eddf36;flex-direction:row;align-items:center}
+ .culture-art-study-index strong{font-size:30px}
+ .culture-art-study-text{padding:41px 29px 52px}
+}
+@media(max-width:520px){
+ .culture-art-study{margin-block:0 43px}
+ .culture-art-study-index{padding:21px 20px}
+ .culture-art-study-text{padding:37px 20px 45px}
+ .culture-art-study h2{font-size:clamp(48px,12vw,68px)}
+ .culture-art-study p{font-size:18px}
+ .museum-open-access{scroll-margin-top:75px}
+}
