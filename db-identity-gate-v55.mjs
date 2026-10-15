@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {migrationVersions} from './migration-manifest-v16.mjs';
+import {inspectDataApiGrants,evaluateDataApiGrants,enforceDataApiGrants} from './data-api-grants-v56.mjs';
 
 // Negative identities come from independently verified projects, not a guessed Antiqua ref.
 // The allow-ref must come from a fresh, reviewed Supabase management API response.
@@ -111,15 +112,18 @@ export async function inspectDatabaseLineage(client){
     const policies=(await client.query(
       "SELECT tablename,policyname,roles,cmd,qual,with_check FROM pg_catalog.pg_policies WHERE schemaname='public' ORDER BY tablename,policyname"
     )).rows;
+    const dataApiEvidence=await inspectDataApiGrants(client);
+    const dataApiReport=evaluateDataApiGrants({...dataApiEvidence,policies});
     const structureDigest=createHash('sha256')
-      .update(JSON.stringify({columns,indexes,constraints,rls,policies})).digest('hex');
+      .update(JSON.stringify({columns,indexes,constraints,rls,policies,dataApiEvidence})).digest('hex');
     const inventory={
       database:identity.database,
       username:identity.username,
       searchPath:identity.search_path,
       publicTables:tables,
       appliedVersions:applied,
-      structureDigest
+      structureDigest,
+      dataApiReport
     };
     const fingerprint=createHash('sha256').update(JSON.stringify(inventory)).digest('hex');
     return Object.freeze({
@@ -136,6 +140,7 @@ export function requireMigrationApproval(target,inventory,env=process.env){
   if(target.database!==inventory.database)stop('CONNECTED_DATABASE_MISMATCH');
   if(target.mode==='isolated-test')return;
   if(inventory.username!=='postgres')stop('CONNECTED_ROLE_MISMATCH');
+  enforceDataApiGrants(inventory.dataApiReport,target.mode);
   const reviewed=String(env.ANTIQUA_REVIEWED_DB_FINGERPRINT||'').trim().toLowerCase();
   if(!/^[0-9a-f]{64}$/.test(reviewed))stop('SCHEMA_INVENTORY_REVIEW_REQUIRED');
   if(reviewed!==inventory.fingerprint)stop('SCHEMA_INVENTORY_CHANGED');
@@ -153,6 +158,7 @@ export function summarizeDatabaseInspection(target,inventory){
     pendingVersions:inventory.pendingVersions,
     publicTables:inventory.publicTables,
     structureDigest:inventory.structureDigest,
+    dataApi:inventory.dataApiReport,
     schemaFingerprint:inventory.fingerprint
   };
 }
