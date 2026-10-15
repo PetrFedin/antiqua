@@ -50,3 +50,17 @@ test('museum metadata fetch is narrowly allowed by the application CSP',()=>{
   assert.match(server,/connect-src 'self' https:\/\/api\.artic\.edu; frame-ancestors 'none'/);
   assert.doesNotMatch(server,/connect-src[^;]*\*/);
 });
+
+test('v60 curated Russian metadata survives museum API hydration without invented medium',()=>{
+  assert.match(museum,/ru: hint\.ru/);
+  assert.match(museum,/artistRu: hint\.artistRu/);
+  assert.match(museum,/mediumRu: reviewedMediumRu\(mediumEn\)/);
+  assert.match(museum,/Техника — в музейной записи/);
+  assert.match(museum,/record\.is_public_domain !== true/);
+  assert.match(museum,/record\.artwork_type_title !== 'Painting'/);
+});
+test('v60 offline hero compacts without hiding source and caption',()=>{
+  assert.match(museum,/culture-hero-media-unavailable/);
+  assert.match(css,/\.culture-hero-media\.culture-hero-media-unavailable\{/);
+  assert.match(css,/\.culture-hero-media\.culture-hero-media-unavailable \.culture-hero-caption\{[\s\S]*?position:static;/);
+});
