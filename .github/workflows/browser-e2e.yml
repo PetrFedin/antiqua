@@ -19,13 +19,33 @@ jobs:
           node-version: 22
       - run: npm install
       - name: Install pinned Playwright runner
-        run: npm install --no-save @playwright/test@1.55.0
+        # This ephemeral dev manifest/lock exists only in the CI checkout.
+        # Unlike --no-save, it lets npm audit inspect the actual browser runner.
+        run: npm install --save-dev --save-exact --ignore-scripts @playwright/test@1.63.0
+      - name: Verify and audit the complete browser toolchain
+        run: |
+          mkdir -p artifacts/browser-toolchain
+          node -e "for (const name of ['@playwright/test','playwright','playwright-core']) { const version = require(name + '/package.json').version; if (version !== '1.63.0') throw new Error(name + ': unexpected version ' + version); }"
+          npm ls @playwright/test playwright playwright-core --json > artifacts/browser-toolchain/versions.json
+          cp package-lock.json artifacts/browser-toolchain/ephemeral-package-lock.json
+          npm audit --include=dev --audit-level=high --json > artifacts/browser-toolchain/audit.json
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Syntax check browser suite
-        run: node --check tests/browser/core-journey.spec.mjs && node --check tests/browser/engagement.spec.mjs && node --check tests/browser/similarity.spec.mjs && node --check tests/browser/shareable-passport.spec.mjs && node --check tests/browser/watch.spec.mjs && node --check tests/browser/auction-results.spec.mjs && node --check tests/browser/inquiry.spec.mjs && node --check tests/browser/offer-negotiation.spec.mjs && node --check tests/browser/commercial-services.spec.mjs && node --check tests/browser/dealer-leads.spec.mjs && node --check tests/browser/dealer-interest.spec.mjs && node --check tests/browser/market-intelligence.spec.mjs && node --check tests/browser/object-desire.spec.mjs && node --check tests/browser/taste-graph.spec.mjs && node --check tests/browser/partner-drops.spec.mjs && node --check tests/browser/creator-graph.spec.mjs && node --check tests/browser/art-network.spec.mjs && node --check tests/browser/cultural-calendar.spec.mjs && node --check tests/browser/editorial-commerce.spec.mjs && node --check tests/browser/partner-investor-showcase.spec.mjs && node --check tests/browser/artwork-dossier-v51.spec.mjs
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: Syntax check every browser spec
+        run: |
+          for spec in tests/browser/*.spec.mjs; do
+            node --check "$spec"
+          done
       - name: Run real browser journeys
-        run: npx playwright test -c playwright.config.mjs
+        run: ./node_modules/.bin/playwright test -c playwright.config.mjs
+      - name: Upload browser toolchain audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-browser-toolchain-${{ github.sha }}
+          path: artifacts/browser-toolchain/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload visual proof and failure traces
         if: always()
         uses: actions/upload-artifact@v4
