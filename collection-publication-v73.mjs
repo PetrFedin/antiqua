@@ -96,7 +96,7 @@ const safeNote=(note,required)=>{
  return note.trim();
 };
 const publicMeta=(previous,state,extra={})=>({
- ...previous,publicationState:state,reviewedForPublicHomepage:state==='PUBLISHED',
+ ...previous,discipline:'PAINTING',publicationState:state,reviewedForPublicHomepage:state==='PUBLISHED',
  mediaRightsReviewed:state==='PUBLISHED',
  ...extra
 });

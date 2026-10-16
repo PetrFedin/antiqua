@@ -23,7 +23,7 @@ try{
  await failure(transitionCollectionPublication(reviewer,id,'PUBLISH',{note:'Same reviewer disallowed',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'FORBIDDEN');
  await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Rights check missing references',rightsAttested:true,evidenceRefs:[]}), 'MEDIA_EVIDENCE_REQUIRED');
  const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]});assert.equal(published.publicationState,'PUBLISHED');
- assert.ok((await listCollections()).some(x=>x.id===id));assert.ok((await getReadableCollection(id,null))?.id===id);
+ const visible=(await listCollections()).find(x=>x.id===id);assert.ok(visible);assert.equal(visible.metadata.discipline,'PAINTING','frontend publication gate must recognize reviewed artwork category');assert.ok((await getReadableCollection(id,null))?.id===id);
  const audit=await collectionPublicationStatus(seller,id);assert.deepEqual(audit.events.map(x=>x.sequenceNo),[1,2,3]);
  await addCollectionObject(seller,id,{objectId:'lot-109'});
  assert.equal((await getReadableCollection(id,null)),null,'composition invalidates rights admission');
