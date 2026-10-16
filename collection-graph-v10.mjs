@@ -3,6 +3,7 @@ import {db,lots,uid,now,bi} from './runtime-v09.mjs';
 import {canReadCollection,isPublicCollection,isPublicEnsemble,isPublicExhibition} from './access-policy.mjs';
 import {setObjectFlag} from './preferences-v14.mjs';
 import {publishedSnapshotMatches,appendCollectionContentChange} from './collection-publication-v73.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const collections=new Map(),ensembles=new Map(),exhibitions=new Map(),claims=new Map();
 const clone=x=>structuredClone(x),loc=id=>lots.find(x=>x.id===id);
@@ -33,7 +34,6 @@ async function readEnsemblesFromDb(){if(db.kind!=='POSTGRES')return null;const r
 async function readExhibitionsFromDb(){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query("SELECT e.*,o.name AS organization_name,o.slug AS organization_slug,l.label AS location_label,l.city AS location_city,l.address_line AS location_address FROM exhibitions e LEFT JOIN organizations o ON o.id=e.organization_id LEFT JOIN organization_locations l ON l.id=e.organization_location_id WHERE e.visibility='PUBLIC' AND e.publication_status='PUBLISHED' AND e.status IN('SCHEDULED','LIVE','CLOSED','ARCHIVED') ORDER BY e.updated_at DESC")).rows;return rows.map(r=>({id:r.id,title:r.title,subtitle:r.subtitle,curatorialStatement:r.curatorial_statement,visibility:r.visibility,status:r.status,publicationStatus:r.publication_status,startsAt:r.starts_at,endsAt:r.ends_at,coverObjectId:r.cover_object_id,metadata:r.metadata,organizationId:r.organization_id||null,organization:r.organization_id?{id:r.organization_id,name:r.organization_name,slug:r.organization_slug}:null,organizationLocationId:r.organization_location_id||null,organizationLocation:r.organization_location_id?{id:r.organization_location_id,label:r.location_label,city:r.location_city,addressLine:r.location_address}:null,timezone:r.timezone||'UTC',publicSourceUrl:r.public_source_url||null,bookingUrl:r.booking_url||null,city:r.location_city?bi(r.location_city,r.location_city):{},venueName:r.location_label?bi(r.location_label,r.location_label):{}}))}
 
 
-const VISUAL_MEDIA=/^(?:painting|watercolou?r|drawing|graphics?|graphic arts|prints?|engraving|etching|lithograph(?:y)?|pastel|gouache|живопись|акварель|графика|рисунок|гравюра|офорт|литография|пастель|гуашь)$/iu;
 function reviewedVisualCollection(c){
  if(!isPublicCollection(c))return false;
  const meta=c.metadata||{};
@@ -41,7 +41,7 @@ function reviewedVisualCollection(c){
  return Array.isArray(c.items)&&c.items.length>0&&c.items.every(item=>{
   const artwork=loc(item.objectId);
   const medium=typeof artwork?.department==='string'?artwork.department:(artwork?.department?.en||artwork?.department?.ru||'');
-  return Boolean(artwork?.image&&VISUAL_MEDIA.test(String(medium).trim()));
+  return Boolean(artwork?.image&&isPaintingCategory(medium));
  });
 }
 function publicCollectionProjection(c){

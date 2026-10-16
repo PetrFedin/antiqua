@@ -122,6 +122,31 @@ export async function collectionPublicationStatus(actor,id){
   events:events.map(eventRow)};
 }
 
+// Reviewer inbox is scoped server-side; never exposes full private collection
+// records, private owner notes, storage or unreviewed media evidence.
+export async function collectionReviewQueue(actor,{limit=30}={}){
+ if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Reviewer inbox needs durable PostgreSQL');
+ if(!hasPermission(actor,'catalogue.review')&&!hasPermission(actor,'trust.review'))
+  throw bad(403,'FORBIDDEN','Reviewer permission required');
+ const n=Number(limit);
+ if(!Number.isSafeInteger(n)||n<1||n>100)throw bad(400,'INVALID_LIMIT','Limit must be 1-100');
+ const catalogue=hasPermission(actor,'catalogue.review');
+ const rights=hasPermission(actor,'trust.review');
+ const states=[];
+ if(catalogue)states.push('SUBMITTED');
+ if(rights)states.push('CATALOGUE_APPROVED');
+ const rows=(await db.pool.query(
+  "SELECT id,owner_account_id,title,visibility,metadata,updated_at FROM collections WHERE metadata->>'publicationState'=ANY($1::text[]) ORDER BY updated_at ASC,id ASC LIMIT $2",
+  [states,n]
+ )).rows;
+ return{items:rows.filter(r=>r.owner_account_id!==actor.id&&
+   !(r.metadata?.publicationState==='CATALOGUE_APPROVED'&&r.metadata?.catalogueReviewerId===actor.id))
+  .map(r=>({id:r.id,title:r.title,visibility:r.visibility,
+   publicationState:r.metadata?.publicationState,
+   updatedAt:r.updated_at,
+   stage:r.metadata?.publicationState==='SUBMITTED'?'CATALOGUE':'RIGHTS'})),
+  stages:states};
+}
 export async function transitionCollectionPublication(actor,id,action,body={}){
  if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Durable publication authority requires PostgreSQL');
  if(!actions.has(action))throw bad(400,'INVALID_ACTION','Invalid publication action');

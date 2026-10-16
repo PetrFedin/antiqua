@@ -102,16 +102,12 @@ function auctionsView(){const entries=state.catalog.auctions.map(a=>entryForLot(
  // Backend authorization and rights verification remain separate requirements.
 function publicPaintingCollection(c){
  if(c?.visibility!=='PUBLIC')return false;
- const meta=c.metadata||{};
- if(meta.discipline!=='PAINTING'||meta.reviewedForPublicHomepage!==true||meta.mediaRightsReviewed!==true)return false;
+ const m=c.metadata||{};
+ // The API already enforces the canonical painting category and signed snapshot.
+ // Do not reclassify legitimate watercolours through a different client regex.
+ if(m.discipline!=='PAINTING'||m.reviewedForPublicHomepage!==true||m.mediaRightsReviewed!==true)return false;
  const items=c.items||[];
- return items.length>0&&items.every(item=>{
-  const o=item?.object;
-  if(!o)return false;
-  const terms=[o.department?.en,o.department?.ru,o.category?.en,o.category?.ru,o.department,o.category]
-   .filter(x=>typeof x==='string').join(' ').toLowerCase();
-  return /(?:painting|живопис)/u.test(terms);
- });
+ return items.length>0&&items.every(item=>Boolean(item?.object?.image));
 }
 function collectionsView(){const reviewed=(state.collections||[]).filter(publicPaintingCollection);
  return`<section class="page section collection-register-v70"><div class="collection-register-head">
