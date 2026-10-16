@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import {db,lots,uid,now,bi} from './runtime-v09.mjs';
 import {canReadCollection,isPublicCollection,isPublicEnsemble,isPublicExhibition} from './access-policy.mjs';
 import {setObjectFlag} from './preferences-v14.mjs';
-import {publishedSnapshotMatches} from './collection-publication-v73.mjs';
+import {publishedSnapshotMatches,appendCollectionContentChange} from './collection-publication-v73.mjs';
 
 const collections=new Map(),ensembles=new Map(),exhibitions=new Map(),claims=new Map();
 const clone=x=>structuredClone(x),loc=id=>lots.find(x=>x.id===id);
@@ -119,7 +119,8 @@ export async function addCollectionObject(account,id,body={}){
    await client.query("INSERT INTO account_object_flags(account_id,object_id,flag_type) VALUES($1,$2,'COLLECTED') ON CONFLICT(account_id,object_id,flag_type) DO UPDATE SET updated_at=now()",[account.id,objectId]);
    if(owner.visibility==='PUBLIC'){
     // Adding/changing even one work invalidates the previous publication review.
-    await client.query("UPDATE collections SET metadata=coalesce(metadata,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[id,{publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,reviewedAt:null}]);
+    await client.query("UPDATE collections SET metadata=coalesce(metadata,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[id,{publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,approvedDigest:null,submittedDigest:null,reviewedAt:null}]);
+    await appendCollectionContentChange(client,id,account.id,owner.metadata?.publicationState||'DRAFT');
    }else await client.query('UPDATE collections SET updated_at=now() WHERE id=$1',[id]);
    await client.query('COMMIT');
   }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}

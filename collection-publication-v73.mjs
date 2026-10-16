@@ -192,3 +192,24 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}
  finally{client.release()}
 }
+
+
+// Called from the *same locked transaction* that changes collection contents.
+// Content change is a revocation event, never a fresh publication approval.
+export async function appendCollectionContentChange(client,id,actorId,previousState){
+ if(!['SUBMITTED','CATALOGUE_APPROVED','PUBLISHED'].includes(previousState))return null;
+ const c=await lockedCollection(client,id);
+ if(!c)throw bad(404,'COLLECTION_NOT_FOUND','Collection not found');
+ const digest=collectionContentDigest(c),action='CONTENT_CHANGED',toState='REVIEW_REQUIRED';
+ const history=(await client.query('SELECT sequence_no,event_hash FROM collection_publication_events WHERE collection_id=$1 ORDER BY sequence_no DESC LIMIT 1',[id])).rows[0]||null;
+ const sequenceNo=Number(history?.sequence_no||0)+1,at=new Date().toISOString();
+ const note='Collection composition was changed; prior admission revoked';
+ const requestDigest=sha({action,reason:'COMPOSITION_CHANGED',id,actorId,digest});
+ const eventHash=sha({collectionId:id,sequenceNo,fromState:previousState,toState,action,actorId,digest,
+  previousEventHash:history?.event_hash||null,requestDigest,at});
+ const row=(await client.query(
+  "INSERT INTO collection_publication_events(id,collection_id,sequence_no,actor_account_id,action,from_state,to_state,snapshot_hash,previous_event_hash,event_hash,idempotency_key,request_hash,note,media_evidence,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,'[]'::jsonb,$13) RETURNING *",
+  [uid('cpe'),id,sequenceNo,actorId,action,previousState,toState,digest,history?.event_hash||null,eventHash,requestDigest,note,at]
+ )).rows[0];
+ return eventRow(row);
+}

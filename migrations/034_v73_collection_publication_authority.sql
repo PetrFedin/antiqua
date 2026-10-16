@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS collection_publication_events(
  collection_id text NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
  sequence_no integer NOT NULL CHECK(sequence_no>0),
  actor_account_id text NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
- action text NOT NULL CHECK(action IN('SUBMIT','APPROVE','PUBLISH','REQUEST_CHANGES','REVOKE')),
+ action text NOT NULL CHECK(action IN('SUBMIT','APPROVE','PUBLISH','REQUEST_CHANGES','REVOKE','CONTENT_CHANGED')),
  from_state text NOT NULL,
  to_state text NOT NULL,
  snapshot_hash char(64) NOT NULL CHECK(snapshot_hash~'^[a-f0-9]{64}$'),

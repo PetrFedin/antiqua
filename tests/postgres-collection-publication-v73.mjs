@@ -28,6 +28,10 @@ try{
  await addCollectionObject(seller,id,{objectId:'lot-109'});
  assert.equal((await getReadableCollection(id,null)),null,'composition invalidates rights admission');
  const after=await collectionPublicationStatus(seller,id);assert.equal(after.publicationState,'REVIEW_REQUIRED');
+ assert.deepEqual(after.events.map(e=>e.sequenceNo),[1,2,3,4]);
+ assert.equal(after.events[3].action,'CONTENT_CHANGED');
+ assert.equal(after.events[3].previousEventHash,after.events[2].eventHash,'revocation event must connect to the last publisher event');
+ assert.notEqual(after.events[3].snapshotHash,after.events[2].snapshotHash,'changed composition must have a different digest');
  assert.ok(!(await listCollections()).some(x=>x.id===id));
  console.log('ANTIQUA v73 publication authority PostgreSQL two-person + snapshot + revocation on edit PASS');
 }finally{
