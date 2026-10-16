@@ -25,6 +25,9 @@ try{
  const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]});assert.equal(published.publicationState,'PUBLISHED');
  const visible=(await listCollections()).find(x=>x.id===id);assert.ok(visible);assert.equal(visible.metadata.discipline,'PAINTING','frontend publication gate must recognize reviewed artwork category');assert.ok((await getReadableCollection(id,null))?.id===id);
  const audit=await collectionPublicationStatus(seller,id);assert.deepEqual(audit.events.map(x=>x.sequenceNo),[1,2,3]);
+ await addCollectionObject(seller,id,{objectId:'lot-108'});
+ assert.ok((await getReadableCollection(id,null))?.id===id,'same existing membership must not revoke an approved collection');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,3,'no audit mutation event for identical retry');
  await addCollectionObject(seller,id,{objectId:'lot-109'});
  assert.equal((await getReadableCollection(id,null)),null,'composition invalidates rights admission');
  const after=await collectionPublicationStatus(seller,id);assert.equal(after.publicationState,'REVIEW_REQUIRED');

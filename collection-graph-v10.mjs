@@ -114,14 +114,17 @@ export async function addCollectionObject(account,id,body={}){
    const visibility=ownerMode??previous?.owner_display_mode??'ANONYMOUS';
    const locationMode=placeMode??previous?.location_display_mode??'HIDDEN';
    const note=has('note')?body.note:previous?.note||{};
-   await client.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,nextOrder,section,visibility,locationMode,note]);
+   const unchanged=Boolean(previous&&Number(previous.sort_order)===nextOrder&&previous.section===section&&
+    previous.owner_display_mode===visibility&&previous.location_display_mode===locationMode&&
+    JSON.stringify(previous.note||{})===JSON.stringify(note||{}));
+   if(!unchanged)await client.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,nextOrder,section,visibility,locationMode,note]);
    // Membership and the Taste COLLECTED flag commit or roll back together.
    await client.query("INSERT INTO account_object_flags(account_id,object_id,flag_type) VALUES($1,$2,'COLLECTED') ON CONFLICT(account_id,object_id,flag_type) DO UPDATE SET updated_at=now()",[account.id,objectId]);
-   if(owner.visibility==='PUBLIC'){
-    // Adding/changing even one work invalidates the previous publication review.
+   if(!unchanged&&owner.visibility==='PUBLIC'){
+    // Only an actual content/privacy change invalidates a prior reviewed snapshot.
     await client.query("UPDATE collections SET metadata=coalesce(metadata,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[id,{publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,approvedDigest:null,submittedDigest:null,reviewedAt:null}]);
     await appendCollectionContentChange(client,id,account.id,owner.metadata?.publicationState||'DRAFT');
-   }else await client.query('UPDATE collections SET updated_at=now() WHERE id=$1',[id]);
+   }else if(!unchanged)await client.query('UPDATE collections SET updated_at=now() WHERE id=$1',[id]);
    await client.query('COMMIT');
   }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}
   finally{client.release()}
