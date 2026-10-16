@@ -36,11 +36,12 @@ for(const path of manifest.databaseFiles){
     'security boundary changed: '+path);
 }
 assert.equal(git('ls-tree','-r',manifest.main,'--','migrations'),
-  git('ls-tree','-r','HEAD','--','migrations'),
+  git('ls-tree','-r','HEAD','--','migrations').split('\n').filter(x=>!x.includes('034_v73_collection_publication_authority.sql')).join('\n'),
   '001-033 baseline cannot change inside P0 integration');
 const migrations=git('ls-tree','-r','--name-only','HEAD','--','migrations')
   .split('\n').filter(x=>/\/\d{3}_.+\.sql$/.test(x));
-assert.equal(migrations.length,33,'expected precisely 33 canonical SQL revisions');
+assert.equal(migrations.length,34,'expect 001–033 immutable and the new v73 migration 034');
+assert.equal(migrations.at(-1),'migrations/034_v73_collection_publication_authority.sql');
 
 // Inject a private owner, storage location and document ID into the canonical
 // research authority. Public passport, Dossier and Interchange may never emit

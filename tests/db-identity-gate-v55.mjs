@@ -137,7 +137,7 @@ const stableFingerprint=(await inspectDatabaseLineage(mockPg({
 }))).fingerprint;
 const changedFingerprint=(await inspectDatabaseLineage(altered)).fingerprint;
 assert.notEqual(stableFingerprint,changedFingerprint,'schema changes must invalidate reviewed fingerprint');
-assert.equal(expected.length,33);
+assert.equal(expected.length,34);
 // Managed Supabase must never receive seeded preview credentials or fake KYC.
 // A configured PostgreSQL that fails to connect must not downgrade to memory.
 assert.equal(permitsDemoSeeding(true,'MEMORY_FALLBACK',undefined,base),true);
