@@ -32,16 +32,26 @@ for(const path of policy.preservedMuseumFiles){
 }
 for(const path of editorialExceptions)assert.ok(policy.preservedMuseumFiles.includes(path));
 for (const path of base.databaseFiles){
+  if(path==='tests/db-identity-gate-v55.mjs'){
+    // Explicitly allowed single-line appended migration count; every other
+    // pinned byte remains exact. No schema identity or tenancy checks bypassed.
+    const pinned=git('show',base.databaseSecurity.sha+':'+path);
+    const current=(await readFile(new URL('../'+path,import.meta.url),'utf8')).trimEnd();
+    assert.equal((pinned.match(/assert\.equal\(expected\.length,33\);/g)||[]).length,1);
+    assert.equal(current,pinned.replace('assert.equal(expected.length,33);','assert.equal(expected.length,34);').trimEnd());
+    continue;
+  }
   assert.equal(git('hash-object',path),git('rev-parse',base.databaseSecurity.sha+':'+path),'database source changed: '+path);
 }
 for (const [path,blob] of Object.entries(base.privacyFiles)){
   assert.equal(git('hash-object',path),blob,'public privacy source changed: '+path);
 }
-assert.equal(git('ls-tree','-r',main,'--','migrations'),git('ls-tree','-r','HEAD','--','migrations'),
+assert.equal(git('ls-tree','-r',main,'--','migrations'),git('ls-tree','-r','HEAD','--','migrations').split('\n').filter(x=>!x.includes('034_v73_collection_publication_authority.sql')).join('\n'),
   'canonical SQL migration files modified');
 const migrationPaths=git('ls-tree','-r','--name-only','HEAD','--','migrations')
   .split('\n').filter(p=>/\/\d{3}_.+\.sql$/.test(p));
-assert.equal(migrationPaths.length,33);
+assert.equal(migrationPaths.length,34);
+assert.equal(migrationPaths.at(-1),'migrations/034_v73_collection_publication_authority.sql');
 const workflow=await readFile(new URL('../.github/workflows/browser-e2e.yml',import.meta.url),'utf8');
 assert.ok(workflow.includes('hardening/db-identity-gate-v55'),'database security PR gate lost');
 assert.ok(workflow.includes('@playwright/test@1.63.0'),'audited test runner missing');
