@@ -19,7 +19,8 @@ const cleanup={objects:[],listings:[],orders:[],auctions:[],exhibitions:[],ensem
 try{
  assert.equal(db.kind,'POSTGRES');
  assert.ok(migrationManifest.some(x=>x.version==='015_v16_db_integrity'),'DB integrity migration 015 must remain registered');
- assert.equal(migrationManifest.at(-1).version,'033_v46_independent_passport_verification');
+ assert.equal(migrationManifest.at(-1).version,'034_v73_collection_publication_authority');
+ assert.ok(migrationManifest.some(x=>x.version==='033_v46_independent_passport_verification'),'immutable previous approval');
  assert.ok(migrationManifest.some(x=>x.version==='029_v43_provenance_evidence_passport'),'provenance passport migration 029 must remain registered');
  assert.ok(migrationManifest.some(x=>x.version==='030_v44_provenance_attestations'),'provenance attestation migration 030 must remain registered');
 
