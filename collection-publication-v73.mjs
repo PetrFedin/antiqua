@@ -183,8 +183,8 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
   const hash=sha({collectionId:id,sequenceNo,fromState:state,toState:next,action,actorId:actor.id,digest,
    previousEventHash:history?.event_hash||null,requestDigest,at});
   const ev=(await client.query(
-   "INSERT INTO collection_publication_events(id,collection_id,sequence_no,actor_account_id,action,from_state,to_state,snapshot_hash,previous_event_hash,event_hash,idempotency_key,request_hash,note,media_evidence,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *",
-   [uid('cpe'),id,sequenceNo,actor.id,action,state,next,digest,history?.event_hash||null,hash,key,requestDigest,note,requestedEvidence,at]
+   "INSERT INTO collection_publication_events(id,collection_id,sequence_no,actor_account_id,action,from_state,to_state,snapshot_hash,previous_event_hash,event_hash,idempotency_key,request_hash,note,media_evidence,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15) RETURNING *",
+   [uid('cpe'),id,sequenceNo,actor.id,action,state,next,digest,history?.event_hash||null,hash,key,requestDigest,note,JSON.stringify(requestedEvidence),at]
   )).rows[0];
   await client.query('UPDATE collections SET metadata=$2::jsonb,updated_at=now() WHERE id=$1',[id,metadata]);
   await client.query('COMMIT');
