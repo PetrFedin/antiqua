@@ -37,8 +37,8 @@ for(const path of manifest.databaseFiles){
     const baseline=git('show',manifest.databaseSecurity.sha+':'+path);
     const current=await readFile(new URL('../'+path,import.meta.url),'utf8');
     assert.equal((baseline.match(/assert\.equal\(expected\.length,33\);/g)||[]).length,1);
-    assert.equal(current,baseline.replace('assert.equal(expected.length,33);',
-      'assert.equal(expected.length,34);'),'only the appended migration count may differ');
+    assert.equal(current.trimEnd(),baseline.replace('assert.equal(expected.length,33);',
+      'assert.equal(expected.length,34);').trimEnd(),'only the appended migration count may differ');
     continue;
   }
   assert.equal(git('hash-object',path),
