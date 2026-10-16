@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import {db,lots,uid,now,bi} from './runtime-v09.mjs';
 import {canReadCollection,isPublicCollection,isPublicEnsemble,isPublicExhibition} from './access-policy.mjs';
 import {setObjectFlag} from './preferences-v14.mjs';
+import {publishedSnapshotMatches} from './collection-publication-v73.mjs';
 
 const collections=new Map(),ensembles=new Map(),exhibitions=new Map(),claims=new Map();
 const clone=x=>structuredClone(x),loc=id=>lots.find(x=>x.id===id);
@@ -36,7 +37,7 @@ const VISUAL_MEDIA=/^(?:painting|watercolou?r|drawing|graphics?|graphic arts|pri
 function reviewedVisualCollection(c){
  if(!isPublicCollection(c))return false;
  const meta=c.metadata||{};
- if(meta.discipline!=='PAINTING'||meta.reviewedForPublicHomepage!==true||meta.mediaRightsReviewed!==true)return false;
+ if(!publishedSnapshotMatches(c))return false;
  return Array.isArray(c.items)&&c.items.length>0&&c.items.every(item=>{
   const artwork=loc(item.objectId);
   const medium=typeof artwork?.department==='string'?artwork.department:(artwork?.department?.en||artwork?.department?.ru||'');
