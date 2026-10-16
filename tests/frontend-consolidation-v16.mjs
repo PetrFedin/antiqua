@@ -16,13 +16,13 @@ async function listFiles(dir=ROOT){
 }
 const publicFiles=(await listFiles()).sort();
 for(const p of publicFiles){const parts=p.split('/');const versioned=parts.some(part=>/^v\\d+$/.test(part))||/(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/.test(p);assert.equal(versioned,false,'legacy versioned frontend asset remains: '+p)}
-for(const p of ['index.html','styles.css','museum-resilience.css','art-direction.css','dossier-art-direction.css','artist-art-direction.css','main.js','app.js','operations.js','modules/mobile-navigation.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/dossier-art-direction.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
+for(const p of ['index.html','styles.css','museum-resilience.css','art-direction.css','dossier-art-direction.css','artist-art-direction.css','collection-art-direction.css','main.js','app.js','operations.js','modules/mobile-navigation.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/dossier-art-direction.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
 const scripts=[...index.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)].map(x=>x[1]);
 // One canonical base cascade plus one explicitly scoped museum failure-state
 // companion. Keep an exact ordered allowlist: unknown/remote/legacy sheets fail.
-assert.deepEqual(styles,['/styles.css','/museum-resilience.css','/art-direction.css','/dossier-art-direction.css','/artist-art-direction.css']);
+assert.deepEqual(styles,['/styles.css','/museum-resilience.css','/art-direction.css','/dossier-art-direction.css','/artist-art-direction.css','/collection-art-direction.css']);
 assert.deepEqual(scripts,['/main.js']);
 assert.doesNotMatch(index,/(?:styles|app|operations)(?:-addon)?-v\d+/);
 const museumCss=await read('museum-resilience.css');
@@ -61,6 +61,11 @@ assert.doesNotMatch(artistCss,/@import\b|url\s*\(|!important|@font-face|https?:\
 assert.match(artistCss,/\.artist-profile-v69 \.creator-profile-hero/);
 assert.match(artistCss,/\.artist-profile-v69 \.creator-work-card img/);
 assert.match(artistCss,/object-fit:contain/);
+const collectionCss=await read('collection-art-direction.css');
+assert.ok(Buffer.byteLength(collectionCss,'utf8')>4000 && Buffer.byteLength(collectionCss,'utf8')<15000);
+assert.doesNotMatch(collectionCss,/@import\b|url\s*\(|!important|@font-face|https?:\/\//i);
+assert.match(collectionCss,/\.collection-studio-v70 \.collection-studio-card/);
+assert.match(collectionCss,/\.collection-study-v70 \.collection-object img/);
 const seen=new Set();
 async function walk(rel){
   rel=rel.replace(/^\.\//,'');
