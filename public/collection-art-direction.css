@@ -398,3 +398,7 @@
 @media(prefers-reduced-motion:reduce){
  .collection-studio-v70 .collection-studio-card{transition:none}
 }
+
+/* v76: preserve semantic hidden state of empty public collection panel. */
+.collection-register-v70 .collection-register-empty[hidden]{display:none}
+.collection-studio-v70 .collection-publication-status{font-size:12px;line-height:1.4;color:#8f482e;border-left:2px solid #a44936;padding-left:11px}

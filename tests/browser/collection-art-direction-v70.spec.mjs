@@ -38,3 +38,52 @@ test('v70 private collection creation remains private',async({page})=>{
  expect(publicData.collections.some(c=>(c.title?.en||c.title)===name)).toBe(false);
  await expect(panel.locator('.collection-studio-card').filter({hasText:name})).toBeVisible();
 });
+
+
+// Previously, the rendered form and its submit handler had mismatched IDs.
+for(const width of [390,1440]){
+ test('v76 owner creates collection and adds real painting via browser '+width,async({page})=>{
+  await page.setViewportSize({width,height:800});
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  expect(await page.evaluate(async()=>{
+   const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});
+   return r.status;
+  })).toBe(200);
+  await page.goto('/#account',{waitUntil:'domcontentloaded'});
+  await page.locator('[data-v14-tab="collections"]').click();
+  let studio=page.locator('.collection-studio-v70');
+  await expect(studio).toBeVisible();
+  const name='Artwork collection '+width+' '+Date.now();
+  const create=studio.locator('#v14CollectionCreateForm');
+  await create.locator('input[name="title"]').fill(name);
+  const createdResponse=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/collections');
+  await create.locator('button').click();
+  const created=await createdResponse;
+  expect(created.status()).toBe(201);
+  const id=(await created.json()).collection.id;
+  studio=page.locator('.collection-studio-v70');
+  await expect(studio.locator('.collection-studio-card').filter({hasText:name})).toBeVisible();
+  const add=studio.locator('#v14CollectionArtworkForm');
+  await expect(add).toBeVisible();
+  await add.locator('select[name="collectionId"]').selectOption(id);
+  await add.locator('select[name="objectId"]').selectOption('lot-108');
+  const section='Paintings study '+width;
+  await add.locator('input[name="section"]').fill(section);
+  const addedResponse=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/collections/'+id+'/objects');
+  await add.locator('button').click();
+  const response=await addedResponse;
+  expect(response.status()).toBe(200);
+  const linked=(await response.json()).collection.items.find(x=>x.objectId==='lot-108');
+  expect(linked).toBeTruthy();
+  expect(linked.section).toBe(section);
+  await expect(page.locator('.collection-studio-card').filter({hasText:name})).toContainText('1');
+  const stored=await page.evaluate(async id=>{
+   const r=await fetch('/api/collections/mine');
+   const d=await r.json();
+   return d.collections.find(x=>x.id===id);
+  },id);
+  expect(stored?.items?.some(x=>x.objectId==='lot-108')).toBe(true);
+  const publication=await page.evaluate(async()=>fetch('/api/collections').then(r=>r.json()));
+  expect(publication.collections.some(x=>x.id===id)).toBe(false);
+ });
+}

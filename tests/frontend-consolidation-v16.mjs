@@ -88,4 +88,11 @@ const css=await read('styles.css');
 assert.ok(css.length>90000,'canonical stylesheet appears incomplete');
 for(const marker of ['styles-v07.css','styles-addon-v08.css','styles-addon-v09.css','styles-addon-v10.css','styles-v11.css','commerce-v11.css','styles-v12.css','styles-v13.css','styles-v14.css'])assert.match(css,new RegExp(marker.replaceAll('.','\\.')));
 assert.match(css,/v16-cockpit/);assert.match(css,/v20-public-auction-results/);assert.match(css,/auction-result-card-v20/);assert.match(css,/v21-object-inquiry/);assert.match(css,/inquiry-context-v21/);assert.match(css,/v22-offer-negotiation/);assert.match(css,/v23-condition-viewing/);assert.match(css,/v24-dealer-lead-cockpit/);assert.match(css,/v25-market-intelligence/);assert.match(css,/v0\.26 · Culture of Objects/);assert.match(css,/v0\.27 · Object Desire Page/);assert.match(css,/v0\.28 · Explainable Taste Graph/);assert.match(css,/v0\.29 · Partner Drops \/ Fair Edition Engine/);assert.match(css,/v0\.30 · Creator & Gallery Graph/);assert.match(css,/v0\.31 · Editorial Commerce/);assert.match(css,/v0\.32 · Dealer Interest Signals/);assert.match(css,/Partner & Investor Showcase/);assert.match(css,/v0\.36 · Dealer Pilot Workspace/);assert.match(css,/v0\.37 · Real Dealer Pilot Authority/);assert.match(css,/v0\.38 · Counterparty Pilot Review/);assert.match(css,/v0\.39 · Independent Pilot Verification/);assert.match(css,/v0\.40 · Real Pilot Launch/);assert.match(css,/v0\.41 · Antiqua Art Network/);assert.match(css,/v0\.42 · Cultural Calendar/);
+
+const collectionModule=await read('modules/collection.js');
+const operationsModule=await read('operations.js');
+assert.match(collectionModule,/id="v14CollectionArtworkForm"/);
+assert.match(operationsModule,/f\.id==='v14CollectionArtworkForm'/);
+assert.doesNotMatch(operationsModule,/v14CollectionObjectForm/);
+assert.match(collectionCss,/\.collection-register-v70 \.collection-register-empty\[hidden\]\{display:none\}/);
 console.log('ANTIQUA frontend consolidation: canonical module graph, base cascade and scoped museum companion passed');
