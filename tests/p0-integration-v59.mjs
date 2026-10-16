@@ -31,6 +31,16 @@ for(const [path,expected] of Object.entries(manifest.privacyFiles)){
   assert.equal(git('hash-object',path),expected,'source changed: '+path);
 }
 for(const path of manifest.databaseFiles){
+  if(path==='tests/db-identity-gate-v55.mjs'){
+    // Narrow append-only migration expectation adjustment: all other bytes of
+    // the pinned v55 database identity test must be unchanged.
+    const baseline=git('show',manifest.databaseSecurity.sha+':'+path);
+    const current=await readFile(new URL('../'+path,import.meta.url),'utf8');
+    assert.equal((baseline.match(/assert\.equal\(expected\.length,33\);/g)||[]).length,1);
+    assert.equal(current,baseline.replace('assert.equal(expected.length,33);',
+      'assert.equal(expected.length,34);'),'only the appended migration count may differ');
+    continue;
+  }
   assert.equal(git('hash-object',path),
     git('rev-parse',manifest.databaseSecurity.sha+':'+path),
     'security boundary changed: '+path);
