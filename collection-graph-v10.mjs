@@ -84,7 +84,61 @@ export async function listExhibitions(){const pg=await readExhibitionsFromDb();r
 export async function getExhibition(id){if(db.kind==='POSTGRES'){const row=(await db.pool.query('SELECT * FROM exhibitions WHERE id=$1',[id])).rows[0];if(row){const secs=(await db.pool.query('SELECT * FROM exhibition_sections WHERE exhibition_id=$1 ORDER BY sort_order',[id])).rows;for(const s of secs){s.items=(await db.pool.query('SELECT * FROM exhibition_items WHERE exhibition_id=$1 AND section_id=$2 ORDER BY sort_order',[id,s.id])).rows.map(i=>({objectId:i.object_id,ensembleId:i.ensemble_id,caption:i.caption,ownerConsentStatus:i.owner_consent_status}))}const sections=[];for(const s of secs){const items=[];for(const i of s.items){const item={...i};if(item.objectId)item.object=publicObject(item.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(item.ensembleId)item.ensemble=await getEnsemble(item.ensembleId);items.push(item)}sections.push({id:s.id,title:s.title,narrative:s.narrative,sortOrder:s.sort_order,items})}return{id:row.id,ownerAccountId:row.owner_account_id,title:row.title,subtitle:row.subtitle,curatorialStatement:row.curatorial_statement,visibility:row.visibility,status:row.status,publicationStatus:row.publication_status||'DRAFT',startsAt:row.starts_at,endsAt:row.ends_at,coverObjectId:row.cover_object_id,metadata:row.metadata||{},organizationId:row.organization_id||null,organizationLocationId:row.organization_location_id||null,timezone:row.timezone||'UTC',publicSourceUrl:row.public_source_url||null,bookingUrl:row.booking_url||null,reviewedByAccountId:row.reviewed_by_account_id||null,reviewedAt:row.reviewed_at||null,reviewNote:row.review_note||null,createdAt:row.created_at,updatedAt:row.updated_at,sections}}return null}const e=exhibitions.get(id);if(!e)return null;const out=clone(e);for(const s of out.sections)for(const i of s.items){if(i.objectId)i.object=publicObject(i.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(i.ensembleId)i.ensemble=await getEnsemble(i.ensembleId)}return out}
 
 export async function createCollection(account,body){const id=uid('col'),c={id,ownerAccountId:account.id,title:bi(String(body.titleEn||body.title||'Untitled collection'),String(body.titleRu||body.title||'Без названия')),summary:bi(String(body.summaryEn||''),String(body.summaryRu||'')),story:bi(String(body.storyEn||''),String(body.storyRu||'')),collectionType:['PERSONAL','CURATED','DISTRIBUTED','INSTITUTIONAL'].includes(body.collectionType)?body.collectionType:'PERSONAL',visibility:['PRIVATE','UNLISTED','PUBLIC'].includes(body.visibility)?body.visibility:'PRIVATE',coverObjectId:null,items:[],createdAt:now(),updatedAt:now()};if(db.kind==='POSTGRES'){await db.pool.query('INSERT INTO collections(id,owner_account_id,title,summary,story,collection_type,visibility,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,account.id,c.title,c.summary,c.story,c.collectionType,c.visibility,{}]);await db.pool.query("INSERT INTO collection_collaborators(collection_id,account_id,role) VALUES($1,$2,'OWNER')",[id,account.id])}else collections.set(id,c);return clone(c)}
-export async function addCollectionObject(account,id,body){const objectId=String(body.objectId||''),o=loc(objectId);if(!o)throw Object.assign(new Error('Object not found'),{status:404});if(db.kind==='POSTGRES'){const own=(await db.pool.query('SELECT 1 FROM collections WHERE id=$1 AND owner_account_id=$2',[id,account.id])).rowCount;if(!own)throw Object.assign(new Error('Collection not found'),{status:404});await db.pool.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,Number(body.sortOrder||0),String(body.section||''),String(body.ownerDisplayMode||'ANONYMOUS'),String(body.locationDisplayMode||'HIDDEN'),body.note||{}])}else{const c=collections.get(id);if(!c||c.ownerAccountId!==account.id)throw Object.assign(new Error('Collection not found'),{status:404});const prev=c.items.find(x=>x.objectId===objectId);if(prev)Object.assign(prev,body);else c.items.push({objectId,sortOrder:Number(body.sortOrder||c.items.length+1),section:String(body.section||''),ownerDisplayMode:String(body.ownerDisplayMode||'ANONYMOUS'),locationDisplayMode:String(body.locationDisplayMode||'HIDDEN'),note:body.note||{}});c.updatedAt=now()}await setObjectFlag(db,account.id,objectId,'COLLECTED',true);return getCollection(id)}
+export async function addCollectionObject(account,id,body={}){
+ const objectId=String(body.objectId||'');
+ if(!loc(objectId))throw Object.assign(new Error('Object not found'),{status:404});
+ const bad=(message)=>Object.assign(new Error(message),{status:400});
+ const has=k=>Object.hasOwn(body,k);
+ const enumValue=(key,values,fallback)=>{
+  if(!has(key))return fallback;
+  if(!values.includes(body[key]))throw bad('Invalid '+key);
+  return body[key];
+ };
+ const ownerMode=enumValue('ownerDisplayMode',['ANONYMOUS','PSEUDONYM','PUBLIC'],undefined);
+ const placeMode=enumValue('locationDisplayMode',['HIDDEN','COUNTRY','CITY','FULL'],undefined);
+ const haveOrder=has('sortOrder')&&body.sortOrder!==''&&body.sortOrder!==null;
+ const rawOrder=haveOrder?Number(body.sortOrder):null;
+ if(haveOrder&&(!Number.isSafeInteger(rawOrder)||rawOrder<0||rawOrder>1000000))throw bad('Invalid sortOrder');
+ if(has('section')&&(typeof body.section!=='string'||body.section.length>180))throw bad('Invalid section');
+ if(has('note')&&(body.note===null||typeof body.note!=='object'||Array.isArray(body.note)||JSON.stringify(body.note).length>4096))throw bad('Invalid note');
+ if(db.kind==='POSTGRES'){
+  const client=await db.pool.connect();
+  try{
+   await client.query('BEGIN');
+   const owner=(await client.query('SELECT visibility,metadata FROM collections WHERE id=$1 AND owner_account_id=$2 FOR UPDATE',[id,account.id])).rows[0];
+   if(!owner)throw Object.assign(new Error('Collection not found'),{status:404});
+   const previous=(await client.query('SELECT sort_order,section,owner_display_mode,location_display_mode,note FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[id,objectId])).rows[0];
+   const nextOrder=haveOrder?rawOrder:previous?.sort_order??Number((await client.query('SELECT coalesce(max(sort_order),0)+1 AS next_order FROM collection_objects WHERE collection_id=$1',[id])).rows[0].next_order);
+   const section=has('section')?body.section:previous?.section||'';
+   const visibility=ownerMode??previous?.owner_display_mode??'ANONYMOUS';
+   const locationMode=placeMode??previous?.location_display_mode??'HIDDEN';
+   const note=has('note')?body.note:previous?.note||{};
+   await client.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,nextOrder,section,visibility,locationMode,note]);
+   // Membership and the Taste COLLECTED flag commit or roll back together.
+   await client.query("INSERT INTO account_object_flags(account_id,object_id,flag_type) VALUES($1,$2,'COLLECTED') ON CONFLICT(account_id,object_id,flag_type) DO UPDATE SET updated_at=now()",[account.id,objectId]);
+   if(owner.visibility==='PUBLIC'){
+    // Adding/changing even one work invalidates the previous publication review.
+    await client.query("UPDATE collections SET metadata=coalesce(metadata,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[id,{publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,reviewedAt:null}]);
+   }else await client.query('UPDATE collections SET updated_at=now() WHERE id=$1',[id]);
+   await client.query('COMMIT');
+  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}
+  finally{client.release()}
+ }else{
+  const c=collections.get(id);
+  if(!c||c.ownerAccountId!==account.id)throw Object.assign(new Error('Collection not found'),{status:404});
+  const before=clone(c);
+  try{
+   const previous=c.items.find(i=>i.objectId===objectId);
+   const nextOrder=haveOrder?rawOrder:previous?.sortOrder??Math.max(0,...c.items.map(i=>i.sortOrder||0))+1;
+   const item={objectId,sortOrder:nextOrder,section:has('section')?body.section:previous?.section||'',ownerDisplayMode:ownerMode??previous?.ownerDisplayMode??'ANONYMOUS',locationDisplayMode:placeMode??previous?.locationDisplayMode??'HIDDEN',note:has('note')?body.note:previous?.note||{}};
+   if(previous)Object.assign(previous,item);else c.items.push(item);
+   if(c.visibility==='PUBLIC')c.metadata={...(c.metadata||{}),publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,reviewedAt:null};
+   c.updatedAt=now();
+   await setObjectFlag(db,account.id,objectId,'COLLECTED',true);
+  }catch(error){collections.set(id,before);throw error}
+ }
+ return getCollection(id);
+}
 
 export async function submitEnsembleClaim(account,id,body){const e=await getEnsemble(id);if(!e)throw Object.assign(new Error('Ensemble not found'),{status:404});const claim={id:uid('claim'),ensembleId:id,slotId:String(body.slotId||''),claimantAccountId:account.id,objectId:body.objectId||null,status:'PENDING',evidence:Array.isArray(body.evidence)?body.evidence:[],consent:{displayOwner:body.displayOwner===true,displayLocation:body.displayLocation===true},createdAt:now(),updatedAt:now()};if(db.kind==='POSTGRES')await db.pool.query('INSERT INTO ensemble_claims(id,ensemble_id,slot_id,claimant_account_id,object_id,status,evidence,consent,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)',[claim.id,claim.ensembleId,claim.slotId||null,claim.claimantAccountId,claim.objectId,claim.status,claim.evidence,claim.consent,claim.createdAt]);else claims.set(claim.id,claim);return clone(claim)}
 
