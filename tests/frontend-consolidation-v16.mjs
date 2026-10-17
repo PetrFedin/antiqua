@@ -100,5 +100,5 @@ const publicationUi=await read('modules/collection-publication-ui.js');
 assert.match(publicationUi,/collectionReviewDecisionForm/);
 assert.match(publicationUi,/data-collection-submit/);
 assert.match(publicationUi,/api\/collection-publication\/queue/);
-assert.match(publicationUi,/independently verified rights evidence/);
+assert.match(publicationUi,/independently verified the rights documents/);
 console.log('ANTIQUA frontend consolidation: canonical module graph, base cascade and scoped museum companion passed');
