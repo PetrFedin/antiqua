@@ -45,8 +45,9 @@ try{
   list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===unlistedId),false);
 
   x=await owner.call('/api/collections',{method:'POST',body:JSON.stringify({title:'Public regression collection',visibility:'PUBLIC'})});assert.equal(x.r.status,201);const publicId=x.body.collection.id;
-  assert.equal((await fetch(`${base}/api/collections/${publicId}`)).status,200);
-  list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),true);
+  assert.equal((await fetch(`${base}/api/collections/${publicId}`)).status,404,'public selection is not publication approval');
+  list=await(await fetch(base+'/api/collections')).json();assert.equal(list.collections.some(c=>c.id===publicId),false,'unreviewed PUBLIC must remain undiscoverable');
+  assert.equal((await owner.call(`/api/collections/${publicId}`)).r.status,200,'owner retains access');
 
   assert.equal((await fetch(base+'/api/exhibitions/ex-objects-in-dialogue')).status,200);
   console.log('ANTIQUA 0.16 access smoke: public collections + owner-scoped /mine + private/unlisted isolation passed');

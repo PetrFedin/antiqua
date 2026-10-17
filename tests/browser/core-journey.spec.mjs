@@ -3,7 +3,10 @@ import {test,expect} from '@playwright/test';
 const nav=(page,key)=>page.locator(`[data-nav="${key}"]:visible`).first();
 
 async function clickNav(page,key){
-  const node=nav(page,key);
+  let node=nav(page,key);
+  if(!(await node.isVisible().catch(()=>false)) && await page.locator('[data-mobile-more]').isVisible().catch(()=>false)){
+   await page.locator('[data-mobile-more]').click();node=nav(page,key);
+  }
   await expect(node,`visible navigation target: ${key}`).toBeVisible();
   await node.click();
   return node;
@@ -24,7 +27,8 @@ test('catalog -> object dossier -> locale -> authenticated account works in a re
   const response=await page.goto('/',{waitUntil:'domcontentloaded'});expect(response?.ok()).toBeTruthy();
   await expect(page.locator('body')).toContainText('ANTIQUA');
   await expect(nav(page,'gallery')).toBeVisible();
-  await expect(nav(page,'auctions')).toBeVisible();
+  if(await page.locator('[data-mobile-more]').isVisible())await expect(page.locator('[data-mobile-more]')).toBeVisible();
+  else await expect(nav(page,'auctions')).toBeVisible();
   await expect(nav(page,'account')).toBeVisible();
 
   await clickNav(page,'auctions');

@@ -1,0 +1,39 @@
+name: ANTIQUA P0 UX and Security Integration
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: antiqua-v62-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  combined-safety-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PREVIEW_MODE: "true"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Verify integrated source identity and runtime contracts
+        run: |
+          node --check tests/p0-integration-v59.mjs
+          node --check tests/p0-museum-security-v62.mjs
+          node tests/p0-integration-v59.mjs
+          node tests/p0-museum-security-v62.mjs
+      - name: Attach preview-only integration receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-p0-combined-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/p0-combined-v62.json
+          if-no-files-found: warn
+          retention-days: 14

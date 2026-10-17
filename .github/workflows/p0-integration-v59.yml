@@ -1,0 +1,42 @@
+name: ANTIQUA P0 Integrated Security Proof
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: p0-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  integrated-security-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PREVIEW_MODE: "true"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Integrated source and privacy gates (no managed DB)
+        run: |
+          node --check tests/p0-integration-v59.mjs
+          node tests/db-identity-gate-v55.mjs
+          node tests/data-api-grants-v56.mjs
+          node tests/public-provenance-redaction-v57.mjs
+          node tests/research-interchange-public-v58.mjs
+          node tests/artwork-dossier-public-v58.mjs
+          node tests/p0-integration-v59.mjs
+      - name: Attach auditable, non-secret receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-p0-integration-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/p0-integration-v59.json
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,6 @@
+# ANTIQUA v72 — Collection transactional integrity
+16 October 2026. Draft PR #148; no main or production deployment.
+
+Owner-scoped row lock ensures an existing PostgreSQL collection is present before mutation. Membership, account COLLECTED flag and review invalidation commit in one transaction; failure rolls back. Repeat additions without explicit changes preserve rank, section and privacy modes. Input rank/section/note and disclosure enums are validated before mutation. Any change to a PUBLIC collection invalidates existing homepage/media-rights admission, requiring independent re-review. Preview memory path restores collection contents upon failure. Existing PostgreSQL isolation test now checks repeat stability, invalid sorting and cross-role denial. Previous smoke-access test is adapted to the intentionally fail-closed PUBLIC-but-unreviewed state. Publication via the old PUBLIC visibility choice is **not** approval.
+
+Limitations: transactions do not yet cover a full human-reviewed publication decision, which must be designed with reviewer authority and evidence. The original Antiqua DB migration/admission, backup/restore and independent PR review remain blocked.

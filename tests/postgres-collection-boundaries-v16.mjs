@@ -41,7 +41,11 @@ try{
  const otherRecordBefore=(await db.pool.query('SELECT id,updated_at,private_notes FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-108'])).rows[0]||null;
  x=await owner.call(`/api/collections/${collectionId}/objects`,{method:'POST',body:JSON.stringify({objectId:'lot-108',section:'Boundary proof',ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'})});
  assert.equal(x.r.status,200);
- const member=(await db.pool.query('SELECT collection_id,object_id,section FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[collectionId,'lot-108'])).rows[0];assert.equal(member?.section,'Boundary proof');
+ const member=(await db.pool.query('SELECT collection_id,object_id,section,sort_order FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[collectionId,'lot-108'])).rows[0];assert.equal(member?.section,'Boundary proof');assert.equal(member?.sort_order,1,'new member has stable 1-based sort order');
+ x=await owner.call(`/api/collections/${collectionId}/objects`,{method:'POST',body:JSON.stringify({objectId:'lot-108'})});assert.equal(x.r.status,200);
+ const repeated=(await db.pool.query('SELECT section,sort_order FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[collectionId,'lot-108'])).rows[0];assert.deepEqual(repeated,{section:'Boundary proof',sort_order:1},'retry does not rewrite existing member position or context');
+ x=await other.call(`/api/collections/${collectionId}/objects`,{method:'POST',body:JSON.stringify({objectId:'lot-109'})});assert.equal(x.r.status,404,'unrelated seller denied');
+ x=await owner.call(`/api/collections/${collectionId}/objects`,{method:'POST',body:JSON.stringify({objectId:'lot-109',sortOrder:-5})});assert.equal(x.r.status,400,'invalid rank denied');
  const collectedFlag=(await db.pool.query("SELECT 1 FROM account_object_flags WHERE account_id=$1 AND object_id='lot-108' AND flag_type='COLLECTED'",[ownerId])).rowCount;assert.equal(collectedFlag,1,'Curated Collection membership must feed Taste through COLLECTED flag');
  const otherRecordAfter=(await db.pool.query('SELECT id,updated_at,private_notes FROM collection_records WHERE account_id=$1 AND object_id=$2',[ownerId,'lot-108'])).rows[0]||null;
  assert.deepEqual(otherRecordAfter,otherRecordBefore,'Curated Collection membership must not mutate private Collection Record');
