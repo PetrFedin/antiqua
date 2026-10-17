@@ -3,8 +3,8 @@
 import crypto from 'node:crypto';
 import {db,lots,uid} from './runtime-v09.mjs';
 import {hasPermission,requirePermission} from './security-v09.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
-const admissibleMedia=/^(?:painting|watercolou?r|drawing|graphics?|graphic arts|prints?|engraving|etching|lithograph(?:y)?|pastel|gouache|живопись|акварель|графика|рисунок|гравюра|офорт|литография|пастель|гуашь)$/iu;
 const actions=new Set(['SUBMIT','APPROVE','PUBLISH','REQUEST_CHANGES','REVOKE']);
 const bad=(status,code,message)=>Object.assign(new Error(message),{status,code});
 const stable=value=>JSON.stringify(value,(key,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
@@ -36,7 +36,7 @@ export function publicationEligible(c){
  return c.items.every(i=>{
   const work=lots.find(x=>x.id===i.objectId);
   const medium=typeof work?.department==='string'?work.department:work?.department?.en||work?.department?.ru||'';
-  return Boolean(work?.image&&admissibleMedia.test(String(medium).trim())&&
+  return Boolean(work?.image&&isPaintingCategory(medium)&&
    i.ownerDisplayMode==='ANONYMOUS'&&i.locationDisplayMode==='HIDDEN');
  });
 }
@@ -111,41 +111,74 @@ const response=(c,ev,idempotent=false)=>({
  snapshotHash:collectionContentDigest(c),event:ev?eventRow(ev):null,idempotent
 });
 
+function reviewStage(row,actor){
+ if(!row||!actor?.id||row.owner_account_id===actor.id||row.visibility!=='PUBLIC')return null;
+ const meta=row.metadata||{};
+ if(meta.publicationState==='SUBMITTED'&&hasPermission(actor,'catalogue.review'))return 'CATALOGUE';
+ if(meta.publicationState==='CATALOGUE_APPROVED'&&hasPermission(actor,'trust.review')&&meta.catalogueReviewerId!==actor.id)return 'RIGHTS';
+ if(meta.publicationState==='PUBLISHED'&&hasPermission(actor,'trust.review')&&meta.catalogueReviewerId!==actor.id)return 'POST_PUBLICATION';
+ return null;
+}
+const noReview=()=>bad(404,'COLLECTION_NOT_FOUND','Collection not found');
+
 export async function collectionPublicationStatus(actor,id){
  if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Durable publication authority requires PostgreSQL');
- const r=(await db.pool.query('SELECT id,owner_account_id,metadata,visibility FROM collections WHERE id=$1',[id])).rows[0];
- if(!r)throw bad(404,'COLLECTION_NOT_FOUND','Collection not found');
- if(r.owner_account_id!==actor?.id&&!hasPermission(actor,'catalogue.review')&&!hasPermission(actor,'trust.review'))
-  throw bad(404,'COLLECTION_NOT_FOUND','Collection not found');
+ if(!actor?.id)throw bad(401,'AUTH_REQUIRED','Authentication required');
+ const row=(await db.pool.query('SELECT id,owner_account_id,metadata,visibility FROM collections WHERE id=$1',[id])).rows[0];
+ if(!row||row.owner_account_id!==actor.id&&!reviewStage(row,actor))throw noReview();
  const events=(await db.pool.query('SELECT * FROM collection_publication_events WHERE collection_id=$1 ORDER BY sequence_no',[id])).rows;
- return{collectionId:id,publicationState:r.metadata?.publicationState||'DRAFT',visibility:r.visibility,
-  events:events.map(eventRow)};
+ return{collectionId:id,publicationState:row.metadata?.publicationState||'DRAFT',visibility:row.visibility,events:events.map(eventRow)};
 }
 
-// Reviewer inbox is scoped server-side; never exposes full private collection
-// records, private owner notes, storage or unreviewed media evidence.
+// Eligibility and reviewer separation are enforced before LIMIT in SQL.
+// A client-side filtered LIMIT could starve legitimate pending dossiers.
 export async function collectionReviewQueue(actor,{limit=30}={}){
- if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Reviewer inbox needs durable PostgreSQL');
+ if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Reviewer inbox requires durable PostgreSQL');
+ if(!actor?.id)throw bad(401,'AUTH_REQUIRED','Authentication required');
  if(!hasPermission(actor,'catalogue.review')&&!hasPermission(actor,'trust.review'))
   throw bad(403,'FORBIDDEN','Reviewer permission required');
  const n=Number(limit);
  if(!Number.isSafeInteger(n)||n<1||n>100)throw bad(400,'INVALID_LIMIT','Limit must be 1-100');
- const catalogue=hasPermission(actor,'catalogue.review');
- const rights=hasPermission(actor,'trust.review');
  const states=[];
- if(catalogue)states.push('SUBMITTED');
- if(rights)states.push('CATALOGUE_APPROVED');
+ if(hasPermission(actor,'catalogue.review'))states.push('SUBMITTED');
+ if(hasPermission(actor,'trust.review'))states.push('CATALOGUE_APPROVED','PUBLISHED');
  const rows=(await db.pool.query(
-  "SELECT id,owner_account_id,title,visibility,metadata,updated_at FROM collections WHERE metadata->>'publicationState'=ANY($1::text[]) ORDER BY updated_at ASC,id ASC LIMIT $2",
-  [states,n]
+  "SELECT id,title,visibility,metadata,updated_at FROM collections WHERE visibility='PUBLIC' AND owner_account_id<>$1 AND metadata->>'publicationState'=ANY($2::text[]) AND (metadata->>'publicationState'='SUBMITTED' OR coalesce(metadata->>'catalogueReviewerId','')<>$1) ORDER BY CASE metadata->>'publicationState' WHEN 'SUBMITTED' THEN 0 WHEN 'CATALOGUE_APPROVED' THEN 1 ELSE 2 END,updated_at ASC,id ASC LIMIT $3",
+  [actor.id,states,n]
  )).rows;
- return{items:rows.filter(r=>r.owner_account_id!==actor.id&&
-   !(r.metadata?.publicationState==='CATALOGUE_APPROVED'&&r.metadata?.catalogueReviewerId===actor.id))
-  .map(r=>({id:r.id,title:r.title,visibility:r.visibility,
-   publicationState:r.metadata?.publicationState,
-   updatedAt:r.updated_at,
-   stage:r.metadata?.publicationState==='SUBMITTED'?'CATALOGUE':'RIGHTS'})),
-  stages:states};
+ return{items:rows.map(r=>({id:r.id,title:r.title,visibility:r.visibility,
+  publicationState:r.metadata?.publicationState,updatedAt:r.updated_at,
+  stage:r.metadata?.publicationState==='SUBMITTED'?'CATALOGUE':
+   r.metadata?.publicationState==='CATALOGUE_APPROVED'?'RIGHTS':'POST_PUBLICATION'})),stages:states};
+}
+
+// Scoped read-only reviewer study, not a generic collection read endpoint.
+// Return no owner identity, contact, storage, insurance, member note or document.
+export async function collectionReviewDossier(actor,id){
+ if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Reviewer dossier requires durable PostgreSQL');
+ if(!actor?.id)throw bad(401,'AUTH_REQUIRED','Authentication required');
+ const cx=await db.pool.connect();
+ try{
+  await cx.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  const row=(await cx.query('SELECT id,owner_account_id,title,summary,visibility,metadata FROM collections WHERE id=$1',[id])).rows[0];
+  const stage=reviewStage(row,actor);
+  if(!stage)throw noReview();
+  const linked=(await cx.query('SELECT object_id,sort_order,owner_display_mode,location_display_mode FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order,object_id',[id])).rows;
+  const works=linked.map(i=>{
+   const o=lots.find(w=>w.id===i.object_id);
+   return{objectId:i.object_id,sortOrder:i.sort_order,title:o?.title||null,
+    maker:o?.maker||null,medium:o?.department||null,image:o?.image||null,
+    painting:Boolean(o?.image&&isPaintingCategory(o?.department)),
+    privacyReady:i.owner_display_mode==='ANONYMOUS'&&i.location_display_mode==='HIDDEN'};
+  });
+  const result={collectionId:row.id,title:row.title,summary:row.summary,stage,
+   publicationState:row.metadata?.publicationState,submittedDigest:row.metadata?.submittedDigest||null,
+   artworkCount:works.length,works,requiresIndependentRightsReview:stage==='RIGHTS',
+   externalRightsVerified:false};
+  await cx.query('COMMIT');
+  return result;
+ }catch(error){await cx.query('ROLLBACK').catch(()=>{});throw error}
+ finally{cx.release()}
 }
 export async function transitionCollectionPublication(actor,id,action,body={}){
  if(db.kind!=='POSTGRES')throw bad(503,'POSTGRES_REQUIRED','Durable publication authority requires PostgreSQL');
