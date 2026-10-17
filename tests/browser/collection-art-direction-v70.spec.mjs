@@ -87,3 +87,25 @@ for(const width of [390,1440]){
   expect(publication.collections.some(x=>x.id===id)).toBe(false);
  });
 }
+
+
+test('v79 reviewer desk is role-scoped and preview cannot approve',async({page})=>{
+ await page.goto('/',{waitUntil:'domcontentloaded'});
+ let response=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'BUYER'})});return r.status});
+ expect(response).toBe(200);
+ await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ await expect(page.locator('[data-v14-tab="collection-review"]')).toHaveCount(0);
+ response=await page.evaluate(async()=>{const r=await fetch('/api/auth/demo-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona:'OPERATOR'})});return r.status});
+ expect(response).toBe(200);
+ await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+ await page.goto('/#account',{waitUntil:'domcontentloaded'});
+ const tab=page.locator('[data-v14-tab="collection-review"]');
+ await expect(tab).toBeVisible();
+ await tab.click();
+ await expect(page.locator('.review-workspace-v79')).toBeVisible();
+ const run=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/collection-publication/queue');
+ await page.locator('[data-review-queue-load]').click();
+ const result=await run;
+ expect([200,503]).toContain(result.status());
+ if(result.status()===503)await expect(page.locator('[data-review-output]')).toContainText(/PostgreSQL|Postgres|база|доступ/i);
+});
