@@ -90,6 +90,18 @@ function authorize(actor,action,ownerId){
  if(action==='REQUEST_CHANGES'&&!hasPermission(actor,'catalogue.review')&&!hasPermission(actor,'trust.review'))
   throw bad(403,'FORBIDDEN','Reviewer permission required');
 }
+// Enforce review-stage authority on direct POST, not just on the filtered inbox.
+function requireCurrentReviewStage(actor,c,action){
+ if(action==='SUBMIT')return;
+ const stage=reviewStage({
+  owner_account_id:c.ownerAccountId,visibility:c.visibility,metadata:c.metadata
+ },actor);
+ const allowed=action==='APPROVE'?stage==='CATALOGUE':
+  action==='PUBLISH'?stage==='RIGHTS':
+  action==='REQUEST_CHANGES'?stage==='CATALOGUE'||stage==='RIGHTS':
+  action==='REVOKE'?stage==='POST_PUBLICATION':false;
+ if(!allowed)throw noReview();
+}
 const safeNote=(note,required)=>{
  if(typeof note!=='string'||note.length>1200||required&&note.trim().length<12)
   throw bad(400,'INVALID_REVIEW_NOTE','Review note must be a reasoned statement of 12-1200 characters');
@@ -203,6 +215,7 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
    }
   }
   const state=c.metadata?.publicationState||'DRAFT';
+  requireCurrentReviewStage(actor,c,action);
   const digest=collectionContentDigest(c);
   let next,metadata;
   const frozen=c.metadata?.submittedDigest===digest;

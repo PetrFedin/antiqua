@@ -28,8 +28,13 @@ try{
  assert.equal('note' in catalogueDossier.works[0],false);
  const repeat=await transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001'});assert.equal(repeat.idempotent,true);
  await failure(transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001',note:'mismatched'}),'IDEMPOTENCY_CONFLICT');
- await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Attempt to skip catalogue',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'STALE_APPROVAL');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Attempt to skip catalogue',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication(independent,id,'REQUEST_CHANGES',{note:'Rights reviewer cannot alter catalogue stage'}),'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,1,'cross-stage writes no audit event');
  const approved=await transitionCollectionPublication(reviewer,id,'APPROVE',{note:'Catalogue evidence reviewed and accepted'});assert.equal(approved.publicationState,'CATALOGUE_APPROVED');
+ await failure(transitionCollectionPublication(reviewer,id,'REQUEST_CHANGES',{note:'Catalogue reviewer cannot act in rights stage'}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication({...reviewer,roles:['CATALOGUER','TRUST_REVIEWER']},id,'PUBLISH',{note:'Original catalogue reviewer cannot approve rights',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,2,'unauthorized stage produces no event');
  assert.ok((await collectionReviewQueue(independent)).items.some(x=>x.id===id),'rights reviewer sees approved case');
  assert.ok(!(await collectionReviewQueue(reviewer)).items.some(x=>x.id===id),'cataloguer cannot perform own rights review');
  assert.equal((await collectionReviewDossier(independent,id)).stage,'RIGHTS');
@@ -37,6 +42,8 @@ try{
  await failure(transitionCollectionPublication(reviewer,id,'PUBLISH',{note:'Same reviewer disallowed',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'FORBIDDEN');
  await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Rights check missing references',rightsAttested:true,evidenceRefs:[]}), 'MEDIA_EVIDENCE_REQUIRED');
  const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]});assert.equal(published.publicationState,'PUBLISHED');
+ await failure(transitionCollectionPublication({...reviewer,roles:['CATALOGUER','TRUST_REVIEWER']},id,'REVOKE',{note:'The catalogue reviewer must not revoke publication'}),'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,3,'unauthorized revocation produces no event');
  assert.ok((await collectionReviewQueue(independent)).items.some(x=>x.id===id&&x.stage==='POST_PUBLICATION'));
  assert.equal((await collectionReviewDossier(independent,id)).stage,'POST_PUBLICATION');
  const visible=(await listCollections()).find(x=>x.id===id);assert.ok(visible);assert.equal(visible.metadata.discipline,'PAINTING','frontend publication gate must recognize reviewed artwork category');assert.ok((await getReadableCollection(id,null))?.id===id);
