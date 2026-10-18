@@ -204,18 +204,21 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
   const c=await lockedCollection(client,id);
   if(!c)throw bad(404,'COLLECTION_NOT_FOUND','Collection not found');
   authorize(actor,action,c.ownerAccountId);
-  const requestedEvidence=action==='PUBLISH'?evidence(body,c.items):[];
+  // First distinguish a replay from a fresh decision. A fresh unauthorized
+  // stage must not receive media-evidence length or object-id feedback.
+  const prior=key?(await client.query('SELECT * FROM collection_publication_events WHERE collection_id=$1 AND actor_account_id=$2 AND idempotency_key=$3',[id,actor.id,key])).rows[0]:null;
+  if(!prior)requireCurrentReviewStage(actor,c,action);
+  // Replay validation uses the ORIGINAL event's artwork set, not a later
+  // collection composition. A previously committed decision stays idempotent.
+  const evidenceItems=prior?(Array.isArray(prior.media_evidence)?prior.media_evidence:[]):c.items;
+  const requestedEvidence=action==='PUBLISH'?evidence(body,evidenceItems):[];
   const requestDigest=sha({action,note,requestedEvidence,rightsAttested:body.rightsAttested===true});
-  if(key){
-   const prior=(await client.query('SELECT * FROM collection_publication_events WHERE collection_id=$1 AND actor_account_id=$2 AND idempotency_key=$3',[id,actor.id,key])).rows[0];
-   if(prior){
-    if(prior.action!==action||prior.request_hash!==requestDigest)throw bad(409,'IDEMPOTENCY_CONFLICT','Idempotency key used for a different decision');
-    await client.query('COMMIT');
-    return response(c,prior,true);
-   }
+  if(prior){
+   if(prior.action!==action||prior.request_hash!==requestDigest)throw bad(409,'IDEMPOTENCY_CONFLICT','Idempotency key used for a different decision');
+   await client.query('COMMIT');
+   return response(c,prior,true);
   }
   const state=c.metadata?.publicationState||'DRAFT';
-  requireCurrentReviewStage(actor,c,action);
   const digest=collectionContentDigest(c);
   let next,metadata;
   const frozen=c.metadata?.submittedDigest===digest;

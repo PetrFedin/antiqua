@@ -30,6 +30,7 @@ try{
  await failure(transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001',note:'mismatched'}),'IDEMPOTENCY_CONFLICT');
  await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Attempt to skip catalogue',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'COLLECTION_NOT_FOUND');
  await failure(transitionCollectionPublication(independent,id,'REQUEST_CHANGES',{note:'Rights reviewer cannot alter catalogue stage'}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Invalid evidence must not disclose hidden stage',rightsAttested:true,evidenceRefs:[]}), 'COLLECTION_NOT_FOUND');
  assert.equal((await collectionPublicationStatus(seller,id)).events.length,1,'cross-stage writes no audit event');
  const approved=await transitionCollectionPublication(reviewer,id,'APPROVE',{note:'Catalogue evidence reviewed and accepted'});assert.equal(approved.publicationState,'CATALOGUE_APPROVED');
  await failure(transitionCollectionPublication(reviewer,id,'REQUEST_CHANGES',{note:'Catalogue reviewer cannot act in rights stage'}),'COLLECTION_NOT_FOUND');
@@ -41,7 +42,7 @@ try{
  await assert.rejects(collectionReviewDossier(reviewer,id),e=>e.status===404);
  await failure(transitionCollectionPublication(reviewer,id,'PUBLISH',{note:'Same reviewer disallowed',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'FORBIDDEN');
  await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Rights check missing references',rightsAttested:true,evidenceRefs:[]}), 'MEDIA_EVIDENCE_REQUIRED');
- const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]});assert.equal(published.publicationState,'PUBLISHED');
+ const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'});assert.equal(published.publicationState,'PUBLISHED');
  await failure(transitionCollectionPublication({...reviewer,roles:['CATALOGUER','TRUST_REVIEWER']},id,'REVOKE',{note:'The catalogue reviewer must not revoke publication'}),'COLLECTION_NOT_FOUND');
  assert.equal((await collectionPublicationStatus(seller,id)).events.length,3,'unauthorized revocation produces no event');
  assert.ok((await collectionReviewQueue(independent)).items.some(x=>x.id===id&&x.stage==='POST_PUBLICATION'));
@@ -59,6 +60,11 @@ try{
  assert.equal(after.events[3].previousEventHash,after.events[2].eventHash,'revocation event must connect to the last publisher event');
  assert.notEqual(after.events[3].snapshotHash,after.events[2].snapshotHash,'changed composition must have a different digest');
  assert.ok(!(await listCollections()).some(x=>x.id===id));
+ const replay=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'});
+ assert.equal(replay.idempotent,true,'post-mutation retry replays original publication decision without reapproval');
+ assert.equal(replay.publicationState,'REVIEW_REQUIRED','replay does not re-publish a changed collection');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,4,'replay never appends a new event');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Changed publication reason and evidence',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'}),'IDEMPOTENCY_CONFLICT');
  console.log('ANTIQUA v73 publication authority PostgreSQL two-person + snapshot + revocation on edit PASS');
 }finally{
  if(id)await db.pool.query('DELETE FROM collections WHERE id=$1',[id]).catch(()=>{});
