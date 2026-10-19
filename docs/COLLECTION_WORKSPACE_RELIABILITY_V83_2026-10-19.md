@@ -26,6 +26,11 @@ not an acceptance receipt for v83.
 - Operations loading discards data for a detached/replaced account host and
   retries mounting the currently connected account host when appropriate.
 
+- Actual captured reviewer screenshot exposed an inaccurate Buyer header: the
+  demo OPERATOR has CATALOGUER/TRUST_REVIEWER rather than ADMIN. Header and
+  persona cycling now recognize those existing roles without granting any new
+  permissions. Browser regression checks the operator label and return to BUYER.
+
 ## Validation
 
 - `node tests/collection-workspace-reliability-v83.mjs`: PASS. Executes actual

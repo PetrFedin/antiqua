@@ -21,6 +21,7 @@ test('v83 reviewer UI preserves delivery key after lost reply (transport fixture
  // UI-only transport fault injection; real PostgreSQL authorization is covered
  // separately by postgres-collection-publication-http-v81, never bypassed here.
  await account(page,'OPERATOR');
+ await expect(page.locator('#persona')).toHaveText(/Оператор|Operator/);
  const sent=[];
  await page.route('**/api/collection-publication/queue',route=>route.fulfill({json:{items:[{
   id:'delivery-fixture',title:'Transport test dossier',stage:'CATALOGUE',publicationState:'SUBMITTED'
@@ -47,4 +48,14 @@ test('v83 reviewer UI preserves delivery key after lost reply (transport fixture
  expect(sent).toHaveLength(2);
  expect(sent[1]).toEqual(sent[0]);
  expect(sent[0].idempotencyKey).toMatch(/^web-/);
+});
+
+// The operator demo persona is CATALOGUER + TRUST_REVIEWER, not ADMIN.
+test('v83 role label and persona cycle reflect actual review roles',async({page})=>{
+ await account(page,'OPERATOR');
+ await expect(page.locator('#persona')).toHaveText(/Оператор|Operator/);
+ const next=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/demo-login');
+ await page.locator('#persona').click();
+ expect((await next).request().postDataJSON().persona).toBe('BUYER');
+ await expect(page.locator('#persona')).toHaveText(/Покупатель|Buyer/);
 });
