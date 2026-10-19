@@ -27,9 +27,11 @@ not an acceptance receipt for v83.
   retries mounting the currently connected account host when appropriate.
 
 - Actual captured reviewer screenshot exposed an inaccurate Buyer header: the
-  demo OPERATOR has CATALOGUER/TRUST_REVIEWER rather than ADMIN. Header and
-  persona cycling now recognize those existing roles without granting any new
-  permissions. Browser regression checks the operator label and return to BUYER.
+  capture helper changed the HTTP session without refreshing the app shell.
+  The helper now reloads after direct login. Demo OPERATOR includes ADMIN;
+  header and persona cycling additionally recognize non-admin CATALOGUER and
+  TRUST_REVIEWER accounts without granting new permissions. Browser regression
+  checks the operator label and return to BUYER.
 
 ## Validation
 

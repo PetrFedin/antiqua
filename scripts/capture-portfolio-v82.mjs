@@ -50,6 +50,8 @@ async function login(page,persona){
   return response.status;
  },persona);
  assert(r===200,'Demo sign-in failed: '+persona+': '+r);
+ // Direct HTTP login changes cookies; reload also refreshes the app shell.
+ await page.reload({waitUntil:'domcontentloaded'});
 }
 async function accountTab(page,tab){
  await page.goto(BASE+'/#account',{waitUntil:'domcontentloaded'});

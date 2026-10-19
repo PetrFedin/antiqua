@@ -5,6 +5,7 @@ async function account(page,persona){
  expect(await page.evaluate(async persona=>(await fetch('/api/auth/demo-login',{
   method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({persona})
  })).status,persona)).toBe(200);
+ await page.reload({waitUntil:'domcontentloaded'});
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
  await expect(page.locator('#v14Operations')).toBeVisible();
 }
@@ -50,7 +51,7 @@ test('v83 reviewer UI preserves delivery key after lost reply (transport fixture
  expect(sent[0].idempotencyKey).toMatch(/^web-/);
 });
 
-// The operator demo persona is CATALOGUER + TRUST_REVIEWER, not ADMIN.
+// Verify that the shell agrees with the authenticated server session.
 test('v83 role label and persona cycle reflect actual review roles',async({page})=>{
  await account(page,'OPERATOR');
  await expect(page.locator('#persona')).toHaveText(/Оператор|Operator/);
