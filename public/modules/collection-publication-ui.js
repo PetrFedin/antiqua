@@ -5,6 +5,24 @@ const reviewRoles=new Set(['CATALOGUER','TRUST_REVIEWER','ADMIN']);
 const waitingStates=new Set(['DRAFT','REVIEW_REQUIRED','CHANGES_REQUESTED','REVOKED']);
 const actions=new Set(['approve','publish','request-changes','revoke']);
 const idKey=()=>('web-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+// Retain the key after an ambiguous network failure. Never persist private
+// review notes in browser storage or reuse a key for a changed payload.
+const attempts=new WeakMap();
+function retryPayload(host,path,payload){
+ const signature=JSON.stringify({path,payload});
+ let attempt=attempts.get(host);
+ if(attempt?.signature!==signature){attempt={signature,key:idKey()};attempts.set(host,attempt)}
+ return {...payload,idempotencyKey:attempt.key};
+}
+// Bind responses to the initiating workspace. A response from an unmounted
+// account must never be written into a newly mounted account's review desk.
+const reads=new WeakMap();
+function startRead(out){
+ if(!out?.isConnected)return null;
+ const token={out};reads.set(out,token);return token;
+}
+const currentRead=token=>Boolean(token?.out.isConnected&&reads.get(token.out)===token);
+const putResult=(token,html)=>{if(currentRead(token))token.out.innerHTML=html};
 const title=v=>esc(local(v)||'—');
 const ownerStage=c=>c?.metadata?.publicationState||'DRAFT';
 export function canSeeReviewTab(d){return Boolean(d?.me?.roles?.some(r=>reviewRoles.has(r)))}
@@ -99,12 +117,13 @@ const pendingMessage=error=>error?.status===503?
  copy('Приёмка недоступна: необходима выделенная PostgreSQL Antiqua. В preview публикация закрыта.','Review unavailable: dedicated Antiqua PostgreSQL is required. Preview approval is disabled.'):
  (error?.status===401||error?.status===403||error?.status===404?
  copy('Нет доступа к этому действию или заявке.','This case or action is not accessible.'):error?.message||copy('Ошибка операции','Operation failed'));
-const putResult=html=>{const out=document.querySelector('[data-review-output]');if(out)out.innerHTML=html};
-export async function loadReviewQueue(){
- try{const data=await api('/api/collection-publication/queue');putResult(reviewQueueMarkup(data))}
- catch(error){putResult('<p class="review-error" role="alert">'+esc(pendingMessage(error))+'</p>')}
+export async function loadReviewQueue(out=document.querySelector('[data-review-output]')){
+ const token=startRead(out);if(!token)return;
+ try{const data=await api('/api/collection-publication/queue');putResult(token,reviewQueueMarkup(data))}
+ catch(error){putResult(token,'<p class="review-error" role="alert">'+esc(pendingMessage(error))+'</p>')}
 }
 function toggleRights(form){
+ if(!form)return;
  const choice=form?.elements?.namedItem('action')?.value,yes=choice==='publish';
  const block=form.querySelector('[data-review-rights-fields]');
  if(!block)return;
@@ -118,20 +137,24 @@ document.addEventListener('change',e=>{
 document.addEventListener('click',async e=>{
  const button=e.target.closest?.('[data-collection-submit],[data-collection-history],[data-review-open],[data-review-queue-load]');
  if(!button||button.disabled)return;
+ const out=document.querySelector('[data-review-output]');
+ const host=button.closest('.collection-studio-card');
+ let token;
  button.disabled=true;
  try{
-  if('reviewQueueLoad' in button.dataset)return await loadReviewQueue();
+  if('reviewQueueLoad' in button.dataset)return await loadReviewQueue(out);
   if(button.dataset.reviewOpen){
    const id=encodeURIComponent(button.dataset.reviewOpen);
+   token=startRead(out);if(!token)return;
    const dossier=await api('/api/collections/'+id+'/publication/review');
-   putResult(reviewDossierMarkup(dossier));
-   toggleRights(document.querySelector('#collectionReviewDecisionForm'));
+   putResult(token,reviewDossierMarkup(dossier));
+   if(currentRead(token))toggleRights(out.querySelector('#collectionReviewDecisionForm'));
    return;
   }
   if(button.dataset.collectionHistory){
    const id=encodeURIComponent(button.dataset.collectionHistory);
    const history=await api('/api/collections/'+id+'/publication');
-   const host=button.closest('.collection-studio-card');
+   if(!host?.isConnected)return;
    let slot=host?.querySelector('[data-collection-history-output]');
    if(!slot&&host){slot=document.createElement('div');slot.dataset.collectionHistoryOutput='';host.append(slot)}
    if(slot)slot.innerHTML=publicationHistoryMarkup(history);
@@ -139,14 +162,16 @@ document.addEventListener('click',async e=>{
   }
   if(button.dataset.collectionSubmit){
    const id=encodeURIComponent(button.dataset.collectionSubmit);
-   await api('/api/collections/'+id+'/publication/submit',
-    {method:'POST',body:JSON.stringify({idempotencyKey:idKey()})});
+   const path='/api/collections/'+id+'/publication/submit';
+   await api(path,{method:'POST',body:JSON.stringify(retryPayload(button,path,{}))});
+   attempts.delete(button);
+   if(!button.isConnected)return;
    toast(copy('Коллекция отправлена на проверку','Collection submitted for review'));
    window.dispatchEvent(new Event('antiqua:operations-refresh'));
    return;
   }
- }catch(error){toast(pendingMessage(error));const out=document.querySelector('[data-review-output]');
-  if('reviewOpen' in button.dataset&&out)out.innerHTML='<p role="alert">'+esc(pendingMessage(error))+'</p>';
+ }catch(error){if(button.isConnected)toast(pendingMessage(error));
+  if('reviewOpen' in button.dataset)putResult(token,'<p role="alert">'+esc(pendingMessage(error))+'</p>');
  }finally{button.disabled=false}
 });
 document.addEventListener('submit',async e=>{
@@ -158,7 +183,7 @@ document.addEventListener('submit',async e=>{
  const fd=new FormData(form),action=String(fd.get('action')||'');
  if(!actions.has(action))return toast(copy('Неизвестное решение','Unknown decision'));
  const note=String(fd.get('note')||'').trim();
- const payload={note,idempotencyKey:idKey()};
+ const payload={note};
  if(action==='publish'){
   const rights=fd.get('rightsAttested')==='on';
   const evidence=[...form.querySelectorAll('input[name^="objectId_"]')].map((field,i)=>({
@@ -170,12 +195,15 @@ document.addEventListener('submit',async e=>{
   }
   payload.rightsAttested=true;payload.evidenceRefs=evidence;
  }
+ const out=form.closest('[data-review-output]');
+ const path='/api/collections/'+encodeURIComponent(form.dataset.collection)+'/publication/'+action;
  if(button)button.disabled=true;
  try{
-  await api('/api/collections/'+encodeURIComponent(form.dataset.collection)+'/publication/'+action,
-   {method:'POST',body:JSON.stringify(payload)});
+  await api(path,{method:'POST',body:JSON.stringify(retryPayload(form,path,payload))});
+  attempts.delete(form);
+  if(!form.isConnected)return;
   toast(copy('Решение сохранено','Decision recorded'));
-  await loadReviewQueue();
- }catch(error){toast(pendingMessage(error))}
+  await loadReviewQueue(out);
+ }catch(error){if(form.isConnected)toast(pendingMessage(error))}
  finally{if(button)button.disabled=false}
 });
