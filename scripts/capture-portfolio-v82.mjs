@@ -37,6 +37,8 @@ async function snap(page,name,selector=null){
  }
  await ready(page);
  await page.screenshot({path:join(IMAGE,file),fullPage:false,animations:'disabled',caret:'hide'});
+ const toast=await page.locator('#toast').textContent();
+ assert(!/Cannot read|TypeError|ReferenceError/.test(toast||''),'Runtime error in captured screen: '+toast);
  const fileBytes=(await stat(join(IMAGE,file))).size;
  assert(fileBytes>16000,'Screenshot is unexpectedly blank or tiny: '+file);
  meta.screenshots.push({file:'screenshots/'+file,width:page.viewportSize().width,height:page.viewportSize().height,bytes:fileBytes,source:'actual Chromium viewport'});

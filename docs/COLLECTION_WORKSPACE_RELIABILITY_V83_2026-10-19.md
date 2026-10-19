@@ -33,6 +33,13 @@ not an acceptance receipt for v83.
   TRUST_REVIEWER accounts without granting new permissions. Browser regression
   checks the operator label and return to BUYER.
 
+- Reviewing the refreshed capture exposed a real account hydration race:
+  refresh assigned the authenticated account before awaiting client-state,
+  allowing hash navigation to read null verification data. Refresh now commits
+  account/client state together; early account rendering shows a loading state.
+  Browser regression delays client-state explicitly; capture rejects technical
+  TypeError/ReferenceError toasts instead of saving them as acceptable media.
+
 ## Validation
 
 - `node tests/collection-workspace-reliability-v83.mjs`: PASS. Executes actual

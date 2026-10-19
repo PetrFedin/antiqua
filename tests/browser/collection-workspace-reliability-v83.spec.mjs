@@ -60,3 +60,20 @@ test('v83 role label and persona cycle reflect actual review roles',async({page}
  expect((await next).request().postDataJSON().persona).toBe('BUYER');
  await expect(page.locator('#persona')).toHaveText(/Покупатель|Buyer/);
 });
+
+test('v83 account navigation tolerates delayed client-state hydration',async({page})=>{
+ await account(page,'BUYER');
+ let release,started;
+ const gate=new Promise(r=>{release=r});
+ const requested=new Promise(r=>{started=r});
+ await page.route('**/api/client-state',async route=>{started();await gate;await route.continue()});
+ await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+ await page.reload({waitUntil:'domcontentloaded'});
+ await requested;
+ await page.evaluate(()=>{location.hash='account'});
+ await expect(page.locator('[aria-busy="true"]')).toBeVisible();
+ await expect(page.locator('#toast')).not.toContainText(/Cannot read|TypeError|null/);
+ release();
+ await expect(page.locator('.account-v12')).toBeVisible();
+ await expect(page.locator('#toast')).not.toContainText(/Cannot read|TypeError|null/);
+});
