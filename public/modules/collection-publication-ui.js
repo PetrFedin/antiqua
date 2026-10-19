@@ -95,7 +95,7 @@ export function reviewDossierMarkup(d){
    '<small>'+((w.painting&&w.privacyReady)?copy('Категория и приватность допустимы','Category and privacy ready'):
      copy('Нужна доработка','Review required'))+'</small></div></article>').join('')+'</div>'+
   '<p class="review-external-warning">'+copy('Ссылки на лицензии не проверяются автоматически. Отметка проверяющего не является юридическим заключением.','Licence references are not verified automatically. Reviewer attestation is not a legal opinion.')+'</p>'+
-  '<form id="collectionReviewDecisionForm" data-collection="'+esc(d.collectionId)+'" data-stage="'+esc(stage)+'">'+
+  '<form id="collectionReviewDecisionForm" data-collection="'+esc(d.collectionId)+'" data-stage="'+esc(stage)+'" data-review-token="'+esc(d.reviewToken||'')+'">'+
   '<label>'+copy('Решение','Decision')+'<select name="action">'+decisionOptions(stage)+'</select></label>'+
   '<label>'+copy('Обоснование (от 12 символов)','Reason (at least 12 characters)')+
   '<textarea name="note" minlength="12" maxlength="1200" required rows="3"></textarea></label>'+
@@ -113,7 +113,9 @@ export function publicationHistoryMarkup(data){
   (e.note?'<p>'+esc(e.note)+'</p>':'')+'</li>').join('')+'</ol>':
   '<p>'+copy('Решений пока нет','No decisions yet')+'</p>')+'</div>';
 }
-const pendingMessage=error=>error?.status===503?
+const pendingMessage=error=>error?.data?.code==='STALE_REVIEW'||error?.data?.code==='REVIEW_TOKEN_REQUIRED'?
+ copy('Досье изменилось или устарело. Откройте актуальную версию и повторите проверку.','The dossier changed or expired. Open the current version and review it again.'):
+ error?.status===503?
  copy('Приёмка недоступна: необходима выделенная PostgreSQL Antiqua. В preview публикация закрыта.','Review unavailable: dedicated Antiqua PostgreSQL is required. Preview approval is disabled.'):
  (error?.status===401||error?.status===403||error?.status===404?
  copy('Нет доступа к этому действию или заявке.','This case or action is not accessible.'):error?.message||copy('Ошибка операции','Operation failed'));
@@ -183,7 +185,7 @@ document.addEventListener('submit',async e=>{
  const fd=new FormData(form),action=String(fd.get('action')||'');
  if(!actions.has(action))return toast(copy('Неизвестное решение','Unknown decision'));
  const note=String(fd.get('note')||'').trim();
- const payload={note};
+ const payload={note,reviewToken:form.dataset.reviewToken||''};
  if(action==='publish'){
   const rights=fd.get('rightsAttested')==='on';
   const evidence=[...form.querySelectorAll('input[name^="objectId_"]')].map((field,i)=>({

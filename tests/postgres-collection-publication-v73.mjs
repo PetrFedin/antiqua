@@ -2,8 +2,21 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 if(!process.env.DATABASE_URL){console.log('v73 publication authority skipped: no isolated PostgreSQL');process.exit(0)}
 const {db}=await import('../runtime-v09.mjs');
-const {transitionCollectionPublication,collectionPublicationStatus,collectionReviewQueue,collectionReviewDossier}=await import('../collection-publication-v73.mjs');
+const {transitionCollectionPublication as transitionRaw,collectionPublicationStatus,collectionReviewQueue,collectionReviewDossier}=await import('../collection-publication-v73.mjs');
 const {createCollection,addCollectionObject,listCollections,getReadableCollection}=await import('../collection-graph-v10.mjs');
+// Existing lifecycle cases obtain the same mandatory token as the real UI.
+// Preserve acknowledged keyed attempts when testing later HTTP-style replay.
+const tokens=new Map();
+async function transitionCollectionPublication(actor,id,action,body={}){
+ if(action==='SUBMIT')return transitionRaw(actor,id,action,body);
+ const cache=body.idempotencyKey?actor.id+':'+id+':'+body.idempotencyKey:null;
+ let token=tokens.get(cache);
+ if(!token)token=(await collectionReviewDossier(actor,id).catch(()=>null))?.reviewToken||'0'.repeat(64);
+ const result=await transitionRaw(actor,id,action,{reviewToken:token,...body});
+ if(cache)tokens.set(cache,token);
+ return result;
+}
+
 const seller=await db.findAccountByEmail('buyer@demo.antiqua'),operator=await db.findAccountByEmail('operator@demo.antiqua');
 assert.equal(db.kind,'POSTGRES');assert.ok(seller&&operator);
 const independent=await db.createAccount({id:'acct-review-'+crypto.randomUUID(),email:crypto.randomUUID()+'@example.test',displayName:'Rights Reviewer',passwordHash:'test',accountType:'BUYER',status:'ACTIVE',sellerId:null,twofaStatus:'DISABLED',twofaSecretEnc:null,roles:['TRUST_REVIEWER'],createdAt:new Date().toISOString()});

@@ -30,7 +30,13 @@ class Client{
   let result={};try{result=await r.json()}catch{}
   return{status:r.status,data:result};
  }
- async post(path,body={},csrf=true){return this.request(path,{method:'POST',body,csrf})}
+ async post(path,body={},csrf=true){
+  if(/\/publication\/(approve|publish|request-changes|revoke)$/.test(path)&&!Object.hasOwn(body,'reviewToken')){
+   const dossier=await this.get(path.replace(/\/[^/]+$/,'/review'));
+   body={...body,reviewToken:dossier.data.reviewToken};
+  }
+  return this.request(path,{method:'POST',body,csrf});
+ }
  async get(path){return this.request(path)}
 }
 async function createUser(label,roles){
@@ -105,6 +111,7 @@ try{
  for(const secret of ['ownerAccountId','owner_account_id','note','privateNotes','storage','insurance','media_evidence'])
   assert.ok(!JSON.stringify(dossier.data).includes('"'+secret+'"'),'secret '+secret+' must not appear');
  expectStatus(await rights.get(pub+'/review'),404,'off-stage dossier hidden');
+ expectStatus(await catalogue.post(pub+'/approve',{note:'Must open a current version',reviewToken:null}),428,'missing review token fails closed');
  expectStatus(await rights.post(pub+'/request-changes',{note:'Off-stage rights feedback must not succeed'}),404,'off-stage rights feedback');
  expectStatus(await rights.post(pub+'/publish',{note:'Cannot skip independent catalogue stage',rightsAttested:true,evidenceRefs:evidence}),404,'cannot skip stage via POST');
  expectStatus(await catalogue.post(pub+'/approve',{note:'Catalogue evidence has been reviewed',idempotencyKey:'qa-approve-0001'},false),403,'catalogue CSRF is mandatory');
@@ -113,6 +120,8 @@ try{
  history=await owner.get(pub);assert.equal(history.data.publicationState,'CHANGES_REQUESTED');
  assert.equal(history.data.events.length,2);
  expectStatus(await owner.post(pub+'/submit',{idempotencyKey:'qa-submit-0002'}),200,'owner resubmission');
+ expectStatus(await catalogue.post(pub+'/approve',{note:'Old screen must not approve a resubmission',reviewToken:dossier.data.reviewToken}),409,'stale round denied over HTTP');
+ assert.equal((await owner.get(pub)).data.events.length,3,'stale round adds no event');
  const approved=await catalogue.post(pub+'/approve',{note:'Catalogue source review independently completed',idempotencyKey:'qa-approve-0001'});
  expectStatus(approved,200,'catalogue approval');assert.equal(approved.data.publicationState,'CATALOGUE_APPROVED');
  expectStatus(await catalogue.post(pub+'/request-changes',{note:'Cannot return rights-stage case as cataloguer'}),404,'reviewer cannot cross stage');
@@ -120,7 +129,8 @@ try{
  expectStatus(await rights.post(pub+'/publish',{note:'No attestation provided',evidenceRefs:evidence}),422,'rights attestation required');
  const reviewed=await rights.get(pub+'/review');
  expectStatus(reviewed,200,'rights reviewer dossier');assert.equal(reviewed.data.stage,'RIGHTS');
- const decision=await rights.post(pub+'/publish',{note:'Rights references reviewed independently for each work',rightsAttested:true,evidenceRefs:evidence,idempotencyKey:'qa-publish-0001'});
+ const publishToken=reviewed.data.reviewToken;
+ const decision=await rights.post(pub+'/publish',{reviewToken:publishToken,note:'Rights references reviewed independently for each work',rightsAttested:true,evidenceRefs:evidence,idempotencyKey:'qa-publish-0001'});
  expectStatus(decision,200,'publish after independent review');assert.equal(decision.data.publicationState,'PUBLISHED');
  const publicList=await guest.get('/api/collections');
  assert.ok(publicList.data.collections.some(c=>c.id===collectionId),'public index opens only after dual review');
@@ -132,6 +142,8 @@ try{
  expectStatus(revoked,200,'independent reviewer revocation');
  assert.equal(revoked.data.publicationState,'REVOKED');
  assert.ok(!(await guest.get('/api/collections')).data.collections.some(c=>c.id===collectionId),'revocation removes public item');
+ const replay=await rights.post(pub+'/publish',{reviewToken:publishToken,note:'Rights references reviewed independently for each work',rightsAttested:true,evidenceRefs:evidence,idempotencyKey:'qa-publish-0001'});
+ expectStatus(replay,200,'replay after revocation');assert.equal(replay.data.idempotent,true);assert.equal(replay.data.publicationState,'REVOKED');
  const final=await owner.get(pub);
  assert.deepEqual(final.data.events.map(e=>e.sequenceNo),[1,2,3,4,5,6]);
  assert.deepEqual(final.data.events.map(e=>e.action),['SUBMIT','REQUEST_CHANGES','SUBMIT','APPROVE','PUBLISH','REVOKE']);

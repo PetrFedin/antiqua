@@ -50,6 +50,9 @@ async function lockedCollection(client,id){
  const row=(await client.query('SELECT * FROM collections WHERE id=$1 FOR UPDATE',[id])).rows[0];
  if(!row)return null;
  const rows=(await client.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order,object_id',[id])).rows;
+ return collectionFromRows(row,rows);
+}
+function collectionFromRows(row,rows){
  return{
   id:row.id,ownerAccountId:row.owner_account_id,title:row.title,summary:row.summary,story:row.story,
   visibility:row.visibility,collectionType:row.collection_type,coverObjectId:row.cover_object_id,
@@ -59,6 +62,10 @@ async function lockedCollection(client,id){
   }))
  };
 }
+// Contents and journal tip bind both the composition and review round.
+const reviewToken=(c,history)=>sha({collectionId:c.id,
+ snapshotHash:collectionContentDigest(c),state:c.metadata?.publicationState||'DRAFT',
+ eventHash:history?.event_hash||null});
 const normKey=raw=>{
  if(raw==null||raw==='')return null;
  const key=String(raw);
@@ -172,10 +179,12 @@ export async function collectionReviewDossier(actor,id){
  const cx=await db.pool.connect();
  try{
   await cx.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-  const row=(await cx.query('SELECT id,owner_account_id,title,summary,visibility,metadata FROM collections WHERE id=$1',[id])).rows[0];
+  const row=(await cx.query('SELECT * FROM collections WHERE id=$1',[id])).rows[0];
   const stage=reviewStage(row,actor);
   if(!stage)throw noReview();
-  const linked=(await cx.query('SELECT object_id,sort_order,owner_display_mode,location_display_mode FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order,object_id',[id])).rows;
+  const linked=(await cx.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order,object_id',[id])).rows;
+  const history=(await cx.query('SELECT sequence_no,event_hash FROM collection_publication_events WHERE collection_id=$1 ORDER BY sequence_no DESC LIMIT 1',[id])).rows[0]||null;
+  const token=reviewToken(collectionFromRows(row,linked),history);
   const works=linked.map(i=>{
    const o=lots.find(w=>w.id===i.object_id);
    return{objectId:i.object_id,sortOrder:i.sort_order,title:o?.title||null,
@@ -183,7 +192,7 @@ export async function collectionReviewDossier(actor,id){
     painting:Boolean(o?.image&&isPaintingCategory(o?.department)),
     privacyReady:i.owner_display_mode==='ANONYMOUS'&&i.location_display_mode==='HIDDEN'};
   });
-  const result={collectionId:row.id,title:row.title,summary:row.summary,stage,
+  const result={collectionId:row.id,title:row.title,summary:row.summary,stage,reviewToken:token,
    publicationState:row.metadata?.publicationState,submittedDigest:row.metadata?.submittedDigest||null,
    artworkCount:works.length,works,requiresIndependentRightsReview:stage==='RIGHTS',
    externalRightsVerified:false};
@@ -208,13 +217,21 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
   // stage must not receive media-evidence length or object-id feedback.
   const prior=key?(await client.query('SELECT * FROM collection_publication_events WHERE collection_id=$1 AND actor_account_id=$2 AND idempotency_key=$3',[id,actor.id,key])).rows[0]:null;
   if(!prior)requireCurrentReviewStage(actor,c,action);
+  const history=(await client.query('SELECT sequence_no,event_hash FROM collection_publication_events WHERE collection_id=$1 ORDER BY sequence_no DESC LIMIT 1',[id])).rows[0]||null;
+  if(!prior&&action!=='SUBMIT'){
+   if(typeof body.reviewToken!=='string'||!/^[a-f0-9]{64}$/.test(body.reviewToken))
+    throw bad(428,'REVIEW_TOKEN_REQUIRED','Open the current review dossier before recording a decision');
+   if(body.reviewToken!==reviewToken(c,history))
+    throw bad(409,'STALE_REVIEW','The review dossier changed; reload and review it again');
+  }
   // Replay validation uses the ORIGINAL event's artwork set, not a later
   // collection composition. A previously committed decision stays idempotent.
   const evidenceItems=prior?(Array.isArray(prior.media_evidence)?prior.media_evidence:[]):c.items;
   const requestedEvidence=action==='PUBLISH'?evidence(body,evidenceItems):[];
-  const requestDigest=sha({action,note,requestedEvidence,rightsAttested:body.rightsAttested===true});
+  const requestDigest=sha({action,note,requestedEvidence,rightsAttested:body.rightsAttested===true,reviewToken:action==='SUBMIT'?null:body.reviewToken??null});
   if(prior){
-   if(prior.action!==action||prior.request_hash!==requestDigest)throw bad(409,'IDEMPOTENCY_CONFLICT','Idempotency key used for a different decision');
+   const legacyReplay=body.reviewToken==null&&prior.request_hash===sha({action,note,requestedEvidence,rightsAttested:body.rightsAttested===true});
+   if(prior.action!==action||prior.request_hash!==requestDigest&&!legacyReplay)throw bad(409,'IDEMPOTENCY_CONFLICT','Idempotency key used for a different decision');
    await client.query('COMMIT');
    return response(c,prior,true);
   }
@@ -252,7 +269,7 @@ export async function transitionCollectionPublication(actor,id,action,body={}){
    next='REVOKED';
    metadata=publicMeta(c.metadata,next,{approvedDigest:null,rightsReviewerId:null});
   }
-  const history=(await client.query('SELECT sequence_no,event_hash FROM collection_publication_events WHERE collection_id=$1 ORDER BY sequence_no DESC LIMIT 1',[id])).rows[0]||null;
+
   const sequenceNo=Number(history?.sequence_no||0)+1,at=new Date().toISOString();
   const hash=sha({collectionId:id,sequenceNo,fromState:state,toState:next,action,actorId:actor.id,digest,
    previousEventHash:history?.event_hash||null,requestDigest,at});

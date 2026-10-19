@@ -50,7 +50,7 @@ assert.equal(output.innerHTML,'Other account');
 
 // Identical user retries after a lost response carry the original key and CSRF.
 const button={disabled:false};
-const form={id:'collectionReviewDecisionForm',dataset:{collection:'case-83'},isConnected:true,
+const form={id:'collectionReviewDecisionForm',dataset:{collection:'case-83',reviewToken:'a'.repeat(64)},isConnected:true,
  values:{action:'approve',note:'Independently checked catalogue'},
  querySelector:()=>button,closest:()=>output};
 transport=async()=>{throw new TypeError('Connection lost after server commit')};
