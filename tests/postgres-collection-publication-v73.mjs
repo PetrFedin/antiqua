@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 if(!process.env.DATABASE_URL){console.log('v73 publication authority skipped: no isolated PostgreSQL');process.exit(0)}
 const {db}=await import('../runtime-v09.mjs');
-const {transitionCollectionPublication as transitionRaw,collectionPublicationStatus,collectionReviewQueue,collectionReviewDossier}=await import('../collection-publication-v73.mjs');
+const {transitionCollectionPublication:transitionRaw,collectionPublicationStatus,collectionReviewQueue,collectionReviewDossier}=await import('../collection-publication-v73.mjs');
 const {createCollection,addCollectionObject,listCollections,getReadableCollection}=await import('../collection-graph-v10.mjs');
 // Existing lifecycle cases obtain the same mandatory token as the real UI.
 // Preserve acknowledged keyed attempts when testing later HTTP-style replay.
