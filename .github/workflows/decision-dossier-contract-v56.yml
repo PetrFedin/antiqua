@@ -1,0 +1,31 @@
+name: ANTIQUA DD-01 Read-Only Dossier Contract
+on:
+  pull_request:
+    branches: [main, design/art-direction-v63]
+    paths:
+      - decision-dossier-v56.mjs
+      - tests/decision-dossier-v56.mjs
+      - tests/decision-dossier-v85-integration.mjs
+      - .github/workflows/decision-dossier-contract-v56.yml
+jobs:
+  sourced-public-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Check syntax
+        run: |
+          node --check decision-dossier-v56.mjs
+          node --check tests/decision-dossier-v56.mjs
+          node --check tests/decision-dossier-v85-integration.mjs
+      - name: Reject unsourced or private claims
+        run: |
+          node tests/decision-dossier-v56.mjs
+          node tests/decision-dossier-v85-integration.mjs
+      - name: Repository integration regression
+        run: npm test
