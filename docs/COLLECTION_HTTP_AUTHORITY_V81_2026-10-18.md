@@ -1,0 +1,7 @@
+# ANTIQUA v81 — HTTP authority and privacy regression (2026-10-18)
+
+Direct HTTP test (isolated loopback PostgreSQL only): independently authenticated BUYER, CATALOGUER/TRUST_REVIEWER and TRUST_REVIEWER, with browser-compatible cookies and real CSRF. Verifies owner create/add/submit, unauthorized attempts, role-scoped review dossier, catalogue changes request, resubmission, independent rights review, publish, identical membership retry and revoke. Public index remains closed until publication and re-closes on revocation. Confidential fields are absent from the reviewer dossier.
+
+Server stage guard runs BEFORE evidence-size and artwork-reference validation for new decisions, preventing off-stage reviewers from using error differences to infer the collection's artwork set. For an idempotency replay, evidence normalization binds to the original journal entry's artwork set; after later content changes, the exact same key replays the original response without republishing, and mismatched inputs conflict. PostgreSQL unit regression covers this.
+
+No live managed Antiqua database is involved: the HTTP test will SKIP unless ANTIQUA_ISOLATED_TEST_DB=true and DATABASE_URL targets a local *_test database. Real external evidence verification remains blocked, and no production rollout is authorized.

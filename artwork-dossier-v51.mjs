@@ -1,17 +1,20 @@
 import {db,auctions} from './runtime-v09.mjs';
 import {provenanceEvidencePassport} from './provenance-evidence-passport-v43.mjs';
 import {projectPublicAuctionResult} from './auction-results-v20.mjs';
+import {projectPublicArtworkResearchDossier,PUBLIC_ARTWORK_DOSSIER_VERSION_V58} from './artwork-dossier-public-v58.mjs';
 
 const iso=v=>v?.toISOString?.()||v||null;
 const clone=v=>JSON.parse(JSON.stringify(v??null));
 
 export function artworkDossierCapabilities(){
   return {
-    schemaVersion:'antiqua-artwork-dossier-v51',
+    schemaVersion:PUBLIC_ARTWORK_DOSSIER_VERSION_V58,
     readModel:true,
     writableAuthority:false,
-    scholarlyContributions:true,
-    credentialsAtReview:true,
+    scholarlyContributions:false,
+    credentialsAtReview:false,
+    scholarlyDetailsRequireSeparatePublicationGrant:true,
+    publicFieldRedaction:true,
     provenancePassport:true,
     marketHistory:true,
     currentSaleStateAuthority:'PRODUCT_PASSPORT',
@@ -200,16 +203,15 @@ export async function marketHistoryForArtwork(objectId){
 }
 
 export async function artworkResearchDossier(objectId){
-  const [provenancePassport,scholarlyContributions,marketHistory]=await Promise.all([
-    provenanceEvidencePassport(objectId,{publicOnly:true}),
-    scholarlyContributionsForArtwork(objectId),
-    marketHistoryForArtwork(objectId)
-  ]);
+  // This is a public route: do not even load contributor credentials,
+  // unpublished notes or evidence-document references without field grants.
+  const provenancePassport=await provenanceEvidencePassport(objectId,{publicOnly:true});
   if(!provenancePassport)return null;
-  return buildArtworkResearchProjection({
-    objectId,
-    provenancePassport,
-    scholarlyContributions,
+  const marketHistory=await marketHistoryForArtwork(objectId);
+  const source=buildArtworkResearchProjection({
+    objectId,provenancePassport,
+    scholarlyContributions:[],
     marketHistory
   });
+  return projectPublicArtworkResearchDossier(source);
 }

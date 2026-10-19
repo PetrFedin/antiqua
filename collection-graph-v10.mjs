@@ -2,12 +2,14 @@ import crypto from 'node:crypto';
 import {db,lots,uid,now,bi} from './runtime-v09.mjs';
 import {canReadCollection,isPublicCollection,isPublicEnsemble,isPublicExhibition} from './access-policy.mjs';
 import {setObjectFlag} from './preferences-v14.mjs';
+import {publishedSnapshotMatches,appendCollectionContentChange} from './collection-publication-v73.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const collections=new Map(),ensembles=new Map(),exhibitions=new Map(),claims=new Map();
 const clone=x=>structuredClone(x),loc=id=>lots.find(x=>x.id===id);
 
 function completeness(e){const slots=e.slots||[],known=slots.filter(s=>['VERIFIED','CANDIDATE','KNOWN_PRIVATE','INSTITUTIONAL'].includes(s.status)).length,verified=slots.filter(s=>['VERIFIED','INSTITUTIONAL'].includes(s.status)).length,total=e.expectedCount||slots.length||0;return{known,verified,total,knownPercent:total?Math.round(known/total*100):0,verifiedPercent:total?Math.round(verified/total*100):0,missing:Math.max(0,total-known)}}
-function publicObject(id,privacy={}){const o=loc(id);if(!o)return null;return{id:o.id,objectId:o.objectId,title:o.title,maker:o.maker,period:o.period,origin:o.origin,image:o.image,materials:o.materials,dimensions:o.dimensions,catalogueStatus:o.catalogueStatus,owner:privacy.ownerDisplayMode==='PUBLIC'?privacy.ownerLabel||null:privacy.ownerDisplayMode==='PSEUDONYM'?privacy.ownerLabel||bi('Private collection','Частная коллекция'):null,location:privacy.locationDisplayMode==='CITY'?o.location:privacy.locationDisplayMode==='COUNTRY'?o.origin:null}}
+function publicObject(id,privacy={}){const o=loc(id);if(!o)return null;return{id:o.id,objectId:o.objectId,title:o.title,maker:o.maker,department:o.department,period:o.period,origin:o.origin,image:o.image,materials:o.materials,dimensions:o.dimensions,catalogueStatus:o.catalogueStatus,owner:privacy.ownerDisplayMode==='PUBLIC'?privacy.ownerLabel||null:privacy.ownerDisplayMode==='PSEUDONYM'?privacy.ownerLabel||bi('Private collection','Частная коллекция'):null,location:privacy.locationDisplayMode==='CITY'?o.location:privacy.locationDisplayMode==='COUNTRY'?o.origin:null}}
 
 function seed(){if(collections.size)return;
  const c={id:'col-european-interiors',ownerAccountId:'acct-demo-buyer',title:bi('European Interiors: Objects in Dialogue','Европейский интерьер: диалог предметов'),summary:bi('A private study collection connecting furniture, clocks, ceramics and sculpture across two centuries.','Частное исследовательское собрание, связывающее мебель, часы, керамику и скульптуру двух столетий.'),story:bi('Built around relationships between objects rather than a single category.','Собрание построено вокруг связей между предметами, а не одной категории.'),collectionType:'PERSONAL',visibility:'PUBLIC',coverObjectId:'lot-101',items:[{objectId:'lot-101',section:'Time & Ornament',sortOrder:1,ownerDisplayMode:'PSEUDONYM',ownerLabel:bi('Private Collection A','Частная коллекция A'),locationDisplayMode:'COUNTRY'},{objectId:'lot-106',section:'Furniture',sortOrder:2,ownerDisplayMode:'PSEUDONYM',ownerLabel:bi('Private Collection A','Частная коллекция A'),locationDisplayMode:'COUNTRY'},{objectId:'lot-111',section:'Porcelain',sortOrder:3,ownerDisplayMode:'PSEUDONYM',ownerLabel:bi('Private Collection A','Частная коллекция A'),locationDisplayMode:'HIDDEN'}],createdAt:now(),updatedAt:now()};collections.set(c.id,c);
@@ -25,23 +27,123 @@ function seed(){if(collections.size)return;
 }
 seed();
 
-async function readCollectionsFromDb(){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query('SELECT * FROM collections WHERE visibility=$1 ORDER BY updated_at DESC',['PUBLIC'])).rows;if(!rows.length)return [];const out=[];for(const r of rows){const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[r.id])).rows;out.push({id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))})}return out}
-async function readCollectionFromDb(id){if(db.kind!=='POSTGRES')return null;const r=(await db.pool.query('SELECT * FROM collections WHERE id=$1',[id])).rows[0];if(!r)return null;const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[id])).rows;return{id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))}}
-async function readMyCollectionsFromDb(accountId){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query('SELECT * FROM collections WHERE owner_account_id=$1 ORDER BY updated_at DESC',[accountId])).rows,out=[];for(const r of rows){const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[r.id])).rows;out.push({id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,accessRole:'OWNER',items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))})}return out}
+async function readCollectionsFromDb(){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query('SELECT * FROM collections WHERE visibility=$1 ORDER BY updated_at DESC',['PUBLIC'])).rows;if(!rows.length)return [];const out=[];for(const r of rows){const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[r.id])).rows;out.push({id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,metadata:r.metadata||{},items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))})}return out}
+async function readCollectionFromDb(id){if(db.kind!=='POSTGRES')return null;const r=(await db.pool.query('SELECT * FROM collections WHERE id=$1',[id])).rows[0];if(!r)return null;const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[id])).rows;return{id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,metadata:r.metadata||{},items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))}}
+async function readMyCollectionsFromDb(accountId){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query('SELECT * FROM collections WHERE owner_account_id=$1 ORDER BY updated_at DESC',[accountId])).rows,out=[];for(const r of rows){const items=(await db.pool.query('SELECT * FROM collection_objects WHERE collection_id=$1 ORDER BY sort_order',[r.id])).rows;out.push({id:r.id,ownerAccountId:r.owner_account_id,title:r.title,summary:r.summary,story:r.story,collectionType:r.collection_type,visibility:r.visibility,coverObjectId:r.cover_object_id,metadata:r.metadata||{},accessRole:'OWNER',items:items.map(i=>({objectId:i.object_id,section:i.section,sortOrder:i.sort_order,ownerDisplayMode:i.owner_display_mode,locationDisplayMode:i.location_display_mode,note:i.note}))})}return out}
 async function readEnsemblesFromDb(){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query("SELECT * FROM ensembles WHERE visibility='PUBLIC' AND status='ACTIVE' ORDER BY updated_at DESC")).rows;const out=[];for(const r of rows){const s=(await db.pool.query('SELECT * FROM ensemble_slots WHERE ensemble_id=$1 ORDER BY sort_order',[r.id])).rows.map(x=>({id:x.id,label:x.label,description:x.description,sortOrder:x.sort_order,status:x.slot_status,objectId:x.object_id,externalUri:x.external_uri,ownerDisplayMode:x.owner_display_mode,evidence:x.evidence}));const e={id:r.id,title:r.title,summary:r.summary,expectedCount:r.expected_count,visibility:r.visibility,status:r.status,metadata:r.metadata,slots:s};out.push({...e,completeness:completeness(e)})}return out}
 async function readExhibitionsFromDb(){if(db.kind!=='POSTGRES')return null;const rows=(await db.pool.query("SELECT e.*,o.name AS organization_name,o.slug AS organization_slug,l.label AS location_label,l.city AS location_city,l.address_line AS location_address FROM exhibitions e LEFT JOIN organizations o ON o.id=e.organization_id LEFT JOIN organization_locations l ON l.id=e.organization_location_id WHERE e.visibility='PUBLIC' AND e.publication_status='PUBLISHED' AND e.status IN('SCHEDULED','LIVE','CLOSED','ARCHIVED') ORDER BY e.updated_at DESC")).rows;return rows.map(r=>({id:r.id,title:r.title,subtitle:r.subtitle,curatorialStatement:r.curatorial_statement,visibility:r.visibility,status:r.status,publicationStatus:r.publication_status,startsAt:r.starts_at,endsAt:r.ends_at,coverObjectId:r.cover_object_id,metadata:r.metadata,organizationId:r.organization_id||null,organization:r.organization_id?{id:r.organization_id,name:r.organization_name,slug:r.organization_slug}:null,organizationLocationId:r.organization_location_id||null,organizationLocation:r.organization_location_id?{id:r.organization_location_id,label:r.location_label,city:r.location_city,addressLine:r.location_address}:null,timezone:r.timezone||'UTC',publicSourceUrl:r.public_source_url||null,bookingUrl:r.booking_url||null,city:r.location_city?bi(r.location_city,r.location_city):{},venueName:r.location_label?bi(r.location_label,r.location_label):{}}))}
 
-export async function listCollections(){const pg=await readCollectionsFromDb();return pg??[...collections.values()].filter(isPublicCollection).map(c=>({...clone(c),items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}))}
-export async function getCollection(id){if(db.kind==='POSTGRES'){const c=await readCollectionFromDb(id);if(c)return{...c,items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}}const c=collections.get(id);return c?{...clone(c),items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}:null}
-export async function getReadableCollection(id,accountId=null){const c=await getCollection(id);return canReadCollection(c,accountId)?c:null}
+
+function reviewedVisualCollection(c){
+ if(!isPublicCollection(c))return false;
+ const meta=c.metadata||{};
+ if(!publishedSnapshotMatches(c))return false;
+ return Array.isArray(c.items)&&c.items.length>0&&c.items.every(item=>{
+  const artwork=loc(item.objectId);
+  const medium=typeof artwork?.department==='string'?artwork.department:(artwork?.department?.en||artwork?.department?.ru||'');
+  return Boolean(artwork?.image&&isPaintingCategory(medium));
+ });
+}
+function publicCollectionProjection(c){
+ return{
+  id:c.id,title:c.title,summary:c.summary,story:c.story,
+  collectionType:c.collectionType,visibility:'PUBLIC',coverObjectId:c.coverObjectId,
+  metadata:{discipline:c.metadata?.discipline,reviewedForPublicHomepage:true,mediaRightsReviewed:true},
+  items:c.items.map(item=>({
+   objectId:item.objectId,section:item.section,sortOrder:item.sortOrder,
+   object:publicObject(item.objectId,item)
+  }))
+ };
+}
+function ownsCollection(c,accountId){
+ return Boolean(c&&accountId&&(c.ownerAccountId===accountId||
+ (db.kind!=='POSTGRES'&&c.ownerAccountId==='acct-demo-buyer'&&accountId==='acct-buyer-demo')));
+}
+
+export async function listCollections(){
+ const pg=await readCollectionsFromDb();
+ return (pg??[...collections.values()]).filter(reviewedVisualCollection).map(publicCollectionProjection);
+}
+export async function getCollection(id){
+ if(db.kind==='POSTGRES'){
+  const c=await readCollectionFromDb(id);
+  return c?{...c,items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}:null;
+ }
+ const c=collections.get(id);
+ return c?{...clone(c),items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}:null;
+}
+export async function getReadableCollection(id,accountId=null){
+ const c=await getCollection(id);
+ if(!c)return null;
+ if(ownsCollection(c,accountId))return c;
+ return reviewedVisualCollection(c)?publicCollectionProjection(c):null;
+}
 export async function listMyCollections(account){const accountId=String(account?.id||account||'');if(!accountId)return[];const pg=await readMyCollectionsFromDb(accountId);if(pg)return pg.map(c=>({...c,items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}));return[...collections.values()].filter(c=>c.ownerAccountId===accountId||(c.ownerAccountId==='acct-demo-buyer'&&accountId==='acct-buyer-demo')).map(c=>({...clone(c),accessRole:'OWNER',items:c.items.map(i=>({...i,object:publicObject(i.objectId,i)}))}))}
 export async function listEnsembles(){const pg=await readEnsemblesFromDb();return pg??[...ensembles.values()].filter(isPublicEnsemble).map(e=>({...clone(e),completeness:completeness(e)}))}
-export async function getEnsemble(id){if(db.kind==='POSTGRES'){const all=await readEnsemblesFromDb();const e=all?.find(x=>x.id===id);if(e)return{...e,slots:e.slots.map(s=>({...s,object:s.objectId?publicObject(s.objectId,s):null}))}}const e=ensembles.get(id);return e&&isPublicEnsemble(e)?{...clone(e),completeness:completeness(e),slots:e.slots.map(s=>({...s,object:s.objectId?publicObject(s.objectId,s):null}))}:null}
+export async function getEnsemble(id){if(db.kind==='POSTGRES'){const all=await readEnsemblesFromDb();const e=all?.find(x=>x.id===id);if(e)return{...e,slots:e.slots.map(s=>({...s,object:s.objectId?publicObject(s.objectId,s):null}))};return null}const e=ensembles.get(id);return e&&isPublicEnsemble(e)?{...clone(e),completeness:completeness(e),slots:e.slots.map(s=>({...s,object:s.objectId?publicObject(s.objectId,s):null}))}:null}
 export async function listExhibitions(){const pg=await readExhibitionsFromDb();return pg??[...exhibitions.values()].filter(isPublicExhibition).map(clone)}
-export async function getExhibition(id){if(db.kind==='POSTGRES'){const row=(await db.pool.query('SELECT * FROM exhibitions WHERE id=$1',[id])).rows[0];if(row){const secs=(await db.pool.query('SELECT * FROM exhibition_sections WHERE exhibition_id=$1 ORDER BY sort_order',[id])).rows;for(const s of secs){s.items=(await db.pool.query('SELECT * FROM exhibition_items WHERE exhibition_id=$1 AND section_id=$2 ORDER BY sort_order',[id,s.id])).rows.map(i=>({objectId:i.object_id,ensembleId:i.ensemble_id,caption:i.caption,ownerConsentStatus:i.owner_consent_status}))}const sections=[];for(const s of secs){const items=[];for(const i of s.items){const item={...i};if(item.objectId)item.object=publicObject(item.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(item.ensembleId)item.ensemble=await getEnsemble(item.ensembleId);items.push(item)}sections.push({id:s.id,title:s.title,narrative:s.narrative,sortOrder:s.sort_order,items})}return{id:row.id,ownerAccountId:row.owner_account_id,title:row.title,subtitle:row.subtitle,curatorialStatement:row.curatorial_statement,visibility:row.visibility,status:row.status,publicationStatus:row.publication_status||'DRAFT',startsAt:row.starts_at,endsAt:row.ends_at,coverObjectId:row.cover_object_id,metadata:row.metadata||{},organizationId:row.organization_id||null,organizationLocationId:row.organization_location_id||null,timezone:row.timezone||'UTC',publicSourceUrl:row.public_source_url||null,bookingUrl:row.booking_url||null,reviewedByAccountId:row.reviewed_by_account_id||null,reviewedAt:row.reviewed_at||null,reviewNote:row.review_note||null,createdAt:row.created_at,updatedAt:row.updated_at,sections}}}const e=exhibitions.get(id);if(!e)return null;const out=clone(e);for(const s of out.sections)for(const i of s.items){if(i.objectId)i.object=publicObject(i.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(i.ensembleId)i.ensemble=await getEnsemble(i.ensembleId)}return out}
+export async function getExhibition(id){if(db.kind==='POSTGRES'){const row=(await db.pool.query('SELECT * FROM exhibitions WHERE id=$1',[id])).rows[0];if(row){const secs=(await db.pool.query('SELECT * FROM exhibition_sections WHERE exhibition_id=$1 ORDER BY sort_order',[id])).rows;for(const s of secs){s.items=(await db.pool.query('SELECT * FROM exhibition_items WHERE exhibition_id=$1 AND section_id=$2 ORDER BY sort_order',[id,s.id])).rows.map(i=>({objectId:i.object_id,ensembleId:i.ensemble_id,caption:i.caption,ownerConsentStatus:i.owner_consent_status}))}const sections=[];for(const s of secs){const items=[];for(const i of s.items){const item={...i};if(item.objectId)item.object=publicObject(item.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(item.ensembleId)item.ensemble=await getEnsemble(item.ensembleId);items.push(item)}sections.push({id:s.id,title:s.title,narrative:s.narrative,sortOrder:s.sort_order,items})}return{id:row.id,ownerAccountId:row.owner_account_id,title:row.title,subtitle:row.subtitle,curatorialStatement:row.curatorial_statement,visibility:row.visibility,status:row.status,publicationStatus:row.publication_status||'DRAFT',startsAt:row.starts_at,endsAt:row.ends_at,coverObjectId:row.cover_object_id,metadata:row.metadata||{},organizationId:row.organization_id||null,organizationLocationId:row.organization_location_id||null,timezone:row.timezone||'UTC',publicSourceUrl:row.public_source_url||null,bookingUrl:row.booking_url||null,reviewedByAccountId:row.reviewed_by_account_id||null,reviewedAt:row.reviewed_at||null,reviewNote:row.review_note||null,createdAt:row.created_at,updatedAt:row.updated_at,sections}}return null}const e=exhibitions.get(id);if(!e)return null;const out=clone(e);for(const s of out.sections)for(const i of s.items){if(i.objectId)i.object=publicObject(i.objectId,{ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});if(i.ensembleId)i.ensemble=await getEnsemble(i.ensembleId)}return out}
 
 export async function createCollection(account,body){const id=uid('col'),c={id,ownerAccountId:account.id,title:bi(String(body.titleEn||body.title||'Untitled collection'),String(body.titleRu||body.title||'Без названия')),summary:bi(String(body.summaryEn||''),String(body.summaryRu||'')),story:bi(String(body.storyEn||''),String(body.storyRu||'')),collectionType:['PERSONAL','CURATED','DISTRIBUTED','INSTITUTIONAL'].includes(body.collectionType)?body.collectionType:'PERSONAL',visibility:['PRIVATE','UNLISTED','PUBLIC'].includes(body.visibility)?body.visibility:'PRIVATE',coverObjectId:null,items:[],createdAt:now(),updatedAt:now()};if(db.kind==='POSTGRES'){await db.pool.query('INSERT INTO collections(id,owner_account_id,title,summary,story,collection_type,visibility,metadata) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,account.id,c.title,c.summary,c.story,c.collectionType,c.visibility,{}]);await db.pool.query("INSERT INTO collection_collaborators(collection_id,account_id,role) VALUES($1,$2,'OWNER')",[id,account.id])}else collections.set(id,c);return clone(c)}
-export async function addCollectionObject(account,id,body){const objectId=String(body.objectId||''),o=loc(objectId);if(!o)throw Object.assign(new Error('Object not found'),{status:404});if(db.kind==='POSTGRES'){const own=(await db.pool.query('SELECT 1 FROM collections WHERE id=$1 AND owner_account_id=$2',[id,account.id])).rowCount;if(!own)throw Object.assign(new Error('Collection not found'),{status:404});await db.pool.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,Number(body.sortOrder||0),String(body.section||''),String(body.ownerDisplayMode||'ANONYMOUS'),String(body.locationDisplayMode||'HIDDEN'),body.note||{}])}else{const c=collections.get(id);if(!c||c.ownerAccountId!==account.id)throw Object.assign(new Error('Collection not found'),{status:404});const prev=c.items.find(x=>x.objectId===objectId);if(prev)Object.assign(prev,body);else c.items.push({objectId,sortOrder:Number(body.sortOrder||c.items.length+1),section:String(body.section||''),ownerDisplayMode:String(body.ownerDisplayMode||'ANONYMOUS'),locationDisplayMode:String(body.locationDisplayMode||'HIDDEN'),note:body.note||{}});c.updatedAt=now()}await setObjectFlag(db,account.id,objectId,'COLLECTED',true);return getCollection(id)}
+export async function addCollectionObject(account,id,body={}){
+ const objectId=String(body.objectId||'');
+ if(!loc(objectId))throw Object.assign(new Error('Object not found'),{status:404});
+ const bad=(message)=>Object.assign(new Error(message),{status:400});
+ const has=k=>Object.hasOwn(body,k);
+ const enumValue=(key,values,fallback)=>{
+  if(!has(key))return fallback;
+  if(!values.includes(body[key]))throw bad('Invalid '+key);
+  return body[key];
+ };
+ const ownerMode=enumValue('ownerDisplayMode',['ANONYMOUS','PSEUDONYM','PUBLIC'],undefined);
+ const placeMode=enumValue('locationDisplayMode',['HIDDEN','COUNTRY','CITY','FULL'],undefined);
+ const haveOrder=has('sortOrder')&&body.sortOrder!==''&&body.sortOrder!==null;
+ const rawOrder=haveOrder?Number(body.sortOrder):null;
+ if(haveOrder&&(!Number.isSafeInteger(rawOrder)||rawOrder<0||rawOrder>1000000))throw bad('Invalid sortOrder');
+ if(has('section')&&(typeof body.section!=='string'||body.section.length>180))throw bad('Invalid section');
+ if(has('note')&&(body.note===null||typeof body.note!=='object'||Array.isArray(body.note)||JSON.stringify(body.note).length>4096))throw bad('Invalid note');
+ if(db.kind==='POSTGRES'){
+  const client=await db.pool.connect();
+  try{
+   await client.query('BEGIN');
+   const owner=(await client.query('SELECT visibility,metadata FROM collections WHERE id=$1 AND owner_account_id=$2 FOR UPDATE',[id,account.id])).rows[0];
+   if(!owner)throw Object.assign(new Error('Collection not found'),{status:404});
+   const previous=(await client.query('SELECT sort_order,section,owner_display_mode,location_display_mode,note FROM collection_objects WHERE collection_id=$1 AND object_id=$2',[id,objectId])).rows[0];
+   const nextOrder=haveOrder?rawOrder:previous?.sort_order??Number((await client.query('SELECT coalesce(max(sort_order),0)+1 AS next_order FROM collection_objects WHERE collection_id=$1',[id])).rows[0].next_order);
+   const section=has('section')?body.section:previous?.section||'';
+   const visibility=ownerMode??previous?.owner_display_mode??'ANONYMOUS';
+   const locationMode=placeMode??previous?.location_display_mode??'HIDDEN';
+   const note=has('note')?body.note:previous?.note||{};
+   const unchanged=Boolean(previous&&Number(previous.sort_order)===nextOrder&&previous.section===section&&
+    previous.owner_display_mode===visibility&&previous.location_display_mode===locationMode&&
+    JSON.stringify(previous.note||{})===JSON.stringify(note||{}));
+   if(!unchanged)await client.query('INSERT INTO collection_objects(collection_id,object_id,sort_order,section,owner_display_mode,location_display_mode,note) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(collection_id,object_id) DO UPDATE SET sort_order=excluded.sort_order,section=excluded.section,owner_display_mode=excluded.owner_display_mode,location_display_mode=excluded.location_display_mode,note=excluded.note',[id,objectId,nextOrder,section,visibility,locationMode,note]);
+   // Membership and the Taste COLLECTED flag commit or roll back together.
+   await client.query("INSERT INTO account_object_flags(account_id,object_id,flag_type) VALUES($1,$2,'COLLECTED') ON CONFLICT(account_id,object_id,flag_type) DO UPDATE SET updated_at=now()",[account.id,objectId]);
+   if(!unchanged&&owner.visibility==='PUBLIC'){
+    // Only an actual content/privacy change invalidates a prior reviewed snapshot.
+    await client.query("UPDATE collections SET metadata=coalesce(metadata,'{}'::jsonb)||$2::jsonb,updated_at=now() WHERE id=$1",[id,{publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,approvedDigest:null,submittedDigest:null,reviewedAt:null}]);
+    await appendCollectionContentChange(client,id,account.id,owner.metadata?.publicationState||'DRAFT');
+   }else if(!unchanged)await client.query('UPDATE collections SET updated_at=now() WHERE id=$1',[id]);
+   await client.query('COMMIT');
+  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}
+  finally{client.release()}
+ }else{
+  const c=collections.get(id);
+  if(!c||c.ownerAccountId!==account.id)throw Object.assign(new Error('Collection not found'),{status:404});
+  const before=clone(c);
+  try{
+   const previous=c.items.find(i=>i.objectId===objectId);
+   const nextOrder=haveOrder?rawOrder:previous?.sortOrder??Math.max(0,...c.items.map(i=>i.sortOrder||0))+1;
+   const item={objectId,sortOrder:nextOrder,section:has('section')?body.section:previous?.section||'',ownerDisplayMode:ownerMode??previous?.ownerDisplayMode??'ANONYMOUS',locationDisplayMode:placeMode??previous?.locationDisplayMode??'HIDDEN',note:has('note')?body.note:previous?.note||{}};
+   if(previous)Object.assign(previous,item);else c.items.push(item);
+   if(c.visibility==='PUBLIC')c.metadata={...(c.metadata||{}),publicationState:'REVIEW_REQUIRED',reviewedForPublicHomepage:false,mediaRightsReviewed:false,reviewedAt:null};
+   c.updatedAt=now();
+   await setObjectFlag(db,account.id,objectId,'COLLECTED',true);
+  }catch(error){collections.set(id,before);throw error}
+ }
+ return getCollection(id);
+}
 
 export async function submitEnsembleClaim(account,id,body){const e=await getEnsemble(id);if(!e)throw Object.assign(new Error('Ensemble not found'),{status:404});const claim={id:uid('claim'),ensembleId:id,slotId:String(body.slotId||''),claimantAccountId:account.id,objectId:body.objectId||null,status:'PENDING',evidence:Array.isArray(body.evidence)?body.evidence:[],consent:{displayOwner:body.displayOwner===true,displayLocation:body.displayLocation===true},createdAt:now(),updatedAt:now()};if(db.kind==='POSTGRES')await db.pool.query('INSERT INTO ensemble_claims(id,ensemble_id,slot_id,claimant_account_id,object_id,status,evidence,consent,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)',[claim.id,claim.ensembleId,claim.slotId||null,claim.claimantAccountId,claim.objectId,claim.status,claim.evidence,claim.consent,claim.createdAt]);else claims.set(claim.id,claim);return clone(claim)}
 

@@ -108,3 +108,43 @@ test('v0.54 source API unavailable remains an honest reference gallery',async({p
   await expect(card.locator('[data-passport]')).toHaveCount(0);
   await page.screenshot({path:'artifacts/visual-proof/offline-museum-iphone.png',fullPage:false});
 });
+
+test('v60 320px offline museum hero shrinks while source, caption and dialog remain reachable',async({page})=>{
+  test.setTimeout(40_000);
+  await page.route('https://api.artic.edu/**',route=>route.abort());
+  await page.route('https://www.artic.edu/iiif/**',route=>route.abort());
+  await page.route('https://commons.wikimedia.org/**',route=>route.abort());
+  await page.setViewportSize({width:320,height:568});
+  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+  const hero=page.locator('.culture-hero-media.culture-hero-media-unavailable');
+  await expect(hero).toBeVisible();
+  await expect(hero.locator('.museum-image-fallback')).toContainText(/недоступно|unavailable/i);
+  const geometry=await hero.evaluate(el=>{
+    const root=el.getBoundingClientRect();
+    const note=el.querySelector('.museum-image-fallback').getBoundingClientRect();
+    const caption=el.querySelector('.culture-hero-caption').getBoundingClientRect();
+    return {height:root.height,captionWithin:caption.bottom<=root.bottom+2,
+      contentSeparate:note.bottom<=caption.top+2,
+      aspect:getComputedStyle(el).aspectRatio};
+  });
+  expect(geometry.height,'fallback must not reserve a full-height artwork').toBeLessThan(360);
+  expect(geometry.captionWithin).toBe(true);
+  expect(geometry.contentSeparate).toBe(true);
+  expect(geometry.aspect).toBe('auto');
+  await hero.scrollIntoViewIfNeeded();
+  await page.screenshot({path:'artifacts/visual-proof/offline-museum-320.png',fullPage:false});
+  await hero.locator('[data-museum-open]').click();
+  const modal=page.locator('dialog[data-museum-dialog][open]');
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('a[href="https://www.artic.edu/artworks/27992"]')).toBeVisible();
+  const close=modal.locator('.museum-work-close');
+  await expect(close).toBeVisible();
+  const closeBox=await close.boundingBox();
+  expect(closeBox.y).toBeGreaterThanOrEqual(0);
+  expect(closeBox.y+closeBox.height).toBeLessThanOrEqual(568);
+  const modalRect=await modal.boundingBox();
+  expect(modalRect.height).toBeLessThanOrEqual(568);
+  await page.screenshot({path:'artifacts/visual-proof/offline-dialog-320.png',fullPage:false});
+  await page.keyboard.press('Escape');
+  await expect(modal).not.toBeVisible();
+});

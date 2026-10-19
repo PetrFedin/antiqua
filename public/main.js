@@ -1,5 +1,6 @@
 import './app.js';
 import './operations.js';
+import './modules/mobile-navigation.js';
 
 import './modules/seller-analytics.js';
 import './modules/dealer-interest.js';
@@ -8,6 +9,7 @@ import './modules/similarity.js';
 import './modules/auction-results.js';
 import './modules/market-intelligence.js';
 import './modules/object-desire.js';
+import './modules/dossier-art-direction.js';
 import './modules/culture-discovery.js';
 import './modules/taste-signals.js';
 import './modules/partner-drops.js';

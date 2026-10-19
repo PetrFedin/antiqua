@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, hardening/db-identity-gate-v55]
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -16,6 +16,8 @@ jobs:
       - run: npm install
       - run: npm audit --omit=dev --audit-level=high
       - run: npm test
+      - run: node tests/db-identity-gate-v55.mjs
+      - run: node tests/data-api-grants-v56.mjs
 
   postgres-durability:
     runs-on: ubuntu-latest
@@ -38,6 +40,7 @@ jobs:
       DATABASE_URL: postgresql://antiqua:antiqua@127.0.0.1:5432/antiqua_test
       PGSSL: disable
       PREVIEW_MODE: "true"
+      ANTIQUA_ISOLATED_TEST_DB: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +48,11 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run migrate
+      - name: Prove migration replay is a no-op
+        run: npm run migrate
       - run: npm run test:postgres
+      - name: PostgreSQL real Data API privilege catalog (rollback-only)
+        run: node tests/postgres-api-catalog-v57.mjs
 
   object-storage:
     runs-on: ubuntu-latest
@@ -68,6 +75,7 @@ jobs:
       DATABASE_URL: postgresql://antiqua:antiqua@127.0.0.1:5432/antiqua_storage_test
       PGSSL: disable
       PREVIEW_MODE: "true"
+      ANTIQUA_ISOLATED_TEST_DB: "true"
       OBJECT_STORAGE_ENDPOINT: http://127.0.0.1:9000
       OBJECT_STORAGE_REGION: us-east-1
       OBJECT_STORAGE_ACCESS_ID: antiqua-access
@@ -96,5 +104,7 @@ jobs:
           docker logs antiqua-minio
           exit 1
       - run: npm run migrate
+      - name: Prove migration replay is a no-op
+        run: npm run migrate
       - run: node scripts/prepare-object-storage-v15.mjs
       - run: npm run test:storage

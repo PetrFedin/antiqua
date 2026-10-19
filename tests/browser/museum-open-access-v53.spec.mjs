@@ -58,3 +58,39 @@ test('museum four-image gallery and mobile dialog keep scroll and close usable',
   await modal.locator('.museum-work-close').click();
   await expect(page.locator('html')).not.toHaveClass(/museum-modal-open/);
 });
+
+test('v60 reviewed Russian museum captions survive verified metadata hydration',async({page})=>{
+  await page.route(/^https:\/\/api\.artic\.edu\/api\/v1\/artworks\?/,route=>route.fulfill({
+    status:200,contentType:'application/json',
+    body:JSON.stringify({data:[
+      {id:16568,title:'Water Lilies',artist_display:'Claude Monet (French)',
+        artwork_type_title:'Painting',is_public_domain:true,
+        image_id:'12345678-1234-4abc-8abc-123456789abc',
+        medium_display:'Oil on canvas',date_display:'1906',
+        dimensions:'test dimensions',main_reference_number:'1933.1157'},
+      {id:61128,title:'Not released',artist_display:'Private',
+        artwork_type_title:'Painting',is_public_domain:false,
+        image_id:'12345678-1234-4abc-8abc-123456789abc'},
+      {id:16571,title:'Bad IIIF identity',artist_display:'Private',
+        artwork_type_title:'Painting',is_public_domain:true,
+        image_id:'not-a-valid-iiif-id'}
+    ]})
+  }));
+  await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+  const gallery=page.locator('[data-museum-open-access]');
+  await expect(gallery).toHaveAttribute('data-museum-hydrated','true');
+  const painting=gallery.locator('[data-museum-artwork="16568"]');
+  await expect(painting).toBeVisible();
+  await expect(painting).toContainText('Кувшинки');
+  await expect(painting).toContainText('Клод Моне');
+  await expect(painting).toContainText('Холст, масло');
+  await expect(painting).not.toContainText('Water Lilies');
+  await expect(gallery.locator('[data-museum-artwork="61128"]')).toHaveCount(0);
+  await expect(gallery.locator('[data-museum-artwork="16571"]')).toHaveCount(0);
+  await painting.locator('[data-museum-open]').click();
+  const dialog=page.locator('dialog[data-museum-dialog][open]');
+  await expect(dialog.locator('h2')).toHaveText('Кувшинки');
+  await expect(dialog).toContainText('Клод Моне');
+  await dialog.locator('.museum-work-close').click();
+  await expect(dialog).not.toBeVisible();
+});

@@ -14,7 +14,7 @@ const ready=evaluateProductionAdmission({
 });
 assert.equal(ready.productionReady,true);
 assert.equal(ready.status,'READY');
-assert.equal(ready.migrations.expectedHead,'033_v46_independent_passport_verification');
+assert.equal(ready.migrations.expectedHead,'034_v73_collection_publication_authority');
 assert.equal(ready.migrations.exact,true);
 assert.deepEqual(ready.blockers,[]);
 
@@ -40,6 +40,6 @@ const drift=evaluateProductionAdmission({
 });
 assert.equal(drift.productionReady,false);
 assert.ok(drift.blockers.includes('MIGRATION_DRIFT'));
-assert.deepEqual(drift.migrations.missing,['033_v46_independent_passport_verification']);
+assert.deepEqual(drift.migrations.missing,['034_v73_collection_publication_authority']);
 
 console.log('production admission v49 PASS');

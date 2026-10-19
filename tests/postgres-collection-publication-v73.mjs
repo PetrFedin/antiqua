@@ -1,0 +1,86 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+if(!process.env.DATABASE_URL){console.log('v73 publication authority skipped: no isolated PostgreSQL');process.exit(0)}
+const {db}=await import('../runtime-v09.mjs');
+const {transitionCollectionPublication:transitionRaw,collectionPublicationStatus,collectionReviewQueue,collectionReviewDossier}=await import('../collection-publication-v73.mjs');
+const {createCollection,addCollectionObject,listCollections,getReadableCollection}=await import('../collection-graph-v10.mjs');
+// Existing lifecycle cases obtain the same mandatory token as the real UI.
+// Preserve acknowledged keyed attempts when testing later HTTP-style replay.
+const tokens=new Map();
+async function transitionCollectionPublication(actor,id,action,body={}){
+ if(action==='SUBMIT')return transitionRaw(actor,id,action,body);
+ const cache=body.idempotencyKey?actor.id+':'+id+':'+body.idempotencyKey:null;
+ let token=tokens.get(cache);
+ if(!token)token=(await collectionReviewDossier(actor,id).catch(()=>null))?.reviewToken||'0'.repeat(64);
+ const result=await transitionRaw(actor,id,action,{reviewToken:token,...body});
+ if(cache)tokens.set(cache,token);
+ return result;
+}
+
+const seller=await db.findAccountByEmail('buyer@demo.antiqua'),operator=await db.findAccountByEmail('operator@demo.antiqua');
+assert.equal(db.kind,'POSTGRES');assert.ok(seller&&operator);
+const independent=await db.createAccount({id:'acct-review-'+crypto.randomUUID(),email:crypto.randomUUID()+'@example.test',displayName:'Rights Reviewer',passwordHash:'test',accountType:'BUYER',status:'ACTIVE',sellerId:null,twofaStatus:'DISABLED',twofaSecretEnc:null,roles:['TRUST_REVIEWER'],createdAt:new Date().toISOString()});
+const reviewer={...operator,roles:['CATALOGUER']};
+let id=null;
+const failure=async(p,code)=>{await assert.rejects(p,e=>e.code===code,code)};
+try{
+ const c=await createCollection(seller,{title:'Paintings '+crypto.randomUUID(),visibility:'PUBLIC'});id=c.id;
+ await addCollectionObject(seller,id,{objectId:'lot-108',ownerDisplayMode:'ANONYMOUS',locationDisplayMode:'HIDDEN'});
+ await failure(transitionCollectionPublication(seller,id,'APPROVE',{note:'Attempt to approve own work'}),'INDEPENDENT_REVIEW_REQUIRED');
+ const submitted=await transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001'});
+ assert.equal(submitted.publicationState,'SUBMITTED');
+ assert.ok((await collectionReviewQueue(reviewer,{limit:1})).items.some(x=>x.id===id),'catalogue reviewer sees submitted case');
+ assert.ok(!(await collectionReviewQueue(independent)).items.some(x=>x.id===id),'rights reviewer cannot review unapproved content');
+ await assert.rejects(collectionReviewDossier(seller,id),e=>e.status===404);
+ const catalogueDossier=await collectionReviewDossier(reviewer,id);
+ assert.equal(catalogueDossier.stage,'CATALOGUE');
+ assert.equal(catalogueDossier.artworkCount,1);
+ assert.equal(catalogueDossier.works[0].painting,true);
+ assert.equal(catalogueDossier.works[0].privacyReady,true);
+ assert.equal('ownerAccountId' in catalogueDossier,false);
+ assert.equal('note' in catalogueDossier.works[0],false);
+ const repeat=await transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001'});assert.equal(repeat.idempotent,true);
+ await failure(transitionCollectionPublication(seller,id,'SUBMIT',{idempotencyKey:'submit-first-0001',note:'mismatched'}),'IDEMPOTENCY_CONFLICT');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Attempt to skip catalogue',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication(independent,id,'REQUEST_CHANGES',{note:'Rights reviewer cannot alter catalogue stage'}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Invalid evidence must not disclose hidden stage',rightsAttested:true,evidenceRefs:[]}), 'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,1,'cross-stage writes no audit event');
+ const approved=await transitionCollectionPublication(reviewer,id,'APPROVE',{note:'Catalogue evidence reviewed and accepted'});assert.equal(approved.publicationState,'CATALOGUE_APPROVED');
+ await failure(transitionCollectionPublication(reviewer,id,'REQUEST_CHANGES',{note:'Catalogue reviewer cannot act in rights stage'}),'COLLECTION_NOT_FOUND');
+ await failure(transitionCollectionPublication({...reviewer,roles:['CATALOGUER','TRUST_REVIEWER']},id,'PUBLISH',{note:'Original catalogue reviewer cannot approve rights',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,2,'unauthorized stage produces no event');
+ assert.ok((await collectionReviewQueue(independent)).items.some(x=>x.id===id),'rights reviewer sees approved case');
+ assert.ok(!(await collectionReviewQueue(reviewer)).items.some(x=>x.id===id),'cataloguer cannot perform own rights review');
+ assert.equal((await collectionReviewDossier(independent,id)).stage,'RIGHTS');
+ await assert.rejects(collectionReviewDossier(reviewer,id),e=>e.status===404);
+ await failure(transitionCollectionPublication(reviewer,id,'PUBLISH',{note:'Same reviewer disallowed',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}]}),'FORBIDDEN');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Rights check missing references',rightsAttested:true,evidenceRefs:[]}), 'MEDIA_EVIDENCE_REQUIRED');
+ const published=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'});assert.equal(published.publicationState,'PUBLISHED');
+ await failure(transitionCollectionPublication({...reviewer,roles:['CATALOGUER','TRUST_REVIEWER']},id,'REVOKE',{note:'The catalogue reviewer must not revoke publication'}),'COLLECTION_NOT_FOUND');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,3,'unauthorized revocation produces no event');
+ assert.ok((await collectionReviewQueue(independent)).items.some(x=>x.id===id&&x.stage==='POST_PUBLICATION'));
+ assert.equal((await collectionReviewDossier(independent,id)).stage,'POST_PUBLICATION');
+ const visible=(await listCollections()).find(x=>x.id===id);assert.ok(visible);assert.equal(visible.metadata.discipline,'PAINTING','frontend publication gate must recognize reviewed artwork category');assert.ok((await getReadableCollection(id,null))?.id===id);
+ const audit=await collectionPublicationStatus(seller,id);assert.deepEqual(audit.events.map(x=>x.sequenceNo),[1,2,3]);
+ await addCollectionObject(seller,id,{objectId:'lot-108'});
+ assert.ok((await getReadableCollection(id,null))?.id===id,'same existing membership must not revoke an approved collection');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,3,'no audit mutation event for identical retry');
+ await addCollectionObject(seller,id,{objectId:'lot-109'});
+ assert.equal((await getReadableCollection(id,null)),null,'composition invalidates rights admission');
+ const after=await collectionPublicationStatus(seller,id);assert.equal(after.publicationState,'REVIEW_REQUIRED');
+ assert.deepEqual(after.events.map(e=>e.sequenceNo),[1,2,3,4]);
+ assert.equal(after.events[3].action,'CONTENT_CHANGED');
+ assert.equal(after.events[3].previousEventHash,after.events[2].eventHash,'revocation event must connect to the last publisher event');
+ assert.notEqual(after.events[3].snapshotHash,after.events[2].snapshotHash,'changed composition must have a different digest');
+ assert.ok(!(await listCollections()).some(x=>x.id===id));
+ const replay=await transitionCollectionPublication(independent,id,'PUBLISH',{note:'Independent rights review recorded',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'});
+ assert.equal(replay.idempotent,true,'post-mutation retry replays original publication decision without reapproval');
+ assert.equal(replay.publicationState,'REVIEW_REQUIRED','replay does not re-publish a changed collection');
+ assert.equal((await collectionPublicationStatus(seller,id)).events.length,4,'replay never appends a new event');
+ await failure(transitionCollectionPublication(independent,id,'PUBLISH',{note:'Changed publication reason and evidence',rightsAttested:true,evidenceRefs:[{objectId:'lot-108',evidenceRef:'evidence/test/painting-108',rightsBasis:'CC0'}],idempotencyKey:'review-publish-0001'}),'IDEMPOTENCY_CONFLICT');
+ console.log('ANTIQUA v73 publication authority PostgreSQL two-person + snapshot + revocation on edit PASS');
+}finally{
+ if(id)await db.pool.query('DELETE FROM collections WHERE id=$1',[id]).catch(()=>{});
+ await db.pool.query('DELETE FROM accounts WHERE id=$1',[independent.id]).catch(()=>{});
+ await db.pool.end();
+}
