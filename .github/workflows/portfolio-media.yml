@@ -51,8 +51,12 @@ jobs:
           node -e "for(const m of ['@playwright/test','playwright','playwright-core'])if(require(m+'/package.json').version!=='1.63.0')throw Error('Unexpected '+m+' version')"
       - name: Install headless Chromium
         run: ./node_modules/.bin/playwright install --with-deps chromium
-      - name: Verify capture script and codecs
+      - name: Install reliable FFmpeg and verify capture codecs
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          command -v ffmpeg
+          command -v ffprobe
           node --check scripts/capture-portfolio-v82.mjs
           ffmpeg -hide_banner -version | head -1
           ffprobe -hide_banner -version | head -1
