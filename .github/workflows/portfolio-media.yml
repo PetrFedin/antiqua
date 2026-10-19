@@ -1,0 +1,107 @@
+name: ANTIQUA Portfolio Media Capture
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'scripts/capture-portfolio-v82.mjs'
+      - '.github/workflows/portfolio-media.yml'
+      - 'server-v14.mjs'
+      - 'collection-publication-v73.mjs'
+      - 'collection-graph-v10.mjs'
+      - 'tests/browser/**'
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: antiqua-portfolio-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portfolio-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PORT: "12029"
+      PREVIEW_MODE: "true"
+      NODE_ENV: "test"
+      PORTFOLIO_BASE_URL: "http://127.0.0.1:12029"
+      PORTFOLIO_PR_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PORTFOLIO_CHECKOUT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install repository dependencies
+        run: npm install
+      - name: Pin and audit browser capture dependencies
+        run: |
+          npm install --save-dev --save-exact --ignore-scripts @playwright/test@1.63.0
+          npm audit --include=dev --audit-level=high
+          node -e "for(const m of ['@playwright/test','playwright','playwright-core'])if(require(m+'/package.json').version!=='1.63.0')throw Error('Unexpected '+m+' version')"
+      - name: Install headless Chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify capture script and codecs
+        run: |
+          node --check scripts/capture-portfolio-v82.mjs
+          ffmpeg -hide_banner -version | head -1
+          ffprobe -hide_banner -version | head -1
+      - name: Start real Antiqua app in isolated preview
+        run: |
+          node server-v14.mjs > /tmp/antiqua-portfolio-preview.log 2>&1 &
+          echo $! > /tmp/antiqua-portfolio.pid
+          for i in $(seq 1 70); do
+            if curl -fsS --max-time 2 "${PORTFOLIO_BASE_URL}/api/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/antiqua-portfolio-preview.log
+          exit 1
+      - name: Capture actual screens and two 20-30s clips
+        run: node scripts/capture-portfolio-v82.mjs
+      - name: Generate video cover frames
+        run: |
+          for clip in artifacts/portfolio-media/videos/*.mp4; do
+            ffmpeg -hide_banner -loglevel error -y -ss 00:00:06 -i "$clip" -frames:v 1 "${clip%.mp4}-cover.jpg"
+          done
+      - name: Check media integrity
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const r=JSON.parse(fs.readFileSync('artifacts/portfolio-media/capture-receipt.json'));
+          if(r.source!=='RUNNING_CI_LOCAL_APP'||r.production!==false||r.screenshots.length!==10||r.videos.length!==2)
+            throw Error('Missing or misleading portfolio evidence');
+          for(const v of r.videos)if(v.durationSeconds<20||v.durationSeconds>30||v.bytes<200000)
+            throw Error('Portfolio video invalid: '+v.file);
+          console.log('Portfolio proof PASS: '+r.screenshots.length+' shots, '+r.videos.length+' MP4, SHA '+r.prHead);
+          NODE
+      - name: Upload versioned portfolio assets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-portfolio-media-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/portfolio-media/screenshots/
+            artifacts/portfolio-media/videos/
+            artifacts/portfolio-media/capture-receipt.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Upload diagnostic if capture fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-portfolio-debug-${{ github.sha }}
+          path: /tmp/antiqua-portfolio-preview.log
+          if-no-files-found: warn
+          retention-days: 7
