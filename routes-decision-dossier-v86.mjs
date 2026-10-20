@@ -34,8 +34,9 @@ export async function routePublicDecisionDossierV86(req,res,url){
  let id;
  try{id=decodeURIComponent(match[1])}catch{return send(res,404,hidden,policyHeaders)}
  if(!legalObjectId(id))return send(res,404,hidden,policyHeaders);
- const client=await db.pool.connect();
+ let client;
  try{
+  client=await db.pool.connect();
   await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
   // This query is the publication authority, not an input from the browser,
   // collection settings or the pure Decision Dossier projector.
@@ -45,7 +46,6 @@ export async function routePublicDecisionDossierV86(req,res,url){
   );
   // Restrict the public decision workflow to the painting domain.
   if(visible.rowCount!==1||!isPaintingCategory(visible.rows[0]?.passport?.department)){
-
    await client.query('COMMIT');
    return send(res,404,hidden,policyHeaders);
   }
@@ -62,9 +62,9 @@ export async function routePublicDecisionDossierV86(req,res,url){
    sourcePublicationRequired:true
   }},policyHeaders);
  }catch(error){
-  await client.query('ROLLBACK').catch(()=>{});
+  if(client)await client.query('ROLLBACK').catch(()=>{});
   // The public endpoint must never serialize SQL errors or hidden row details.
   console.error('ANTIQUA Decision Dossier database read failed:',String(error?.code||error?.name||'UNKNOWN'));
   return send(res,503,{error:'Decision dossier temporarily unavailable',code:'DECISION_DOSSIER_UNAVAILABLE'},policyHeaders);
- }finally{client.release()}
+ }finally{client?.release()}
 }
