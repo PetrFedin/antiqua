@@ -5,6 +5,7 @@ import {verifyDatabaseTarget} from './db-identity-gate-v55.mjs';
 import {productionAdmissionSnapshot} from './production-admission-v49.mjs';
 import {artworkResearchDossierSnapshotV86} from './artwork-dossier-v51.mjs';
 import {buildPublicDecisionDossierContract} from './decision-dossier-v56.mjs';
+import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const hidden=Object.freeze({error:'Artwork not found',code:'ARTWORK_NOT_FOUND'});
 const unavailable=Object.freeze({error:'Decision dossier is not admitted',code:'DECISION_DOSSIER_NOT_ADMITTED'});
@@ -39,10 +40,12 @@ export async function routePublicDecisionDossierV86(req,res,url){
   // This query is the publication authority, not an input from the browser,
   // collection settings or the pure Decision Dossier projector.
   const visible=await client.query(
-   "SELECT id FROM objects WHERE id=$1 AND publication_status='PUBLIC' AND catalogue_status='APPROVED'",
+   "SELECT passport FROM objects WHERE id=$1 AND publication_status='PUBLIC' AND catalogue_status='APPROVED'",
    [id]
   );
-  if(visible.rowCount!==1){
+  // Restrict the public decision workflow to the painting domain.
+  if(visible.rowCount!==1||!isPaintingCategory(visible.rows[0]?.passport?.department)){
+
    await client.query('COMMIT');
    return send(res,404,hidden,policyHeaders);
   }
