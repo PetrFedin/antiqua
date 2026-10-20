@@ -5,6 +5,7 @@ on:
     branches: [feature/decision-dossier-http-v86]
     paths:
       - 'public/modules/decision-readiness.js'
+      - 'public/modules/object-desire.js'
       - 'public/dossier-art-direction.css'
       - 'public/main.js'
       - 'tests/browser/decision-readiness-v87.spec.mjs'
