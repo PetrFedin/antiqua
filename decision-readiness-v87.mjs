@@ -34,7 +34,13 @@ export function buildDecisionReadinessV87(dossier){
     !publicStatus.has(provenance?.status)||
     !Array.isArray(dossier.marketHistory))fail();
 
- const attribution=String(dossier.work?.attributionStatus||'UNSPECIFIED');
+ const allowedAttribution=new Set([
+  'ATTRIBUTED','CONFIRMED','SIGNED','SCHOOL_OF','CIRCLE_OF',
+  'FOLLOWER_OF','AFTER','WORKSHOP_OF','DISPUTED','PENDING',
+  'UNKNOWN','UNSPECIFIED'
+ ]);
+ const rawAttribution=String(dossier.work?.attributionStatus||'UNSPECIFIED');
+ const attribution=allowedAttribution.has(rawAttribution)?rawAttribution:'UNSPECIFIED';
  const provenanceStatus=provenance.status==='CONFLICTED'?'CONFLICTED':
    provenance.status==='EVIDENCE_INDEXED'?'INDEXED_UNCERTIFIED':
    provenance.status==='NO_PROVENANCE_EVIDENCE'?'NO_PUBLIC_RECORDS':'INCOMPLETE';
