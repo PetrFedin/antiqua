@@ -12,6 +12,10 @@ on:
       - provenance-evidence-passport-v43.mjs
       - server-v14.mjs
       - .github/workflows/decision-dossier-contract-v56.yml
+concurrency:
+  group: antiqua-dd-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sourced-public-projection:
     runs-on: ubuntu-latest
