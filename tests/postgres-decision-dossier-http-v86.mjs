@@ -62,7 +62,7 @@ try{
  await db.pool.query(
   "INSERT INTO objects(id,object_code,passport,catalogue_status,trust_status,publication_status) VALUES($1,$2,$3,'APPROVED','CLEARED','PRIVATE')",
   [id,objectCode,{title:{ru:'Пейзаж',en:'Landscape'},
-   maker:{ru:'Автор',en:'Artist'},attributionStatus:'DISPUTED',
+   maker:{ru:'Автор',en:'Artist'},department:{ru:'Живопись',en:'Painting'},attributionStatus:'DISPUTED',
    owner:{name:sentinel},storage:{vault:'SECRET_VAULT_V86'}}]
  );
  await db.pool.query(
@@ -91,6 +91,15 @@ try{
  got=await request(pathname);
  expectHidden(got,'public object without approved catalogue');
  await db.pool.query("UPDATE objects SET catalogue_status='APPROVED' WHERE id=$1",[id]);
+ await db.pool.query(
+  "UPDATE objects SET passport=passport||$2::jsonb WHERE id=$1",
+  [id,JSON.stringify({department:{ru:'Скульптура',en:'Sculpture'}})]
+ );
+ expectHidden(await request(pathname),'non-painting category');
+ await db.pool.query(
+  "UPDATE objects SET passport=passport||$2::jsonb WHERE id=$1",
+  [id,JSON.stringify({department:{ru:'Живопись',en:'Painting'}})]
+ );
  const ready=await request(pathname);
  assert.equal(ready.status,200,'public+approved must yield dossier');
  assert.equal(ready.body?.dossier?.work?.title?.ru,'Пейзаж');
