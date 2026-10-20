@@ -1,0 +1,36 @@
+{
+  "project": "antiqua",
+  "source_sha": "1439f3b510a068772cddfd189333412f028f4683",
+  "source_action_artifact": 12217378572,
+  "source_kind": "isolated-demonstration",
+  "production_admitted": false,
+  "captured_date": "20261019",
+  "evidence_source": "GitHub Actions authenticated artifact; all individual file hashes cross-checked or computed against source receipt",
+  "files": [
+    {
+      "name": "gallery-desktop.png",
+      "sha256": "db1bbef2416eb2fd772eb99e0bde7aff7973c9d766b306f43c738750f0b6bbf5",
+      "bytes": 715133
+    },
+    {
+      "name": "museum-paintings.png",
+      "sha256": "d09705ec792ae52da6b34efe622afbd648f0af91a9d2f54f6f8e85e138199d1b",
+      "bytes": 776214
+    },
+    {
+      "name": "artwork-details.png",
+      "sha256": "f3968eb897594b2a3bbcc56c73076161f1506174ce21e80c8bac290c3f27aeac",
+      "bytes": 926213
+    },
+    {
+      "name": "owner-collection.png",
+      "sha256": "8ea6b0e8b74a48410d14a62ac5bb3869f291f2397de00e84e68dad20b16c9978",
+      "bytes": 87047
+    },
+    {
+      "name": "visitor-gallery-28s.mp4",
+      "sha256": "f15b966f6883ea33ac8a8bb0b4088cab1eb604c3875604e53669c2345aee17f0",
+      "bytes": 1256618
+    }
+  ]
+}
