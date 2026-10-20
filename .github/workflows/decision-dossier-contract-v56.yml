@@ -1,9 +1,16 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86]
     paths:
       - decision-dossier-v56.mjs
+      - decision-readiness-v87.mjs
+      - tests/decision-readiness-v87.mjs
+      - public/modules/decision-readiness.js
+      - public/main.js
+      - public/dossier-art-direction.css
+      - tests/frontend-consolidation-v16.mjs
+      - tests/browser/decision-readiness-v87.spec.mjs
       - tests/decision-dossier-v56.mjs
       - tests/decision-dossier-v85-integration.mjs
       - tests/postgres-decision-dossier-http-v86.mjs
@@ -30,11 +37,15 @@ jobs:
       - name: Check syntax
         run: |
           node --check decision-dossier-v56.mjs
+          node --check decision-readiness-v87.mjs
+          node --check public/modules/decision-readiness.js
+          node --check tests/decision-readiness-v87.mjs
           node --check tests/decision-dossier-v56.mjs
           node --check tests/decision-dossier-v85-integration.mjs
       - name: Reject unsourced or private claims
         run: |
           node tests/decision-dossier-v56.mjs
+          node tests/decision-readiness-v87.mjs
           node tests/decision-dossier-v85-integration.mjs
       - name: Repository integration regression
         run: npm test
