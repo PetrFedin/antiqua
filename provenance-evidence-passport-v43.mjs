@@ -389,18 +389,19 @@ export async function portableProvenanceBundle(objectId,{publicOnly=true}={}){
   return passport?buildPortableProvenanceBundle(passport):null;
 }
 
-export async function provenanceEvidencePassport(objectId,{publicOnly=true}={}){
+export async function provenanceEvidencePassport(objectId,{publicOnly=true,queryable=null}={}){
   if(db.kind==='POSTGRES'){
-    const objectRow=(await db.pool.query(
+    const sourceDb=queryable||db.pool;
+    const objectRow=(await sourceDb.query(
       `SELECT id,object_code,passport,publication_status FROM objects WHERE id=$1${publicOnly?" AND publication_status='PUBLIC'":''}`,
       [objectId]
     )).rows[0];
     if(!objectRow)return null;
-    const entries=(await db.pool.query(
+    const entries=(await sourceDb.query(
       'SELECT id,sequence_no,event,evidence_class,evidence_status,evidence_ref,created_at FROM provenance_entries WHERE object_id=$1 ORDER BY sequence_no,id',
       [objectId]
     )).rows.map(mapEntry);
-    const latest=(await db.pool.query(
+    const latest=(await sourceDb.query(
       'SELECT id,revision_no,passport_hash,previous_hash,change_kind,created_at FROM object_passport_revisions WHERE object_id=$1 ORDER BY revision_no DESC LIMIT 1',
       [objectId]
     )).rows[0]||null;
