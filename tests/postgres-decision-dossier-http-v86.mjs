@@ -124,6 +124,27 @@ try{
  const mutation=await request(pathname,{method:'POST'});
  assert.notEqual(mutation.status,200,'GET-only read model cannot mutate');
  assert.equal('dossier' in (mutation.body||{}),false);
+ // A database connection failure must never reveal a private connection
+ // string, SQL detail or internal error message in the HTTP response.
+ await stop();
+ const {routePublicDecisionDossierV86}=await import('../routes-decision-dossier-v86.mjs');
+ const connect=db.pool.connect,originalFlag=process.env.ANTIQUA_DECISION_DOSSIER_HTTP;
+ db.pool.connect=async()=>{const e=new Error('SECRET_DB_CONNECTION_DETAIL_V86');e.code='ECONNREFUSED';throw e};
+ process.env.ANTIQUA_DECISION_DOSSIER_HTTP='true';
+ try{
+  const response={status:null,data:null,headers:null,
+   writeHead(status,headers){this.status=status;this.headers=headers},
+   end(data){this.data=JSON.parse(data)}
+  };
+  await routePublicDecisionDossierV86({method:'GET'},response,new URL(base+pathname));
+  assert.equal(response.status,503,'database connect failure must fail closed');
+  assert.equal(response.data.code,'DECISION_DOSSIER_UNAVAILABLE');
+  assert.ok(!JSON.stringify(response.data).includes('SECRET_DB_CONNECTION_DETAIL_V86'));
+ }finally{
+  db.pool.connect=connect;
+  if(originalFlag==null)delete process.env.ANTIQUA_DECISION_DOSSIER_HTTP;
+  else process.env.ANTIQUA_DECISION_DOSSIER_HTTP=originalFlag;
+ }
  console.log('ANTIQUA v86 isolated PostgreSQL / real HTTP Decision Dossier admission PASS');
 }finally{
  await stop();
