@@ -201,3 +201,15 @@
  #dialog .artwork-editorial-v68 .readiness-checks{grid-template-columns:minmax(0,1fr)}
  #dialog .artwork-editorial-v68 .artwork-readiness{padding:20px 0}
 }
+
+
+/* v87: keep the tenth evidence tab as a scrollable item, not a new intrinsic
+ * width of the desktop dossier. Preserve independent horizontal tab scroll. */
+@media(min-width:801px){
+ #dialog .artwork-editorial-v68 .dossier-tabs{
+  box-sizing:border-box;display:flex;min-width:0;width:100%;max-width:100%;
+  margin-inline:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;
+ }
+ #dialog .artwork-editorial-v68 .dossier-tabs>a{flex:none}
+}
