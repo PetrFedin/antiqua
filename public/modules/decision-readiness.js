@@ -108,12 +108,20 @@ function mount(host,id){
   if(evidence)evidence.after(section);else host.append(section);
  }
  section.dataset.readinessObjectId=id;
- const tabs=host.querySelector('.dossier-tabs');
- if(tabs&&!tabs.querySelector('a[href="#dossier-readiness"]')){
+ // Canonical tab navigation may be a sibling of .dossier-body in
+ // some responsive dialog layouts. Keep a working anchor in both layouts.
+ const tabs=host.querySelector('.dossier-tabs')||
+  host.closest('#dialog')?.querySelector('.dossier-tabs');
+ const target=tabs||host;
+ if(!target.querySelector('a[href="#dossier-readiness"]')){
   const link=document.createElement('a');
   link.href='#dossier-readiness';
   link.textContent=local('Что проверить','Evidence checklist');
-  tabs.append(link);
+  if(tabs)tabs.append(link);
+  else{
+   link.className='readiness-entry-link';
+   host.prepend(link);
+  }
  }
  return section;
 }
