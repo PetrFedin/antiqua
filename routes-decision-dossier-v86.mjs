@@ -5,6 +5,7 @@ import {verifyDatabaseTarget} from './db-identity-gate-v55.mjs';
 import {productionAdmissionSnapshot} from './production-admission-v49.mjs';
 import {artworkResearchDossierSnapshotV86} from './artwork-dossier-v51.mjs';
 import {buildPublicDecisionDossierContract} from './decision-dossier-v56.mjs';
+import {buildDecisionReadinessV87} from './decision-readiness-v87.mjs';
 import {isPaintingCategory} from './art-domain-v50.mjs';
 
 const hidden=Object.freeze({error:'Artwork not found',code:'ARTWORK_NOT_FOUND'});
@@ -55,8 +56,9 @@ export async function routePublicDecisionDossierV86(req,res,url){
    return send(res,404,hidden,policyHeaders);
   }
   const dossier=buildPublicDecisionDossierContract(publicResearch,{publicVisibilityConfirmed:true});
+  const readiness=buildDecisionReadinessV87(dossier);
   await client.query('COMMIT');
-  return send(res,200,{dossier,capabilities:{
+  return send(res,200,{dossier,readiness,capabilities:{
    readModelOnly:true,documentsIncluded:false,privateRoomsEnabled:false,
    authenticityCertified:false,financialValuation:false,
    sourcePublicationRequired:true
