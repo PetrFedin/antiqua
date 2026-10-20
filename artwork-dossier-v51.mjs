@@ -167,14 +167,14 @@ export async function scholarlyContributionsForArtwork(objectId){
   return out;
 }
 
-export async function marketHistoryForArtwork(objectId){
+export async function marketHistoryForArtwork(objectId,{queryable=null}={}){
   if(db.kind!=='POSTGRES'){
     return auctions
       .filter(a=>a.lotId===objectId&&a.state==='CLOSED')
       .map(a=>projectPublicAuctionResult(a,null))
       .filter(Boolean);
   }
-  const rows=(await db.pool.query(
+  const rows=(await (queryable||db.pool).query(
     `SELECT a.id,a.object_id,a.sale_id,a.status,a.current_bid,a.increment,a.bid_count,a.reserve_price,
             a.starts_at,a.ends_at,a.state,
             s.winning_amount_minor,s.currency AS settlement_currency,s.status AS settlement_status,s.completed_at
@@ -214,4 +214,18 @@ export async function artworkResearchDossier(objectId){
     marketHistory
   });
   return projectPublicArtworkResearchDossier(source);
+}
+
+
+// v86 only: obtain ALL public sources on one existing, read-only transaction.
+// Never use the memory preview as a publication authority.
+export async function artworkResearchDossierSnapshotV86(objectId,queryable){
+  if(db.kind!=='POSTGRES'||typeof queryable?.query!=='function')
+    throw Object.assign(new Error('Verified PostgreSQL snapshot required'),{code:'POSTGRES_SNAPSHOT_REQUIRED',status:503});
+  const provenancePassport=await provenanceEvidencePassport(objectId,{publicOnly:true,queryable});
+  if(!provenancePassport)return null;
+  const marketHistory=await marketHistoryForArtwork(objectId,{queryable});
+  return projectPublicArtworkResearchDossier(buildArtworkResearchProjection({
+    objectId,provenancePassport,scholarlyContributions:[],marketHistory
+  }));
 }

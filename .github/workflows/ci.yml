@@ -51,6 +51,7 @@ jobs:
       - name: Prove migration replay is a no-op
         run: npm run migrate
       - run: npm run test:postgres
+      - run: node tests/postgres-decision-dossier-http-v86.mjs
       - name: PostgreSQL real Data API privilege catalog (rollback-only)
         run: node tests/postgres-api-catalog-v57.mjs
 

@@ -1,12 +1,21 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85]
     paths:
       - decision-dossier-v56.mjs
       - tests/decision-dossier-v56.mjs
       - tests/decision-dossier-v85-integration.mjs
+      - tests/postgres-decision-dossier-http-v86.mjs
+      - routes-decision-dossier-v86.mjs
+      - artwork-dossier-v51.mjs
+      - provenance-evidence-passport-v43.mjs
+      - server-v14.mjs
       - .github/workflows/decision-dossier-contract-v56.yml
+concurrency:
+  group: antiqua-dd-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sourced-public-projection:
     runs-on: ubuntu-latest
@@ -29,3 +38,38 @@ jobs:
           node tests/decision-dossier-v85-integration.mjs
       - name: Repository integration regression
         run: npm test
+
+  isolated-postgres-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: antiqua
+          POSTGRES_PASSWORD: antiqua
+          POSTGRES_DB: antiqua_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U antiqua -d antiqua_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      DATABASE_URL: postgresql://antiqua:antiqua@127.0.0.1:5432/antiqua_test
+      PGSSL: disable
+      PREVIEW_MODE: "true"
+      ANTIQUA_ISOLATED_TEST_DB: "true"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run migrate
+      - run: node --check routes-decision-dossier-v86.mjs
+      - run: node --check tests/postgres-decision-dossier-http-v86.mjs
+      - run: node tests/postgres-decision-dossier-http-v86.mjs
