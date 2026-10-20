@@ -32,7 +32,17 @@ for(const size of [{width:320,height:568},{width:1440,height:900}]){
   await expect(dlg.locator('#dossierWhyV27')).toBeVisible();
   await expect(dlg.locator('.dossier-tabs a[href="#dossier-readiness"]')).toBeVisible();
   const overflow=await dlg.locator('.dossier-body').evaluate(x=>x.scrollWidth-x.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(3);
+  if(overflow>3){
+   const offending=await dlg.locator('.dossier-body').evaluate(host=>{
+    const bounds=host.getBoundingClientRect();
+    return [...host.querySelectorAll('*')].map(el=>({el,r:el.getBoundingClientRect()}))
+     .filter(x=>x.r.right>bounds.right+3||x.r.left<bounds.left-3)
+     .slice(0,12).map(x=>({tag:x.el.tagName,id:x.el.id,
+      className:typeof x.el.className==='string'?x.el.className.slice(0,100):null,
+      beyondRight:Math.round(x.r.right-bounds.right),width:Math.round(x.r.width)}));
+   });
+   throw new Error('v87 dossier horizontal overflow '+overflow+'px: '+JSON.stringify(offending));
+  }
   if(size.width===1440){
    await mkdir('artifacts/visual-proof',{recursive:true});
    await panel.screenshot({path:'artifacts/visual-proof/v87-preview-unavailable-'+info.project.name+'.png'});
