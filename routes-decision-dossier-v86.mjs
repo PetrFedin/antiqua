@@ -60,6 +60,8 @@ export async function routePublicDecisionDossierV86(req,res,url){
   }},policyHeaders);
  }catch(error){
   await client.query('ROLLBACK').catch(()=>{});
-  throw error;
+  // The public endpoint must never serialize SQL errors or hidden row details.
+  console.error('ANTIQUA Decision Dossier database read failed:',String(error?.code||error?.name||'UNKNOWN'));
+  return send(res,503,{error:'Decision dossier temporarily unavailable',code:'DECISION_DOSSIER_UNAVAILABLE'},policyHeaders);
  }finally{client.release()}
 }
