@@ -28,7 +28,9 @@ for(const size of [{width:320,height:568},{width:1440,height:900}]){
   await expect(panel).toHaveAttribute('data-readiness-state','unavailable');
   await expect(panel).toContainText(/Расширенный список вопросов|detailed checklist requires/i);
   await expect(panel.locator('.readiness-check')).toHaveCount(0);
-  await expect(dlg.locator('a[href="#dossier-readiness"]')).toBeVisible();
+  // The v27 Artwork Experience async reconciler must preserve this tab.
+  await expect(dlg.locator('#dossierWhyV27')).toBeVisible();
+  await expect(dlg.locator('.dossier-tabs a[href="#dossier-readiness"]')).toBeVisible();
   const overflow=await dlg.locator('.dossier-body').evaluate(x=>x.scrollWidth-x.clientWidth);
   expect(overflow).toBeLessThanOrEqual(3);
   if(size.width===1440){
@@ -46,6 +48,8 @@ for(const size of [{width:320,height:568},{width:1440,height:900}]){
   const panel=dlg.locator('#dossier-readiness');
   await expect(panel).toHaveAttribute('data-readiness-state','ready');
   await expect(panel.locator('.readiness-check')).toHaveCount(8);
+  await expect(dlg.locator('#dossierWhyV27')).toBeVisible();
+  await expect(dlg.locator('.dossier-tabs a[href="#dossier-readiness"]')).toBeVisible();
   await expect(panel.locator('[data-readiness-code="PROVENANCE"]')).toContainText('Есть противоречия');
   await expect(panel.locator('[data-readiness-code="LEGAL_TITLE"]')).toContainText('Не подтверждено');
   await expect(panel).toContainText('Решение требует участия человека');
