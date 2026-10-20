@@ -64,7 +64,8 @@ function rebuildTabs(body){
   q('#dossierStoryV27',body)?['#dossierStoryV27',copy('История','Story')]:null,
   q('#dossierSimilarV18',body)?['#dossierSimilarV18',copy('Похожие','Related')]:null,
   ['#dossier-overview',copy('Детали','Details')],
-  ['#dossier-evidence',copy('Паспорт','Passport')]
+  ['#dossier-evidence',copy('Паспорт','Passport')],
+  q('#dossier-readiness',body)?['#dossier-readiness',copy('Что проверить','Evidence checklist')]:null
  ].filter(Boolean);
  nav.replaceChildren(...items.map(([href,label])=>{const a=make('a','',label);a.href=href;return a}));
 }
@@ -72,7 +73,7 @@ function rebuildTabs(body){
 function reorder(body){
  if(!body||!body.isConnected)return;moveStory(body);
  const tabs=q('.dossier-tabs',body),disclaimer=q('.dossier-disclaimer',body);if(!tabs)return;
- const order=['#dossier-provenance','#dossier-condition','#dossier-scholarly','#dossier-market-history','#dossierMarketIntelligenceV25','#dossierStoryV27','#dossierSimilarV18','#dossier-overview','#dossier-evidence'];
+ const order=['#dossier-provenance','#dossier-condition','#dossier-scholarly','#dossier-market-history','#dossierMarketIntelligenceV25','#dossierStoryV27','#dossierSimilarV18','#dossier-overview','#dossier-evidence','#dossier-readiness'];
  let cursor=tabs;
  for(const selector of order){const node=q(selector,body);if(node){if(cursor.nextElementSibling!==node)cursor.after(node);cursor=node}}
  if(disclaimer&&cursor.nextElementSibling!==disclaimer)cursor.after(disclaimer);rebuildTabs(body)

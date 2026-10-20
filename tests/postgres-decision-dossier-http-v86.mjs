@@ -108,6 +108,15 @@ try{
  assert.equal(ready.body?.dossier?.provenance?.conflictCount,1);
  assert.match(ready.body?.dossier?.projectionSha256||'',/^[a-f0-9]{64}$/);
  assert.equal(ready.body?.dossier?.disclosure?.privateOwnerIdentityIncluded,false);
+ assert.equal(ready.body?.readiness?.schemaVersion,'antiqua-decision-readiness-v1');
+ assert.equal(ready.body?.readiness?.decisionState,'HUMAN_REVIEW_REQUIRED');
+ assert.equal(ready.body?.readiness?.checks?.length,8);
+ assert.equal(ready.body?.readiness?.sourceProjectionSha256,ready.body?.dossier?.projectionSha256);
+ assert.equal(ready.body?.readiness?.checks?.find(x=>x.code==='PROVENANCE')?.status,'CONFLICTED');
+ assert.equal(ready.body?.readiness?.checks?.find(x=>x.code==='LEGAL_TITLE')?.status,'NOT_VERIFIED');
+ assert.equal(ready.body?.readiness?.boundaries?.proofOfAuthenticity,false);
+ assert.equal(ready.body?.readiness?.boundaries?.privateRoomCreated,false);
+ assert.match(ready.body?.readiness?.reportSha256||'',/^[a-f0-9]{64}$/);
  assert.equal(ready.body?.capabilities?.privateRoomsEnabled,false);
  assert.equal(ready.body?.capabilities?.financialValuation,false);
  assert.equal(ready.headers.get('x-robots-tag'),'noindex');
@@ -116,6 +125,23 @@ try{
   assert.ok(!JSON.stringify(ready.body).includes(secretValue),'v86 leaked '+secretValue);
  const another=await request(pathname);
  assert.equal(another.body?.dossier?.projectionSha256,ready.body?.dossier?.projectionSha256);
+ assert.equal(another.body?.readiness?.reportSha256,ready.body?.readiness?.reportSha256);
+ // Internal changes to private owner facts may not change public hashes.
+ await db.pool.query('UPDATE objects SET passport=passport||$2::jsonb WHERE id=$1',
+  [id,JSON.stringify({owner:{name:'SECRET_CHANGED_OWNER_V87'}})]);
+ const privateChange=await request(pathname);
+ assert.equal(privateChange.body?.readiness?.reportSha256,ready.body?.readiness?.reportSha256);
+ assert.ok(!JSON.stringify(privateChange.body).includes('SECRET_CHANGED_OWNER_V87'));
+ // A new published evidence event changes the disclosed evidence lineage.
+ await db.pool.query(
+  "INSERT INTO provenance_entries(id,object_id,sequence_no,event,evidence_class,evidence_status,evidence_ref) VALUES($1,$2,2,$3,'INSTITUTIONAL_RECORD','UNVERIFIED',$4)",
+  ['v87-prov-'+crypto.randomUUID(),id,{kind:'PUBLICATION'},'s3://private/SECRET_NEW_SOURCE_V87']
+ );
+ const revised=await request(pathname);
+ assert.equal(revised.status,200);
+ assert.notEqual(revised.body?.readiness?.reportSha256,ready.body?.readiness?.reportSha256);
+ assert.equal(revised.body?.readiness?.decisionState,'HUMAN_REVIEW_REQUIRED');
+ assert.ok(!JSON.stringify(revised.body).includes('SECRET_NEW_SOURCE_V87'));
  // A disclosure revocation must take effect on the very next request.
  await db.pool.query("UPDATE objects SET publication_status='PRIVATE' WHERE id=$1",[id]);
  expectHidden(await request(pathname),'publication revoked');

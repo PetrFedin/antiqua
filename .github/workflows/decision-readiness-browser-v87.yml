@@ -1,0 +1,53 @@
+name: ANTIQUA v87 Readiness Browser Proof
+
+on:
+  pull_request:
+    branches: [feature/decision-dossier-http-v86]
+    paths:
+      - 'public/modules/decision-readiness.js'
+      - 'public/modules/object-desire.js'
+      - 'public/dossier-art-direction.css'
+      - 'public/main.js'
+      - 'tests/browser/decision-readiness-v87.spec.mjs'
+      - '.github/workflows/decision-readiness-browser-v87.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: antiqua-v87-browser-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  readiness-chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      PREVIEW_MODE: 'true'
+      NODE_ENV: test
+      BROWSER_E2E_PORT: '12026'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm install --save-dev --save-exact --ignore-scripts @playwright/test@1.63.0
+      - run: npm audit --include=dev --audit-level=high
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
+      - run: node --check public/modules/decision-readiness.js
+      - run: node --check tests/browser/decision-readiness-v87.spec.mjs
+      - name: Run v87 mobile and desktop journeys
+        run: ./node_modules/.bin/playwright test -c playwright.config.mjs tests/browser/decision-readiness-v87.spec.mjs
+      - name: Save labelled browser fixture screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antiqua-v87-browser-proof-${{ github.event.pull_request.head.sha }}
+          path: |
+            artifacts/visual-proof/v87-*.png
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

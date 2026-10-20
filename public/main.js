@@ -10,6 +10,7 @@ import './modules/auction-results.js';
 import './modules/market-intelligence.js';
 import './modules/object-desire.js';
 import './modules/dossier-art-direction.js';
+import './modules/decision-readiness.js';
 import './modules/culture-discovery.js';
 import './modules/taste-signals.js';
 import './modules/partner-drops.js';
