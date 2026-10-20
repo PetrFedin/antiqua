@@ -138,3 +138,58 @@
 @media(prefers-reduced-motion:reduce){
  #dialog .artwork-editorial-v68 .dossier-gallery{transition:none}
 }
+
+
+/* v87: a quiet, source-bound, explicitly non-certified collector checklist. */
+#dialog .artwork-editorial-v68 .artwork-readiness{
+ padding:26px 0;border-top:1px solid #cfc0ad;color:#293d31;
+}
+#dialog .artwork-editorial-v68 .artwork-readiness h3{
+ margin:0 0 14px;font:400 clamp(25px,2.6vw,36px)/1.15 Georgia,serif;
+}
+#dialog .artwork-editorial-v68 .readiness-body{max-width:100%;overflow-wrap:anywhere}
+#dialog .artwork-editorial-v68 .readiness-intro{
+ display:flex;align-items:baseline;justify-content:space-between;gap:12px 22px;
+ flex-wrap:wrap;margin-bottom:15px;font-size:13px;line-height:1.5;
+}
+#dialog .artwork-editorial-v68 .readiness-intro p{margin:0;max-width:56ch}
+#dialog .artwork-editorial-v68 .readiness-intro strong{
+ font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#855137;
+}
+#dialog .artwork-editorial-v68 .readiness-checks{
+ margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;
+}
+#dialog .artwork-editorial-v68 .readiness-check{
+ min-width:0;padding:16px;border:1px solid #d5c8b6;background:#f7f1e8;
+}
+#dialog .artwork-editorial-v68 .readiness-check[data-readiness-attention="true"]{
+ border-left:3px solid #a44936;
+}
+#dialog .artwork-editorial-v68 .readiness-check-row{
+ display:flex;flex-direction:column;gap:8px;margin-bottom:8px;
+}
+#dialog .artwork-editorial-v68 .readiness-check-row strong{
+ font:400 17px/1.24 Georgia,serif;color:#283b30;
+}
+#dialog .artwork-editorial-v68 .readiness-status{
+ font-size:11px;line-height:1.4;color:#6f5846;
+}
+#dialog .artwork-editorial-v68 .readiness-source{
+ display:inline-flex;align-items:center;min-height:44px;font-size:12px;
+ color:#385841;text-decoration:underline;text-underline-offset:3px;
+}
+#dialog .artwork-editorial-v68 .readiness-source:focus-visible{
+ outline:3px solid #a44936;outline-offset:3px;
+}
+#dialog .artwork-editorial-v68 .readiness-limit{
+ border-top:1px solid #d5c8b6;margin:18px 0 7px;padding-top:14px;
+ font-size:12px;line-height:1.55;color:#62574c;
+}
+#dialog .artwork-editorial-v68 .readiness-receipt{
+ font-size:10px;color:#72695f;letter-spacing:.03em;
+}
+@media(max-width:700px){
+ #dialog .artwork-editorial-v68 .readiness-checks{grid-template-columns:minmax(0,1fr)}
+ #dialog .artwork-editorial-v68 .artwork-readiness{padding:20px 0}
+}
