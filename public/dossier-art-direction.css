@@ -213,3 +213,21 @@
  }
  #dialog .artwork-editorial-v68 .dossier-tabs>a{flex:none}
 }
+
+
+/* Browser proof v87: the auction commerce dock could choose a 794px
+ * intrinsic-width CTA column inside a ~676px desktop research panel. Keep
+ * every enquiry / bidding action accessible by stacking and wrapping. */
+@media(min-width:801px){
+ #dialog .artwork-editorial-v68 .dossier-commerce-dock{
+  box-sizing:border-box;min-width:0;max-width:100%;
+  grid-template-columns:minmax(0,1fr);
+ }
+ #dialog .artwork-editorial-v68 .dossier-commerce-dock .dock-actions{
+  min-width:0;max-width:100%;display:flex;flex-wrap:wrap;
+  justify-content:flex-start;align-items:center;
+ }
+ #dialog .artwork-editorial-v68 .dossier-commerce-dock .dock-actions>*{
+  max-width:100%;
+ }
+}
