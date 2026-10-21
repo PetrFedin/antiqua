@@ -1,7 +1,7 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
     paths:
       - decision-dossier-v56.mjs
       - decision-readiness-v87.mjs
