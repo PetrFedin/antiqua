@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, hardening/v015-provider-webhook-security, hardening/db-identity-gate-v55, feature/decision-dossier-http-v86]
+    branches: [main, hardening/v015-provider-webhook-security, hardening/db-identity-gate-v55, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
 jobs:
   chromium-e2e:
     runs-on: ubuntu-latest
