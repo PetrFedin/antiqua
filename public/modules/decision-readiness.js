@@ -48,6 +48,33 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({
 }[ch]));
 const local=(ru,en)=>lang()==='en'?en:ru;
 const requests=new WeakMap();
+let actionObserver=null;
+function resetActionObserver(){actionObserver?.disconnect();actionObserver=null}
+function synchronizeActions(section,dialog){
+ resetActionObserver();
+ const dock=dialog.querySelector('.dossier-commerce-dock .dock-actions');
+ if(!dock||!section.isConnected||section.dataset.readinessState!=='ready')return;
+ const refresh=()=>{
+  if(!dialog.open||!section.isConnected||section.dataset.readinessState!=='ready'){
+   resetActionObserver();return;
+  }
+  for(const button of section.querySelectorAll('[data-readiness-request]')){
+   const descriptor=requestTypes[button.dataset.readinessRequest];
+   const match=descriptor&&dock.querySelector(descriptor.selector);
+   const current=button.dataset.readinessRequest==='PROVENANCE'?
+     match?.dataset.objectInquiry:match?.dataset.listing;
+   const available=Boolean(match?.isConnected&&!match.disabled&&
+      validListingId(button.dataset.readinessListing)&&
+      current===button.dataset.readinessListing);
+   button.disabled=!available;
+   button.setAttribute('aria-disabled',String(!available));
+   button.title=available?'':local('Нет доступного запроса продавцу','No seller request currently available');
+  }
+ };
+ refresh();
+ actionObserver=new MutationObserver(refresh);
+ actionObserver.observe(dock,{childList:true,subtree:false});
+}
 
 function validReport(payload,id){
  const d=payload?.dossier,r=payload?.readiness;
@@ -139,6 +166,7 @@ function mount(host,id,listingId){
  return section;
 }
 async function update(event){
+ resetActionObserver();
  const id=String(event.detail?.id||'');
  const dialog=document.querySelector('#dialog[open]');
  const host=dialog?.querySelector('.dossier-body');
@@ -164,6 +192,7 @@ async function update(event){
  if(result.status===200&&validReport(result.data,id)){
   section.dataset.readinessState='ready';
   output.innerHTML=reportMarkup(result.data.readiness,listingId);
+  synchronizeActions(section,dialog);
  }else{
   section.dataset.readinessState='unavailable';
   output.innerHTML=unavailableMarkup(result.status);
@@ -173,6 +202,9 @@ window.addEventListener('antiqua:passport',event=>{
  update(event).catch(error=>console.error('Decision readiness display:',error?.name||'UNKNOWN'));
 });
 
+document.addEventListener('close',event=>{
+ if(event.target?.id==='dialog')resetActionObserver();
+},true);
 document.addEventListener('click',event=>{
  const button=event.target.closest?.('[data-readiness-request]');
  if(!button)return;
@@ -184,7 +216,7 @@ document.addEventListener('click',event=>{
  const descriptor=requestTypes[code];
  // The source listing must still belong to the currently rendered, admitted
  // painting dossier. No cross-object fallback, speculative login or write.
- if(!descriptor||!dialog||!section||section.dataset.readinessState!=='ready'||
+ if(!descriptor||!dialog||!section||button.disabled||section.dataset.readinessState!=='ready'||
     !validListingId(listingId)||section.dataset.readinessListingId!==listingId||
     !section.dataset.readinessObjectId){
   toast(local('Запрос недоступен для этого произведения','Request unavailable for this artwork'));
@@ -192,7 +224,7 @@ document.addEventListener('click',event=>{
  }
  const existing=dialog.querySelector('.dossier-commerce-dock '+descriptor.selector);
  const actualListing=code==='PROVENANCE'?existing?.dataset.objectInquiry:existing?.dataset.listing;
- if(!existing||existing.disabled||actualListing!==listingId){
+ if(!existing?.isConnected||existing.disabled||actualListing!==listingId){
   toast(local('Для этого произведения нет доступного запроса продавцу','No seller request is currently available for this artwork'));
   return;
  }
