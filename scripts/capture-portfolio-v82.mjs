@@ -103,21 +103,23 @@ async function labelDiligenceFixture(page){
  });
 }
 async function frameDiligence(page){
- // Explicitly position the evidence heading within the visible, internally
- // scrollable modal. Element screenshots misframe long modal sections.
- await page.evaluate(()=>{
-  const body=document.querySelector('#dialog[open] .dossier-body');
-  const section=body?.querySelector('#dossier-readiness');
-  if(!body||!section)throw new Error('Diligence dialog lost during media capture');
-  const delta=section.getBoundingClientRect().top-body.getBoundingClientRect().top;
-  body.scrollTop+=delta-110;
+ // Scroll the actual heading (not the parent section) into the center of the
+ // nested native dialog. Depending on artwork height the section's top can
+ // be beyond the scroll range and explicit scrollTop math can be clamped.
+ const heading=page.locator('#dialog[open] #dossier-readiness>h3');
+ await heading.scrollIntoViewIfNeeded();
+ await heading.evaluate(el=>el.scrollIntoView({behavior:'instant',block:'center',inline:'nearest'}));
+ await page.waitForTimeout(220);
+ const dimensions=await heading.evaluate(el=>{
+  const h=el.getBoundingClientRect();
+  const dialog=el.closest('dialog')?.getBoundingClientRect();
+  return {headingTop:h.top,headingBottom:h.bottom,
+   viewport:window.innerHeight,dialogTop:dialog?.top,dialogBottom:dialog?.bottom};
  });
- await page.waitForTimeout(180);
- const aligned=await page.locator('#dossier-readiness>h3').evaluate(heading=>{
-  const r=heading.getBoundingClientRect();
-  return r.top>=35&&r.top<window.innerHeight*.65;
- });
- assert(aligned,'Decision Readiness heading must be visible in the captured frame');
+ const aligned=dimensions.headingTop>0&&
+  dimensions.headingBottom<dimensions.viewport&&
+  dimensions.headingTop>=(dimensions.dialogTop??0);
+ assert(aligned,'Decision Readiness heading outside captured frame: '+JSON.stringify(dimensions));
 }
 async function labelDiligenceForm(page){
  await page.evaluate(()=>{
