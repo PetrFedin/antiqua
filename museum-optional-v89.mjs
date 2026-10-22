@@ -9,11 +9,11 @@ const ALLOWED=new Set(MUSEUM_OPTIONAL_IDS_V89);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_BYTES=65536;
 const LIMIT_MS=4500;
-const empty=()=>({status:'UNAVAILABLE',data:[],source:'ART_INSTITUTE_OF_CHICAGO',verified:false});
+const empty=()=>({status:'UNAVAILABLE',data:[],source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:false});
 const bounded=(x,max=220)=>typeof x==='string'?x.trim().slice(0,max):'';
 
 export function projectVerifiedMuseumOptionalV89(payload){
- if(!payload||!Array.isArray(payload.data))return {status:'UNAVAILABLE',data:[],source:'ART_INSTITUTE_OF_CHICAGO',verified:false};
+ if(!payload||!Array.isArray(payload.data))return {status:'UNAVAILABLE',data:[],source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:false};
  const counts=new Map();
  for(const item of payload.data){
   if(item&&typeof item==='object'&&ALLOWED.has(item.id))
@@ -35,7 +35,7 @@ export function projectVerifiedMuseumOptionalV89(payload){
    image_id:String(item.image_id).toLowerCase()
   }];
  });
- return {status:'VERIFIED',data,source:'ART_INSTITUTE_OF_CHICAGO',verified:true};
+ return {status:'SOURCE_FIELDS_FILTERED',data,source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true};
 }
 
 async function readBoundedJsonV89(response){
@@ -60,7 +60,7 @@ async function readBoundedJsonV89(response){
   body+=decoder.decode();
   return JSON.parse(body);
  }finally{
-  // Cancel only unread bodies; the bounded projection never retains streams.
+  // Release reader regardless of source response success or failure.
   try{reader.releaseLock()}catch{}
  }
 }
