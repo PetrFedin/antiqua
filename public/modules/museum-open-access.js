@@ -139,15 +139,37 @@ export function bindMuseumImage(img, item, width = 843) {
   const primary = museumDisplayImageUrl(item, width);
   const museum = museumImageUrl(item, width);
   if (!primary) return;
-  img.src = primary;
-  img.addEventListener('error', () => {
+  // A hanging third-party CDN is not better than a failed request. Bound both
+  // mirror and museum-source attempts: show the source-linked honest fallback
+  // instead of an indefinitely blank painting.
+  const DEADLINE_MS = 7000;
+  let watchdog = null, finished = false;
+  const clear = () => { if (watchdog) clearTimeout(watchdog); watchdog = null; };
+  const fail = () => {
+    if (finished) return;
+    clear();
+    if (!img.isConnected) { finished = true; return; }
     if (museum && img.src !== museum && img.dataset.museumMirrorRetried !== 'true') {
       img.dataset.museumMirrorRetried = 'true';
       img.src = museum;
+      arm();
       return;
     }
+    finished = true;
     imageUnavailable(img);
+  };
+  const arm = () => {
+    clear();
+    watchdog = setTimeout(() => {
+      if (!finished && (!img.complete || img.naturalWidth <= 0)) fail();
+    }, DEADLINE_MS);
+  };
+  img.addEventListener('load', () => {
+    if (img.naturalWidth > 0) { finished = true; clear(); }
   });
+  img.addEventListener('error', fail);
+  img.src = primary;
+  arm();
 }
 export const featuredMuseumPainting = CORE[0];
 export const museumPaintingCount = CORE.length;
