@@ -220,7 +220,7 @@
  * every enquiry / bidding action accessible by stacking and wrapping. */
 @media(min-width:801px){
  #dialog .artwork-editorial-v68 .dossier-commerce-dock{
-  box-sizing:border-box;min-width:0;max-width:100%;
+  box-sizing:border-box;min-width:0;max-width:100%;position:static;
   grid-template-columns:minmax(0,1fr);
  }
  #dialog .artwork-editorial-v68 .dossier-commerce-dock .dock-actions{
