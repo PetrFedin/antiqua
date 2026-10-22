@@ -63,6 +63,27 @@ for (const locale of ['ru', 'en']) {
   }
 }
 
+test('v61 stalled image CDN falls back to the authentic museum source, not a blank painting',async({page})=>{
+  test.setTimeout(40_000);
+  const release=[];
+  const hang=route=>new Promise(resolve=>{release.push(async()=>{
+    await route.abort().catch(()=>{});resolve();
+  });});
+  await page.route('https://commons.wikimedia.org/**',route=>
+    route.request().url().includes('Georges_Seurat')?hang(route):route.continue());
+  await page.route('https://www.artic.edu/iiif/**',route=>
+    route.request().url().includes('2d484387-2509-5e8e-2c43-22f9981972eb')?
+      hang(route):route.continue());
+  try{
+    await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
+    const card=page.locator('[data-museum-artwork="27992"]');
+    await expect(card).toBeVisible();
+    await expect(card.locator('.museum-image-fallback')).toBeVisible({timeout:18_500});
+    await expect(card.locator('a[href="https://www.artic.edu/artworks/27992"]')).toBeVisible();
+    await expect(card.locator('.museum-artwork-image img')).toHaveCount(0);
+  }finally{await Promise.all(release.map(fn=>fn()))}
+});
+
 test('v61 hydration preserves the focused core painting node', async ({page}) => {
   let release;
   const ready = new Promise(resolve => { release = resolve; });
