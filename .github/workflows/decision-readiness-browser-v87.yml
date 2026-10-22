@@ -2,13 +2,14 @@ name: ANTIQUA v87 Readiness Browser Proof
 
 on:
   pull_request:
-    branches: [feature/decision-dossier-http-v86]
+    branches: [feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
     paths:
       - 'public/modules/decision-readiness.js'
       - 'public/modules/object-desire.js'
       - 'public/dossier-art-direction.css'
       - 'public/main.js'
       - 'tests/browser/decision-readiness-v87.spec.mjs'
+      - 'tests/browser/collector-due-diligence-v88.spec.mjs'
       - '.github/workflows/decision-readiness-browser-v87.yml'
 
 permissions:
@@ -39,8 +40,9 @@ jobs:
       - run: ./node_modules/.bin/playwright install --with-deps chromium
       - run: node --check public/modules/decision-readiness.js
       - run: node --check tests/browser/decision-readiness-v87.spec.mjs
+      - run: node --check tests/browser/collector-due-diligence-v88.spec.mjs
       - name: Run v87 mobile and desktop journeys
-        run: ./node_modules/.bin/playwright test -c playwright.config.mjs tests/browser/decision-readiness-v87.spec.mjs
+        run: ./node_modules/.bin/playwright test -c playwright.config.mjs tests/browser/decision-readiness-v87.spec.mjs tests/browser/collector-due-diligence-v88.spec.mjs
       - name: Save labelled browser fixture screenshots and traces
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,6 +50,7 @@ jobs:
           name: antiqua-v87-browser-proof-${{ github.event.pull_request.head.sha }}
           path: |
             artifacts/visual-proof/v87-*.png
+            artifacts/visual-proof/v88-*.png
             test-results/
           if-no-files-found: warn
           retention-days: 14

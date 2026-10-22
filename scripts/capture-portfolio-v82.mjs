@@ -16,7 +16,7 @@ const assert=(yes,msg)=>{if(!yes)throw new Error('PORTFOLIO_QA: '+msg)};
 const browser=await chromium.launch({headless:true});
 const history=[];
 const meta={
- project:'ANTIQUA',captureVersion:'v82',
+ project:'ANTIQUA',captureVersion:'v88',
  source:'RUNNING_CI_LOCAL_APP',production:false,
  url:BASE,repo:'PetrFedin/antiqua',
  prHead:process.env.PORTFOLIO_PR_SHA||null,checkedOutSha:process.env.PORTFOLIO_CHECKOUT_SHA||null,
@@ -61,6 +61,78 @@ async function accountTab(page,tab){
  await page.locator('[data-v14-tab="'+tab+'"]').click();
  await page.locator('[data-v14-panel="'+tab+'"]').waitFor({state:'visible',timeout:10000});
 }
+
+/* v88 visual proof intentionally mocks ONLY the published redacted Decision
+ * Dossier. All seller/condition forms and resulting HTTP requests are real
+ * interactions with disposable MEMORY_FALLBACK preview data. */
+const demoChecks=['ARTWORK_IDENTITY','ATTRIBUTION','PROVENANCE','CONDITION',
+ 'SCHOLARSHIP','SALE_HISTORY','LEGAL_TITLE','IMAGE_RIGHTS'];
+const demoStatuses=['RECORDED','DISPUTED','CONFLICTED','NOT_ASSESSED',
+ 'NOT_PUBLICLY_RELEASED','NO_PUBLIC_RESULTS','NOT_VERIFIED','NOT_INDEPENDENTLY_VERIFIED'];
+const demoDossier={
+ dossier:{objectId:'lot-109',projectionSha256:'a'.repeat(64)},
+ readiness:{
+  schemaVersion:'antiqua-decision-readiness-v1',objectId:'lot-109',
+  sourceProjectionSha256:'a'.repeat(64),reportSha256:'b'.repeat(64),
+  decisionState:'HUMAN_REVIEW_REQUIRED',
+  boundaries:{proofOfAuthenticity:false,proofOfLegalTitle:false,
+   priceOrReturnRecommendation:false,privateRoomCreated:false},
+  checks:demoChecks.map((code,i)=>({code,status:demoStatuses[i],action:'REVIEW_'+code}))
+ }
+};
+async function installDiligenceFixture(page){
+ await page.route('**/api/lots/lot-109/decision-dossier',route=>
+  route.fulfill({status:200,contentType:'application/json',
+   body:JSON.stringify(demoDossier)}));
+}
+async function waitDiligence(page){
+ await page.locator('#dialog[open] #dossier-readiness[data-readiness-state="ready"]').waitFor({state:'visible'});
+ await page.locator('#dialog[open] [data-readiness-request="PROVENANCE"]:not([disabled])').waitFor({state:'visible'});
+ await page.locator('#dialog[open] [data-readiness-request="CONDITION"]:not([disabled])').waitFor({state:'visible'});
+}
+async function labelDiligenceFixture(page){
+ await page.evaluate(()=>{
+  const panel=document.querySelector('#dialog[open] #dossier-readiness');
+  if(!panel||panel.querySelector('[data-fixture-disclaimer]'))return;
+  const mark=document.createElement('p');
+  mark.dataset.fixtureDisclaimer='public-mock';
+  mark.setAttribute('role','note');
+  mark.textContent='ДЕМО · Публичное Decision Dossier смоделировано. Не экспертиза и не production.';
+  mark.style.cssText='background:#fff3da;border:1px solid #9f7b3f;color:#503b1c;padding:10px;font:600 12px/1.4 Arial,sans-serif';
+  panel.prepend(mark);
+ });
+}
+async function frameDiligence(page){
+ // Scroll the actual heading (not the parent section) into the center of the
+ // nested native dialog. Depending on artwork height the section's top can
+ // be beyond the scroll range and explicit scrollTop math can be clamped.
+ const heading=page.locator('#dialog[open] #dossier-readiness>h3');
+ await heading.scrollIntoViewIfNeeded();
+ await heading.evaluate(el=>el.scrollIntoView({behavior:'instant',block:'center',inline:'nearest'}));
+ await page.waitForTimeout(220);
+ const dimensions=await heading.evaluate(el=>{
+  const h=el.getBoundingClientRect();
+  const dialog=el.closest('dialog')?.getBoundingClientRect();
+  return {headingTop:h.top,headingBottom:h.bottom,
+   viewport:window.innerHeight,dialogTop:dialog?.top,dialogBottom:dialog?.bottom};
+ });
+ const aligned=dimensions.headingTop>0&&
+  dimensions.headingBottom<dimensions.viewport&&
+  dimensions.headingTop>=(dimensions.dialogTop??0);
+ assert(aligned,'Decision Readiness heading outside captured frame: '+JSON.stringify(dimensions));
+}
+async function labelDiligenceForm(page){
+ await page.evaluate(()=>{
+  const form=document.querySelector('#actionSheet[open] .action-sheet-body');
+  if(!form||form.querySelector('[data-fixture-disclaimer]'))return;
+  const mark=document.createElement('p');mark.dataset.fixtureDisclaimer='public-mock';
+  mark.setAttribute('role','note');
+  mark.textContent='ДЕМО: досье смоделировано; эта форма отправляет запрос в реальный тестовый API Antiqua.';
+  mark.style.cssText='background:#fff3da;border:1px solid #9f7b3f;color:#503b1c;padding:8px;font:600 11px/1.4 Arial,sans-serif';
+  form.prepend(mark);
+ });
+}
+
 try{
  const probe=await browser.newPage();
  const response=await probe.request.get(BASE+'/api/health');
@@ -68,6 +140,7 @@ try{
  const health=await response.json();
  meta.server={status:health.status,persistence:health.persistence?.kind||null,preview:health.preview};
  assert(health.preview===true,'This proof must not operate against production/private data');
+ assert(meta.server.persistence==='MEMORY_FALLBACK','v88 fixture proof requires disposable in-memory preview storage');
  await probe.close();
  // Eight portfolio-ready UI states, with separate demo roles and no private data.
  const desktop=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,locale:'ru-RU'});
@@ -107,6 +180,26 @@ try{
  await curator.locator('[data-review-output]').waitFor({state:'visible'});
  await snap(curator,'10-reviewer-queue-preview-limitation','.review-workspace-v79');
  await curatorCtx.close();
+
+ // Additional investor-preview proof: full UI but MOCKED public publication.
+ const ddCtx=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1,locale:'ru-RU'});
+ const dd=await ddCtx.newPage();
+ await dd.goto(BASE+'/',{waitUntil:'domcontentloaded'});
+ await login(dd,'BUYER');
+ await installDiligenceFixture(dd);
+ await dd.goto(BASE+'/?object=lot-109#gallery',{waitUntil:'domcontentloaded'});
+ await waitDiligence(dd);
+ await labelDiligenceFixture(dd);
+ await frameDiligence(dd);
+ await snap(dd,'11-collector-readiness-MOCKED-public-dossier');
+ meta.screenshots.at(-1).authority='MOCKED_PUBLIC_DOSSIER_REAL_UI';
+ await dd.locator('[data-readiness-request="PROVENANCE"]').click();
+ await dd.locator('#actionSheet[open] #v21InquiryForm').waitFor({state:'visible'});
+ await labelDiligenceForm(dd);
+ await snap(dd,'12-provenance-inquiry-MOCKED-public-dossier','#actionSheet[open]');
+ meta.screenshots.at(-1).authority='MOCKED_PUBLIC_DOSSIER_REAL_UI_FORM';
+ await ddCtx.close();
+
  // Record the actual browser interactions. 24+ seconds of real app state,
  // not a motion graphic assembled from still images.
  const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -152,8 +245,15 @@ try{
   await pause(2500);
   await page.locator('[data-museum-filter="landscape"]').click();
   await pause(1900);
-  await page.locator('[data-museum-artwork] [data-museum-open]').first().click();
+  // Open-access search results are network-dependent. A returned empty
+  // landscape filter must never make the entire investor capture hang.
+  const filtered=page.locator('[data-museum-artwork] [data-museum-open]');
+  const filteredExists=await filtered.count()>0;
+  if(filteredExists)await filtered.first().click();
+  else await page.locator('.culture-hero-media [data-museum-open]').click();
   await page.locator('dialog[data-museum-dialog][open]').waitFor({state:'visible'});
+  if(!filteredExists)history.push({captureNotice:
+    'Open-access landscape filter empty; recorded the actual featured museum artwork instead.'});
   await pause(3100);
   await page.locator('.museum-work-close').click();
   await page.goto(BASE+'/#collections',{waitUntil:'domcontentloaded'});
@@ -188,6 +288,45 @@ try{
   await pause(2000);
   history.push({clip:'antiqua-owner-collection-24s',steps:['private collector workspace','real create POST','real painting membership POST','collection detail'],previewDataOnly:true});
  });
+
+ await record('antiqua-buyer-diligence-24s', 'BUYER',async page=>{
+  await installDiligenceFixture(page);
+  await page.goto(BASE+'/?object=lot-109#gallery',{waitUntil:'domcontentloaded'});
+  await waitDiligence(page);
+  await labelDiligenceFixture(page);
+  await frameDiligence(page);
+  await pause(2100);
+  await page.locator('[data-readiness-request="PROVENANCE"]').click();
+  let form=page.locator('#actionSheet[open] #v21InquiryForm');
+  await form.waitFor({state:'visible'});
+  await labelDiligenceForm(page);
+  await form.locator('textarea[name="message"]').fill('Демо: запрос источников провенанса для исследования картины.');
+  await pause(1800);
+  let posted=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/inquiries'&&r.request().method()==='POST');
+  await form.locator('button[type="submit"]').click();
+  assert([200,201].includes((await posted).status()),'Real test-only provenance inquiry must reach server');
+  await pause(1400);
+  await frameDiligence(page);
+  await pause(800);
+  await page.locator('[data-readiness-request="CONDITION"]').click();
+  form=page.locator('#actionSheet[open] #v23ServiceRequestForm[data-kind="condition"]');
+  await form.waitFor({state:'visible'});
+  await labelDiligenceForm(page);
+  await form.locator('textarea[name="note"]').fill('Демо: прошу состояние живописного слоя и сведения о реставрациях.');
+  await pause(1800);
+  posted=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/listings/lst-109/condition-report-requests'&&r.request().method()==='POST');
+  await form.locator('button[type="submit"]').click();
+  assert([200,201].includes((await posted).status()),'Real test-only condition report request must reach server');
+  await pause(1600);
+  history.push({clip:'antiqua-buyer-diligence-24s',
+   steps:['MOCKED publication-admitted dossier explicitly labelled',
+    'buyer selects provenance inquiry','real test-only seller message POST',
+    'buyer selects versioned condition report','real test-only report-request POST'],
+   sourceAuthority:'MOCKED_PUBLIC_DOSSIER_REAL_PREVIEW_HTTP',
+   previewDataOnly:true});
+ });
+ meta.videos.at(-1).sourceAuthority='MOCKED_PUBLIC_DOSSIER_REAL_PREVIEW_HTTP';
+
  await writeFile(join(ROOT,'capture-receipt.json'),JSON.stringify(meta,null,2)+'\n');
  console.log('ANTIQUA real portfolio media capture PASS: '+meta.screenshots.length+
   ' screenshots, '+meta.videos.length+' 20–30s MP4s; SHA '+(meta.prHead||'unknown'));

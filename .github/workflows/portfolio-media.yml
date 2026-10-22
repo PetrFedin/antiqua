@@ -2,7 +2,7 @@ name: ANTIQUA Portfolio Media Capture
 
 on:
   pull_request:
-    branches: [main, feature/decision-dossier-http-v86]
+    branches: [main, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
     paths:
       - 'public/**'
       - 'scripts/capture-portfolio-v82.mjs'
@@ -72,7 +72,7 @@ jobs:
           done
           cat /tmp/antiqua-portfolio-preview.log
           exit 1
-      - name: Capture actual screens and two 20-30s clips
+      - name: Capture actual screens and three 20-30s clips (one mixed-source demo)
         run: node scripts/capture-portfolio-v82.mjs
       - name: Generate video cover frames
         run: |
@@ -84,8 +84,16 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const r=JSON.parse(fs.readFileSync('artifacts/portfolio-media/capture-receipt.json'));
-          if(r.source!=='RUNNING_CI_LOCAL_APP'||r.production!==false||r.screenshots.length!==10||r.videos.length!==2)
+          if(r.source!=='RUNNING_CI_LOCAL_APP'||r.production!==false||r.screenshots.length!==12||r.videos.length!==3)
             throw Error('Missing or misleading portfolio evidence');
+          if(r.captureVersion!=='v88'||r.server?.persistence!=='MEMORY_FALLBACK')
+            throw Error('v88 recordings require clearly labelled, disposable preview');
+          if(r.prHead!==process.env.PORTFOLIO_PR_SHA)
+            throw Error('Portfolio evidence does not match requested PR head');
+          if(r.screenshots.filter(x=>x.authority?.startsWith('MOCKED_PUBLIC_DOSSIER')).length!==2)
+            throw Error('The two fixture screenshots lack honest mock provenance');
+          if(r.videos.find(x=>x.file.includes('buyer-diligence'))?.sourceAuthority!=='MOCKED_PUBLIC_DOSSIER_REAL_PREVIEW_HTTP')
+            throw Error('The diligence clip must disclose its mocked source authority');
           for(const v of r.videos)if(v.durationSeconds<20||v.durationSeconds>30||v.bytes<200000)
             throw Error('Portfolio video invalid: '+v.file);
           console.log('Portfolio proof PASS: '+r.screenshots.length+' shots, '+r.videos.length+' MP4, SHA '+r.prHead);

@@ -220,7 +220,7 @@
  * every enquiry / bidding action accessible by stacking and wrapping. */
 @media(min-width:801px){
  #dialog .artwork-editorial-v68 .dossier-commerce-dock{
-  box-sizing:border-box;min-width:0;max-width:100%;
+  box-sizing:border-box;min-width:0;max-width:100%;position:static;
   grid-template-columns:minmax(0,1fr);
  }
  #dialog .artwork-editorial-v68 .dossier-commerce-dock .dock-actions{
@@ -231,3 +231,9 @@
   max-width:100%;
  }
 }
+
+#dialog .artwork-editorial-v68 .readiness-actions{display:flex;flex-wrap:wrap;gap:10px}
+#dialog .artwork-editorial-v68 .readiness-request{min-height:44px;max-width:100%;background:#284032;color:#fff;border:1px solid #a08e76;padding:8px 12px;cursor:pointer}
+#dialog .artwork-editorial-v68 .readiness-request:disabled{opacity:.55;cursor:not-allowed}
+#dialog .artwork-editorial-v68 .readiness-request:focus-visible{outline:3px solid #a44936;outline-offset:3px}
+@media(max-width:700px){#dialog .artwork-editorial-v68 .readiness-request{width:100%}}

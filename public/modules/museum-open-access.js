@@ -139,15 +139,37 @@ export function bindMuseumImage(img, item, width = 843) {
   const primary = museumDisplayImageUrl(item, width);
   const museum = museumImageUrl(item, width);
   if (!primary) return;
-  img.src = primary;
-  img.addEventListener('error', () => {
+  // A hanging third-party CDN is not better than a failed request. Bound both
+  // mirror and museum-source attempts: show the source-linked honest fallback
+  // instead of an indefinitely blank painting.
+  const DEADLINE_MS = 7000;
+  let watchdog = null, finished = false;
+  const clear = () => { if (watchdog) clearTimeout(watchdog); watchdog = null; };
+  const fail = () => {
+    if (finished) return;
+    clear();
+    if (!img.isConnected) { finished = true; return; }
     if (museum && img.src !== museum && img.dataset.museumMirrorRetried !== 'true') {
       img.dataset.museumMirrorRetried = 'true';
       img.src = museum;
+      arm();
       return;
     }
+    finished = true;
     imageUnavailable(img);
+  };
+  const arm = () => {
+    clear();
+    watchdog = setTimeout(() => {
+      if (!finished && (!img.complete || img.naturalWidth <= 0)) fail();
+    }, DEADLINE_MS);
+  };
+  img.addEventListener('load', () => {
+    if (img.naturalWidth > 0) { finished = true; clear(); }
   });
+  img.addEventListener('error', fail);
+  img.src = primary;
+  arm();
 }
 export const featuredMuseumPainting = CORE[0];
 export const museumPaintingCount = CORE.length;
@@ -275,17 +297,20 @@ function applyFilter(section, genre) {
 async function loadOptionalPaintings() {
   if (supplementalPromise) return supplementalPromise;
   supplementalPromise = (async () => {
-    const ids = OPTIONAL.map(x => x.id).join(',');
-    const fields = 'id,title,artist_display,date_display,medium_display,dimensions,main_reference_number,artwork_type_title,is_public_domain,image_id';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
     try {
-      const response = await fetch(
-        'https://api.artic.edu/api/v1/artworks?ids=' + ids + '&fields=' + fields,
-        {method: 'GET', credentials: 'omit', mode: 'cors', signal: controller.signal}
-      );
+      // The approved metadata adapter owns the sole external connection.
+      // Browser requests remain same-origin and never expose a CORS failure.
+      const response = await fetch('/api/museum/optional',{
+        method:'GET',credentials:'same-origin',signal:controller.signal,
+        headers:{accept:'application/json'},cache:'no-store'
+      });
       if (!response.ok) return [];
       const payload = await response.json();
+      if (payload?.status!=='SOURCE_FIELDS_FILTERED' ||
+          payload?.sourceFieldsValidated!==true ||
+          payload?.source!=='ART_INSTITUTE_OF_CHICAGO')return [];
       const records = Array.isArray(payload?.data) ? payload.data : [];
       const identityCounts = new Map();
       for (const record of records) {

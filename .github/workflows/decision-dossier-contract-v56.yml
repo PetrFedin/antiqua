@@ -1,9 +1,15 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
     paths:
       - decision-dossier-v56.mjs
+      - museum-optional-v89.mjs
+      - routes-museum-optional-v89.mjs
+      - tests/museum-optional-v89.mjs
+      - tests/museum-open-access-v53.mjs
+      - public/modules/museum-open-access.js
+      - tests/browser/museum-optional-v89.spec.mjs
       - decision-readiness-v87.mjs
       - tests/decision-readiness-v87.mjs
       - public/modules/decision-readiness.js
@@ -42,6 +48,14 @@ jobs:
           node --check tests/decision-readiness-v87.mjs
           node --check tests/decision-dossier-v56.mjs
           node --check tests/decision-dossier-v85-integration.mjs
+      - name: Validate bounded museum source imports
+        run: |
+          node --check museum-optional-v89.mjs
+          node --check routes-museum-optional-v89.mjs
+          node --check public/modules/museum-open-access.js
+          node --check tests/museum-optional-v89.mjs
+          node tests/museum-optional-v89.mjs
+          node tests/museum-open-access-v53.mjs
       - name: Reject unsourced or private claims
         run: |
           node tests/decision-dossier-v56.mjs

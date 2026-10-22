@@ -1,3 +1,4 @@
+import {toast} from './core.js';
 // ANTIQUA v87 — collector evidence checklist, presentation only.
 // Publication and evidence permissions are resolved by server-side PostgreSQL.
 const lang=()=>document.documentElement.lang==='en'?'en':'ru';
@@ -35,11 +36,47 @@ const statuses={
  NOT_VERIFIED:['Не подтверждено','Not verified'],
  NOT_INDEPENDENTLY_VERIFIED:['Не подтверждено независимо','Not independently verified']
 };
+// These CTAs call the existing, server-authorized pre-sale workflows.
+// They NEVER write, certify, issue a private-room grant or send automatically.
+const requestTypes={
+ PROVENANCE:{selector:'[data-object-inquiry]',ru:'Запросить документы',en:'Request source documents'},
+ CONDITION:{selector:'[data-v23-service="condition"]',ru:'Запросить отчёт о состоянии',en:'Request a condition report'}
+};
+const validListingId=x=>typeof x==='string'&&/^[A-Za-z0-9._:-]{1,120}$/.test(x);
 const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[ch]));
 const local=(ru,en)=>lang()==='en'?en:ru;
 const requests=new WeakMap();
+let actionObserver=null;
+function resetActionObserver(){actionObserver?.disconnect();actionObserver=null}
+function synchronizeActions(section,dialog){
+ resetActionObserver();
+ if(!section.isConnected||section.dataset.readinessState!=='ready')return;
+ const refresh=()=>{
+  if(!dialog.open||!section.isConnected||section.dataset.readinessState!=='ready'){
+   resetActionObserver();return;
+  }
+  // Reacquire the canonical dock on every mutation, including when the
+  // listing or seller authority removes/replaces its entire subtree.
+  const dock=dialog.querySelector('.dossier-commerce-dock .dock-actions');
+  for(const button of section.querySelectorAll('[data-readiness-request]')){
+   const descriptor=requestTypes[button.dataset.readinessRequest];
+   const match=descriptor&&dock?.querySelector(descriptor.selector);
+   const current=button.dataset.readinessRequest==='PROVENANCE'?
+     match?.dataset.objectInquiry:match?.dataset.listing;
+   const available=Boolean(match?.isConnected&&!match.disabled&&
+      validListingId(button.dataset.readinessListing)&&
+      current===button.dataset.readinessListing);
+   button.disabled=!available;
+   button.setAttribute('aria-disabled',String(!available));
+   button.title=available?'':local('Нет доступного запроса продавцу','No seller request currently available');
+  }
+ };
+ refresh();
+ actionObserver=new MutationObserver(refresh);
+ actionObserver.observe(dialog,{childList:true,subtree:true});
+}
 
 function validReport(payload,id){
  const d=payload?.dossier,r=payload?.readiness;
@@ -57,17 +94,21 @@ function validReport(payload,id){
  const expected=Object.keys(labels);
  return r.checks.every((x,index)=>x?.code===expected[index]&&Boolean(statuses[x.status]));
 }
-function reportMarkup(readiness){
+function reportMarkup(readiness,listingId){
  const loc=lang()==='en'?1:0;
  const items=readiness.checks.map(x=>{
   const code=x.code;
   const unresolved=!['RECORDED','RECORDED_UNCERTIFIED','INDEXED_UNCERTIFIED','PUBLIC_RESULT_RECORDED'].includes(x.status);
+  const request=validListingId(listingId)?requestTypes[code]:null;
+  const action=request?'<button type="button" class="readiness-request" data-readiness-request="'+code+
+    '" data-readiness-listing="'+esc(listingId)+'" disabled aria-disabled="true">'+
+    esc(loc?request.en:request.ru)+'</button>':'';
   return '<li class="readiness-check" data-readiness-code="'+code+
    '" data-readiness-attention="'+unresolved+'">'+
     '<div class="readiness-check-row"><strong>'+esc(labels[code][loc])+'</strong>'+
     '<span class="readiness-status">'+esc(statuses[x.status][loc])+'</span></div>'+
-    '<a href="'+destinations[code]+'" class="readiness-source">'+
-     local('Посмотреть связанные сведения','Review related information')+' →</a></li>';
+    '<div class="readiness-actions"><a href="'+destinations[code]+'" class="readiness-source">'+
+     local('Посмотреть связанные сведения','Review related information')+' →</a>'+action+'</div></li>';
  }).join('');
  return '<div class="readiness-intro"><p>'+
     local('Документы и сведения, которые стоит запросить до решения о покупке.',
@@ -92,7 +133,7 @@ function unavailableMarkup(status){
    'Не удалось получить подтверждённый список. Никакие сведения не считаются автоматически проверенными.',
    'The verified checklist could not be loaded. No evidence is automatically certified.')+'</p>';
 }
-function mount(host,id){
+function mount(host,id,listingId){
  let section=host.querySelector('#dossier-readiness');
  if(!section){
   section=document.createElement('section');
@@ -108,6 +149,7 @@ function mount(host,id){
   if(evidence)evidence.after(section);else host.append(section);
  }
  section.dataset.readinessObjectId=id;
+ section.dataset.readinessListingId=listingId||'';
  // Canonical tab navigation may be a sibling of .dossier-body in
  // some responsive dialog layouts. Keep a working anchor in both layouts.
  const tabs=host.querySelector('.dossier-tabs')||
@@ -126,11 +168,13 @@ function mount(host,id){
  return section;
 }
 async function update(event){
+ resetActionObserver();
  const id=String(event.detail?.id||'');
  const dialog=document.querySelector('#dialog[open]');
  const host=dialog?.querySelector('.dossier-body');
  if(!id||!host)return;
- const section=mount(host,id);
+ const listingId=validListingId(event.detail?.listing?.id)?event.detail.listing.id:null;
+ const section=mount(host,id,listingId);
  const output=section.querySelector('.readiness-body');
  const stamp={host,id};
  requests.set(host,stamp);
@@ -149,7 +193,8 @@ async function update(event){
     section.dataset.readinessObjectId!==id)return;
  if(result.status===200&&validReport(result.data,id)){
   section.dataset.readinessState='ready';
-  output.innerHTML=reportMarkup(result.data.readiness);
+  output.innerHTML=reportMarkup(result.data.readiness,listingId);
+  synchronizeActions(section,dialog);
  }else{
   section.dataset.readinessState='unavailable';
   output.innerHTML=unavailableMarkup(result.status);
@@ -157,4 +202,35 @@ async function update(event){
 }
 window.addEventListener('antiqua:passport',event=>{
  update(event).catch(error=>console.error('Decision readiness display:',error?.name||'UNKNOWN'));
+});
+
+document.addEventListener('close',event=>{
+ if(event.target?.id==='dialog')resetActionObserver();
+},true);
+document.addEventListener('click',event=>{
+ const button=event.target.closest?.('[data-readiness-request]');
+ if(!button)return;
+ event.preventDefault();
+ const section=button.closest('#dossier-readiness');
+ const dialog=button.closest('#dialog[open]');
+ const code=button.dataset.readinessRequest;
+ const listingId=button.dataset.readinessListing;
+ const descriptor=requestTypes[code];
+ // The source listing must still belong to the currently rendered, admitted
+ // painting dossier. No cross-object fallback, speculative login or write.
+ if(!descriptor||!dialog||!section||button.disabled||section.dataset.readinessState!=='ready'||
+    !validListingId(listingId)||section.dataset.readinessListingId!==listingId||
+    !section.dataset.readinessObjectId){
+  toast(local('Запрос недоступен для этого произведения','Request unavailable for this artwork'));
+  return;
+ }
+ const existing=dialog.querySelector('.dossier-commerce-dock '+descriptor.selector);
+ const actualListing=code==='PROVENANCE'?existing?.dataset.objectInquiry:existing?.dataset.listing;
+ if(!existing?.isConnected||existing.disabled||actualListing!==listingId){
+  toast(local('Для этого произведения нет доступного запроса продавцу','No seller request is currently available for this artwork'));
+  return;
+ }
+ // Delegates into v21 Inquiry or v23 Condition Service: both do an
+ // independent buyer authentication/ownership check and require submit.
+ existing.click();
 });

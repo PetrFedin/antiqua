@@ -46,9 +46,12 @@ test('the existing mock sale lot never pretends to be a museum painting',()=>{
   assert.doesNotMatch(seed,/artic\.edu\/artworks/);
 });
 
-test('museum metadata fetch is narrowly allowed by the application CSP',()=>{
-  assert.match(server,/connect-src 'self' https:\/\/api\.artic\.edu; frame-ancestors 'none'/);
+test('museum metadata fetch uses same-origin route, never external browser CORS',()=>{
+  assert.match(server,/routeMuseumOptionalPublicV89/);
+  assert.match(museum,/fetch\('\/api\/museum\/optional'/);
+  assert.match(server,/connect-src 'self'; frame-ancestors 'none'/);
   assert.doesNotMatch(server,/connect-src[^;]*\*/);
+  assert.doesNotMatch(museum,/fetch\(\s*'https:\/\/api\.artic\.edu/);
 });
 
 test('v60 curated Russian metadata survives museum API hydration without invented medium',()=>{
