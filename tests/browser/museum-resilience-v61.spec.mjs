@@ -1,7 +1,7 @@
 import {test, expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 
-const metadataURL = /^https:\/\/api\.artic\.edu\/api\/v1\/artworks\?/;
+const metadataURL = /\/api\/museum\/optional(?:\?|$)/;
 const sourceURL = 'https://www.artic.edu/artworks/27992';
 const fixture = overrides => ({
   id: 16568, title: 'Water Lilies', artist_display: 'Claude Monet (French)',
@@ -17,7 +17,7 @@ async function blockImages(page) {
   await page.route('https://commons.wikimedia.org/**', route => route.abort());
 }
 async function offlineGallery(page, locale = 'ru') {
-  await page.route('https://api.artic.edu/**', route => route.abort());
+  await page.route(metadataURL, route => route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'UNAVAILABLE',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:false,data:[]})}));
   await blockImages(page);
   await page.goto('/#gallery', {waitUntil: 'domcontentloaded'});
   if (locale === 'en') await page.locator('[data-lang="en"]').click();
@@ -89,7 +89,7 @@ test('v61 hydration preserves the focused core painting node', async ({page}) =>
   const ready = new Promise(resolve => { release = resolve; });
   await page.route(metadataURL, async route => {
     await ready;
-    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({data: [fixture()]})});
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({status:'SOURCE_FIELDS_FILTERED',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true,data: [fixture()]})});
   });
   await blockImages(page);
   try {
@@ -112,7 +112,7 @@ test('v61 hydration preserves the focused core painting node', async ({page}) =>
 });
 
 test('v61 malformed neighbours do not erase valid metadata; duplicate identities are withheld', async ({page}) => {
-  await page.route(metadataURL, route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({data: [
+  await page.route(metadataURL, route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({status:'SOURCE_FIELDS_FILTERED',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true,data: [
     null, 'not a record', [], fixture(),
     fixture({id: 61128}), fixture({id: 61128, is_public_domain: false}),
     fixture({id: 16571, is_public_domain: false}),
@@ -132,7 +132,7 @@ test('v61 malformed neighbours do not erase valid metadata; duplicate identities
 
 for (const medium of ['Oil on board', 'constructor', '__proto__']) {
   test(`v61 unreviewed medium stays source-qualified: ${medium}`, async ({page}) => {
-    await page.route(metadataURL, route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({data: [fixture({medium_display: medium})]})}));
+    await page.route(metadataURL, route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({status:'SOURCE_FIELDS_FILTERED',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true,data: [fixture({medium_display: medium})]})}));
     await blockImages(page);
     await page.goto('/#gallery', {waitUntil: 'domcontentloaded'});
     const painting = page.locator('[data-museum-artwork="16568"]');
