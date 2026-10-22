@@ -113,8 +113,8 @@ for(const device of viewports){
 }
 
 test('v0.54 withheld museum metadata never creates fictitious optional works',async({page})=>{
-  await page.route(/^https:\/\/api\.artic\.edu\/api\/v1\/artworks\?/,route=>
-    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:[]})}));
+  await page.route(/\/api\/museum\/optional(?:\?|$)/,route=>
+    route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'SOURCE_FIELDS_FILTERED',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true,data:[]})}));
   await page.goto('/#gallery',{waitUntil:'domcontentloaded'});
   const gallery=page.locator('[data-museum-open-access]');
   await expect(gallery).toHaveAttribute('data-museum-hydrated','true');
@@ -126,7 +126,7 @@ test('v0.54 withheld museum metadata never creates fictitious optional works',as
 });
 
 test('v0.54 source API unavailable remains an honest reference gallery',async({page})=>{
-  await page.route('https://api.artic.edu/**',route=>route.abort());
+  await page.route('**/api/museum/optional',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'UNAVAILABLE',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:false,data:[]})}));
   await page.route('https://www.artic.edu/iiif/**',route=>route.abort());
   await page.route('https://commons.wikimedia.org/**',route=>route.abort());
   await page.setViewportSize({width:390,height:844});
@@ -143,7 +143,7 @@ test('v0.54 source API unavailable remains an honest reference gallery',async({p
 
 test('v60 320px offline museum hero shrinks while source, caption and dialog remain reachable',async({page})=>{
   test.setTimeout(40_000);
-  await page.route('https://api.artic.edu/**',route=>route.abort());
+  await page.route('**/api/museum/optional',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:'UNAVAILABLE',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:false,data:[]})}));
   await page.route('https://www.artic.edu/iiif/**',route=>route.abort());
   await page.route('https://commons.wikimedia.org/**',route=>route.abort());
   await page.setViewportSize({width:320,height:568});
