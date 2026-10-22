@@ -55,6 +55,23 @@ async function visibleAction(section,code){
 test('v88: unauthenticated diligence goes through login boundary; never auto-sends',async({page})=>{
  await mockReadiness(page);
  const {dialog,section}=await openPainting(page);
+ // The preview may start with an authenticated demo BUYER session.
+ // Assert the anonymous boundary only after explicit logout.
+ const identity=await page.evaluate(async()=>{
+  const r=await fetch('/api/auth/me');return r.json();
+ });
+ if(identity.account){
+  const logout=await page.evaluate(async csrf=>{
+   const r=await fetch('/api/auth/logout',{
+    method:'POST',headers:{'x-csrf-token':csrf}
+   });return r.status;
+  },identity.csrf);
+  expect(logout).toBe(200);
+ }
+ const anonymous=await page.evaluate(async()=>{
+  const r=await fetch('/api/auth/me');return r.json();
+ });
+ expect(anonymous.account).toBeNull();
  const prov=await visibleAction(section,'PROVENANCE');
  const condition=await visibleAction(section,'CONDITION');
  await expect(section.locator('[data-readiness-request]')).toHaveCount(2);
