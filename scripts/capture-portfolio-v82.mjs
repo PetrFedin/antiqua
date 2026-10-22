@@ -102,6 +102,23 @@ async function labelDiligenceFixture(page){
   panel.prepend(mark);
  });
 }
+async function frameDiligence(page){
+ // Explicitly position the evidence heading within the visible, internally
+ // scrollable modal. Element screenshots misframe long modal sections.
+ await page.evaluate(()=>{
+  const body=document.querySelector('#dialog[open] .dossier-body');
+  const section=body?.querySelector('#dossier-readiness');
+  if(!body||!section)throw new Error('Diligence dialog lost during media capture');
+  const delta=section.getBoundingClientRect().top-body.getBoundingClientRect().top;
+  body.scrollTop+=delta-110;
+ });
+ await page.waitForTimeout(180);
+ const aligned=await page.locator('#dossier-readiness>h3').evaluate(heading=>{
+  const r=heading.getBoundingClientRect();
+  return r.top>=35&&r.top<window.innerHeight*.65;
+ });
+ assert(aligned,'Decision Readiness heading must be visible in the captured frame');
+}
 async function labelDiligenceForm(page){
  await page.evaluate(()=>{
   const form=document.querySelector('#actionSheet[open] .action-sheet-body');
@@ -171,7 +188,8 @@ try{
  await dd.goto(BASE+'/?object=lot-109#gallery',{waitUntil:'domcontentloaded'});
  await waitDiligence(dd);
  await labelDiligenceFixture(dd);
- await snap(dd,'11-collector-readiness-MOCKED-public-dossier','#dossier-readiness');
+ await frameDiligence(dd);
+ await snap(dd,'11-collector-readiness-MOCKED-public-dossier');
  meta.screenshots.at(-1).authority='MOCKED_PUBLIC_DOSSIER_REAL_UI';
  await dd.locator('[data-readiness-request="PROVENANCE"]').click();
  await dd.locator('#actionSheet[open] #v21InquiryForm').waitFor({state:'visible'});
@@ -274,7 +292,7 @@ try{
   await page.goto(BASE+'/?object=lot-109#gallery',{waitUntil:'domcontentloaded'});
   await waitDiligence(page);
   await labelDiligenceFixture(page);
-  await page.locator('#dossier-readiness').scrollIntoViewIfNeeded();
+  await frameDiligence(page);
   await pause(2100);
   await page.locator('[data-readiness-request="PROVENANCE"]').click();
   let form=page.locator('#actionSheet[open] #v21InquiryForm');
@@ -286,7 +304,7 @@ try{
   await form.locator('button[type="submit"]').click();
   assert([200,201].includes((await posted).status()),'Real test-only provenance inquiry must reach server');
   await pause(1400);
-  await page.locator('#dossier-readiness').scrollIntoViewIfNeeded();
+  await frameDiligence(page);
   await pause(800);
   await page.locator('[data-readiness-request="CONDITION"]').click();
   form=page.locator('#actionSheet[open] #v23ServiceRequestForm[data-kind="condition"]');
