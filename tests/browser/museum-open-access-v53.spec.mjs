@@ -60,9 +60,9 @@ test('museum four-image gallery and mobile dialog keep scroll and close usable',
 });
 
 test('v60 reviewed Russian museum captions survive verified metadata hydration',async({page})=>{
-  await page.route(/^https:\/\/api\.artic\.edu\/api\/v1\/artworks\?/,route=>route.fulfill({
+  await page.route(/\/api\/museum\/optional(?:\?|$)/,route=>route.fulfill({
     status:200,contentType:'application/json',
-    body:JSON.stringify({data:[
+    body:JSON.stringify({status:'SOURCE_FIELDS_FILTERED',source:'ART_INSTITUTE_OF_CHICAGO',sourceFieldsValidated:true,data:[
       {id:16568,title:'Water Lilies',artist_display:'Claude Monet (French)',
         artwork_type_title:'Painting',is_public_domain:true,
         image_id:'12345678-1234-4abc-8abc-123456789abc',
