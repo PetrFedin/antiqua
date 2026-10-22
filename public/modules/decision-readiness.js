@@ -52,15 +52,17 @@ let actionObserver=null;
 function resetActionObserver(){actionObserver?.disconnect();actionObserver=null}
 function synchronizeActions(section,dialog){
  resetActionObserver();
- const dock=dialog.querySelector('.dossier-commerce-dock .dock-actions');
- if(!dock||!section.isConnected||section.dataset.readinessState!=='ready')return;
+ if(!section.isConnected||section.dataset.readinessState!=='ready')return;
  const refresh=()=>{
   if(!dialog.open||!section.isConnected||section.dataset.readinessState!=='ready'){
    resetActionObserver();return;
   }
+  // Reacquire the canonical dock on every mutation, including when the
+  // listing or seller authority removes/replaces its entire subtree.
+  const dock=dialog.querySelector('.dossier-commerce-dock .dock-actions');
   for(const button of section.querySelectorAll('[data-readiness-request]')){
    const descriptor=requestTypes[button.dataset.readinessRequest];
-   const match=descriptor&&dock.querySelector(descriptor.selector);
+   const match=descriptor&&dock?.querySelector(descriptor.selector);
    const current=button.dataset.readinessRequest==='PROVENANCE'?
      match?.dataset.objectInquiry:match?.dataset.listing;
    const available=Boolean(match?.isConnected&&!match.disabled&&
@@ -73,7 +75,7 @@ function synchronizeActions(section,dialog){
  };
  refresh();
  actionObserver=new MutationObserver(refresh);
- actionObserver.observe(dock,{childList:true,subtree:false});
+ actionObserver.observe(dialog,{childList:true,subtree:true});
 }
 
 function validReport(payload,id){
@@ -99,7 +101,7 @@ function reportMarkup(readiness,listingId){
   const unresolved=!['RECORDED','RECORDED_UNCERTIFIED','INDEXED_UNCERTIFIED','PUBLIC_RESULT_RECORDED'].includes(x.status);
   const request=validListingId(listingId)?requestTypes[code]:null;
   const action=request?'<button type="button" class="readiness-request" data-readiness-request="'+code+
-    '" data-readiness-listing="'+esc(listingId)+'">'+
+    '" data-readiness-listing="'+esc(listingId)+'" disabled aria-disabled="true">'+
     esc(loc?request.en:request.ru)+'</button>':'';
   return '<li class="readiness-check" data-readiness-code="'+code+
    '" data-readiness-attention="'+unresolved+'">'+
