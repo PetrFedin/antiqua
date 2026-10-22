@@ -159,6 +159,28 @@ test('v88: selling your own work never grants a buyer request action',async({pag
  await expect(dialog.locator('[data-v23-service="condition"]')).toHaveCount(0);
  await expect(page.locator('#actionSheet[open]')).toHaveCount(0);
 });
+test('v88: deleting and restoring the canonical dealer dock revokes and restores shortcuts',async({page})=>{
+ await mockReadiness(page);
+ const {section}=await openPainting(page);
+ const provenance=await visibleAction(section,'PROVENANCE');
+ const condition=await visibleAction(section,'CONDITION');
+ await page.evaluate(()=>{
+  const dialog=document.querySelector('#dialog[open]');
+  const commerce=dialog.querySelector('.dossier-commerce-dock');
+  window.__v88TestDock=commerce;
+  commerce.remove();
+ });
+ await expect(provenance).toBeDisabled();
+ await expect(condition).toBeDisabled();
+ await expect(page.locator('#actionSheet[open]')).toHaveCount(0);
+ await page.evaluate(()=>{
+  const body=document.querySelector('#dialog[open] .dossier-body');
+  body.append(window.__v88TestDock);
+  delete window.__v88TestDock;
+ });
+ await expect(provenance).toBeEnabled();
+ await expect(condition).toBeEnabled();
+});
 test('v88: non-admitted public dossier never offers service shortcuts',async({page})=>{
  await page.route('**/api/lots/lot-109/decision-dossier',route=>
    route.fulfill({status:503,contentType:'application/json',body:'{"code":"DECISION_DOSSIER_NOT_ADMITTED"}'}));
