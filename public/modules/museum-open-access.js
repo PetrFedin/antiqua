@@ -297,17 +297,20 @@ function applyFilter(section, genre) {
 async function loadOptionalPaintings() {
   if (supplementalPromise) return supplementalPromise;
   supplementalPromise = (async () => {
-    const ids = OPTIONAL.map(x => x.id).join(',');
-    const fields = 'id,title,artist_display,date_display,medium_display,dimensions,main_reference_number,artwork_type_title,is_public_domain,image_id';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
     try {
-      const response = await fetch(
-        'https://api.artic.edu/api/v1/artworks?ids=' + ids + '&fields=' + fields,
-        {method: 'GET', credentials: 'omit', mode: 'cors', signal: controller.signal}
-      );
+      // The approved metadata adapter owns the sole external connection.
+      // Browser requests remain same-origin and never expose a CORS failure.
+      const response = await fetch('/api/museum/optional',{
+        method:'GET',credentials:'same-origin',signal:controller.signal,
+        headers:{accept:'application/json'},cache:'no-store'
+      });
       if (!response.ok) return [];
       const payload = await response.json();
+      if (payload?.status!=='SOURCE_FIELDS_FILTERED' ||
+          payload?.sourceFieldsValidated!==true ||
+          payload?.source!=='ART_INSTITUTE_OF_CHICAGO')return [];
       const records = Array.isArray(payload?.data) ? payload.data : [];
       const identityCounts = new Map();
       for (const record of records) {
