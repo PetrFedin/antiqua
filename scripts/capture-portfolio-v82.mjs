@@ -225,8 +225,15 @@ try{
   await pause(2500);
   await page.locator('[data-museum-filter="landscape"]').click();
   await pause(1900);
-  await page.locator('[data-museum-artwork] [data-museum-open]').first().click();
+  // Open-access search results are network-dependent. A returned empty
+  // landscape filter must never make the entire investor capture hang.
+  const filtered=page.locator('[data-museum-artwork] [data-museum-open]');
+  const filteredExists=await filtered.count()>0;
+  if(filteredExists)await filtered.first().click();
+  else await page.locator('.culture-hero-media [data-museum-open]').click();
   await page.locator('dialog[data-museum-dialog][open]').waitFor({state:'visible'});
+  if(!filteredExists)history.push({captureNotice:
+    'Open-access landscape filter empty; recorded the actual featured museum artwork instead.'});
   await pause(3100);
   await page.locator('.museum-work-close').click();
   await page.goto(BASE+'/#collections',{waitUntil:'domcontentloaded'});
