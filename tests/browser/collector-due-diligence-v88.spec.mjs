@@ -181,6 +181,16 @@ test('v88: deleting and restoring the canonical dealer dock revokes and restores
  await expect(provenance).toBeEnabled();
  await expect(condition).toBeEnabled();
 });
+test('v88: desktop research dock does not stick over checklist headings',async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await mockReadiness(page);
+ const {dialog}=await openPainting(page);
+ await expect(dialog.locator('.native-dossier.artwork-editorial-v68')).toBeVisible();
+ const dock=dialog.locator('.dossier-commerce-dock');
+ await expect(dock).toBeVisible();
+ const position=await dock.evaluate(el=>getComputedStyle(el).position);
+ expect(position).toBe('static');
+});
 test('v88: non-admitted public dossier never offers service shortcuts',async({page})=>{
  await page.route('**/api/lots/lot-109/decision-dossier',route=>
    route.fulfill({status:503,contentType:'application/json',body:'{"code":"DECISION_DOSSIER_NOT_ADMITTED"}'}));
