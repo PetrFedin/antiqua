@@ -57,5 +57,10 @@ document.addEventListener('submit',async e=>{
   const fd=new FormData(f),result=await api('/api/inquiries',{method:'POST',body:JSON.stringify({listingId:f.dataset.listing,inquiryType:fd.get('inquiryType'),message:fd.get('message'),clientMessageId:f.dataset.clientMessageId})});
   actionSheet().dialog?.close();
   toast(result.idempotent?copy('Запрос уже был отправлен','Inquiry was already sent'):copy('Сообщение отправлено дилеру','Message sent to dealer'));
+  // Refresh the buyer's own diligence trail only after an authorized HTTP
+  // response; never optimistically pretend the dealer received an inquiry.
+  window.dispatchEvent(new CustomEvent('antiqua:diligence-updated',{
+   detail:{listingId:f.dataset.listing}
+  }));
  }catch(err){submit.disabled=false;toast(err.message)}
 });
