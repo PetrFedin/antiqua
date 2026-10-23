@@ -53,13 +53,13 @@ function buildResult({account,objects,listingRows,draftRows,flags,views,conversa
   grossPaidByCurrency:funds.grossPaidByCurrency,
   contestedByCurrency:funds.contestedByCurrency,
   paidSettlements:funds.paidCount,disputedSettlements:funds.contestedCount,
-  otherSettlements:funds.pendingCount,invalidFinancialRecords:funds.invalidCount,
+  awaitingSettlements:funds.awaitingCount,unpaidFinalSettlements:funds.unpaidFinalCount,invalidFinancialRecords:funds.invalidCount,
   conversationsPer100ViewSessions:conversationIntensityV90({
    threads:sum(rows,'conversations'),viewSessions:sum(rows,'views')
   }),
   openDisputes:sum(rows,'openDisputes')
  };
- limit=Math.max(1,Math.min(500,Number(limit)||24));return{sellerId:account.sellerId,measurement:{mode:'EVENTS_ONLY',viewsTracked:true,viewDefinition:'DEDUPED_30_MINUTE_PASSPORT_SESSIONS',windowMinutes:engagementCapabilities().windowMinutes,visitorIdentityExposed:false,financialGrossDefinition:'PAID_FULFILLMENT_COMPLETED_ONLY_NO_DISPUTES_NO_FX',ratioDefinition:'THREADS_PER_100_VIEW_SESSIONS_NOT_CONVERSION',generatedAt:new Date().toISOString()},summary,portfolio:{listings:statuses(listingRows),drafts:statuses(draftRows)},objects:rows.slice(0,limit)};
+ limit=Math.max(1,Math.min(500,Number(limit)||24));return{sellerId:account.sellerId,measurement:{mode:'EVENTS_ONLY',viewsTracked:true,viewDefinition:'DEDUPED_30_MINUTE_PASSPORT_SESSIONS',windowMinutes:engagementCapabilities().windowMinutes,visitorIdentityExposed:false,financialGrossDefinition:'SETTLEMENT_STATUS_PAID_FULFILLMENT_COMPLETED_ONLY_NOT_BANK_RECONCILED_NO_FX',ratioDefinition:'THREADS_PER_100_VIEW_SESSIONS_NOT_CONVERSION',generatedAt:new Date().toISOString()},summary,portfolio:{listings:statuses(listingRows),drafts:statuses(draftRows)},objects:rows.slice(0,limit)};
 }
 
 async function postgresAnalytics(account,{limit=24}={}){
