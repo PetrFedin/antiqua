@@ -1,4 +1,4 @@
-import {listing,bi} from './runtime-v09.mjs';
+import {listing,db,bi} from './runtime-v09.mjs';
 import {createConversation,postMessage} from './domain-e2e-v14.mjs';
 
 const TYPES={
@@ -20,9 +20,19 @@ export function inquiryCapabilities(){return{
  structuredWorkflows:{CONDITION:'/api/condition-report-requests',VIEWING:'/api/viewing-requests'}
 }}
 
+async function resolveInquiryListing(listingId){
+ if(db.kind!=='POSTGRES')return listing(listingId);
+ // In production the authoritative listing is PostgreSQL, not the preview
+ // `data-v08` in-memory map. Read status and both foreign keys from PG.
+ const row=(await db.pool.query(
+  'SELECT id,object_id,seller_id,status FROM listings WHERE id=$1 LIMIT 1',
+  [listingId]
+ )).rows[0];
+ return row&&{id:row.id,lotId:row.object_id,sellerId:row.seller_id,status:row.status};
+}
 export async function createObjectInquiry(account,body={}){
  if(!account?.roles?.includes('BUYER'))fail(403,'BUYER_REQUIRED','Buyer account required');
- const listingId=String(body.listingId||'').trim(),li=listing(listingId);
+ const listingId=String(body.listingId||'').trim(),li=await resolveInquiryListing(listingId);
  if(!listingId||!li||li.status!=='ACTIVE')fail(404,'LISTING_NOT_AVAILABLE','Active listing not found');
  if(account.sellerId&&account.sellerId===li.sellerId)fail(409,'OWN_LISTING_INQUIRY','Seller cannot inquire about own listing');
  const inquiryType=String(body.inquiryType||'OTHER').toUpperCase();
@@ -33,7 +43,7 @@ export async function createObjectInquiry(account,body={}){
  const clientMessageId=String(body.clientMessageId||'').trim();
  if(clientMessageId.length<8||clientMessageId.length>160)fail(400,'CLIENT_MESSAGE_ID_INVALID','clientMessageId is required');
  const subject=TYPES[inquiryType];
- const conversation=await createConversation(account,{listingId,subjectEn:subject.en,subjectRu:subject.ru},{notifyOnCreate:false});
+ const conversation=await createConversation(account,{listingId,objectId:li.lotId,sellerId:li.sellerId,subjectEn:subject.en,subjectRu:subject.ru},{notifyOnCreate:false});
  const sent=await postMessage(account,conversation.id,{body:message,clientMessageId,attachments:[{kind:'INQUIRY_CONTEXT',inquiryType,label:subject}]});
  return{conversation,message:sent.message,inquiryType,idempotent:sent.idempotent};
 }
