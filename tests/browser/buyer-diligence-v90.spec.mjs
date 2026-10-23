@@ -74,10 +74,15 @@ test('v90 buyer progress shows only authenticated service facts, no private mess
  });
  expect(wrong).toBe(400);
  const method=await page.evaluate(async()=>{
-  const r=await fetch('/api/listings/lst-109/diligence-progress',{method:'POST'});
-  return r.status;
+  const denied=await fetch('/api/listings/lst-109/diligence-progress',{method:'POST'});
+  const me=await (await fetch('/api/auth/me')).json();
+  const permitted=await fetch('/api/listings/lst-109/diligence-progress',{
+   method:'POST',headers:{'x-csrf-token':me.csrf}
+  });
+  return {withoutCsrf:denied.status,afterCsrf:permitted.status};
  });
- expect(method).toBe(405);
+ expect(method.withoutCsrf).toBe(403);
+ expect(method.afterCsrf).toBe(405);
 });
 
 test('v90 real seller enquiry and condition request update same visible collector status',async({page})=>{
