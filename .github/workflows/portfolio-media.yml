@@ -2,7 +2,7 @@ name: ANTIQUA Portfolio Media Capture
 
 on:
   pull_request:
-    branches: [main, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
+    branches: [main, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88]
     paths:
       - 'public/**'
       - 'scripts/capture-portfolio-v82.mjs'
