@@ -1,5 +1,6 @@
 // ANTIQUA v90 — lossless display for integer minor units.
-// Uses the exact same currency exponents as the authoritative finance engine.
+// Mirrors the authoritative finance engine's currency exponents; a parity
+// regression against money-v15.mjs must reject any drift.
 const EXPONENTS=new Map([
  ['BHD',3],['IQD',3],['JOD',3],['KWD',3],['LYD',3],['OMR',3],['TND',3],
  ['BIF',0],['CLP',0],['DJF',0],['GNF',0],['ISK',0],['JPY',0],
