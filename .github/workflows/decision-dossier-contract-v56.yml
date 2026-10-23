@@ -1,8 +1,20 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88]
     paths:
+      - buyer-diligence-v90.mjs
+      - routes-buyer-diligence-v90.mjs
+      - seller-funds-v90.mjs
+      - seller-analytics-v17.mjs
+      - public/modules/seller-analytics.js
+      - public/modules/inquiry.js
+      - public/modules/services.js
+      - public/diligence-progress.css
+      - public/index.html
+      - tests/buyer-diligence-v90.mjs
+      - tests/seller-funds-v90.mjs
+      - tests/browser/buyer-diligence-v90.spec.mjs
       - decision-dossier-v56.mjs
       - museum-optional-v89.mjs
       - routes-museum-optional-v89.mjs
@@ -48,6 +60,16 @@ jobs:
           node --check tests/decision-readiness-v87.mjs
           node --check tests/decision-dossier-v56.mjs
           node --check tests/decision-dossier-v85-integration.mjs
+      - name: Verify buyer-and-dealer integrity contracts
+        run: |
+          node --check buyer-diligence-v90.mjs
+          node --check routes-buyer-diligence-v90.mjs
+          node --check seller-funds-v90.mjs
+          node --check tests/buyer-diligence-v90.mjs
+          node --check tests/seller-funds-v90.mjs
+          node --check public/modules/seller-analytics.js
+          node tests/buyer-diligence-v90.mjs
+          node tests/seller-funds-v90.mjs
       - name: Validate bounded museum source imports
         run: |
           node --check museum-optional-v89.mjs
