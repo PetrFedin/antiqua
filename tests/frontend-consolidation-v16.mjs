@@ -16,13 +16,13 @@ async function listFiles(dir=ROOT){
 }
 const publicFiles=(await listFiles()).sort();
 for(const p of publicFiles){const parts=p.split('/');const versioned=parts.some(part=>/^v\\d+$/.test(part))||/(?:-addon)?-v\\d+|commerce-v\\d+|ux-v\\d+|experience-v\\d+/.test(p);assert.equal(versioned,false,'legacy versioned frontend asset remains: '+p)}
-for(const p of ['index.html','styles.css','museum-resilience.css','art-direction.css','dossier-art-direction.css','artist-art-direction.css','collection-art-direction.css','main.js','app.js','operations.js','modules/mobile-navigation.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/collection-publication-ui.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/dossier-art-direction.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/decision-readiness.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
+for(const p of ['index.html','styles.css','museum-resilience.css','art-direction.css','dossier-art-direction.css','diligence-progress.css','artist-art-direction.css','collection-art-direction.css','main.js','app.js','operations.js','modules/mobile-navigation.js','modules/core.js','modules/discovery.js','modules/collection.js','modules/collection-publication-ui.js','modules/transactions.js','modules/cockpit.js','modules/seller-analytics.js','modules/dealer-interest.js','modules/engagement.js','modules/similarity.js','modules/auction-results.js','modules/inquiry.js','modules/offers.js','modules/services.js','modules/dealer-leads.js','modules/market-intelligence.js','modules/culture-discovery.js','modules/museum-open-access.js','modules/object-desire.js','modules/dossier-art-direction.js','modules/taste-signals.js','modules/partner-drops.js','modules/creators.js','modules/related-works.js','modules/artwork-dossier.js','modules/decision-readiness.js','modules/art-network.js','modules/cultural-calendar.js','modules/editorial-commerce.js','modules/partner-investor-showcase.js','modules/dealer-pilot-workspace.js','modules/pilot-counterparty.js','modules/pilot-verification.js','modules/pilot-launch.js'])assert.ok(publicFiles.includes(p),'canonical frontend asset missing: '+p);
 const index=await read('index.html');
 const styles=[...index.matchAll(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["']/g)].map(x=>x[1]);
 const scripts=[...index.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)["']/g)].map(x=>x[1]);
 // One canonical base cascade plus one explicitly scoped museum failure-state
 // companion. Keep an exact ordered allowlist: unknown/remote/legacy sheets fail.
-assert.deepEqual(styles,['/styles.css','/museum-resilience.css','/art-direction.css','/dossier-art-direction.css','/artist-art-direction.css','/collection-art-direction.css']);
+assert.deepEqual(styles,['/styles.css','/museum-resilience.css','/art-direction.css','/dossier-art-direction.css','/diligence-progress.css','/artist-art-direction.css','/collection-art-direction.css']);
 assert.deepEqual(scripts,['/main.js']);
 assert.doesNotMatch(index,/(?:styles|app|operations)(?:-addon)?-v\d+/);
 const museumCss=await read('museum-resilience.css');
@@ -55,6 +55,13 @@ assert.ok(roomCss.length>3500 && Buffer.byteLength(roomCss,'utf8')<12000,'dossie
 assert.doesNotMatch(roomCss,/@import\b|url\s*\(|!important|@font-face|https?:\/\//i,'dossier CSS cannot import images, fonts or priority overrides');
 assert.match(roomCss,/#dialog \.artwork-editorial-v68 \.dossier-hero img/);
 assert.match(roomCss,/object-fit:contain/);
+const progressCss=await read('diligence-progress.css');
+assert.ok(Buffer.byteLength(progressCss,'utf8')>1200&&Buffer.byteLength(progressCss,'utf8')<6000,
+ 'buyer follow-up sheet stays compact and intentional');
+assert.doesNotMatch(progressCss,/@import\b|url\s*\(|!important|@font-face|https?:\/\//i,
+ 'buyer follow-up CSS cannot import fonts, images or remote content');
+assert.match(progressCss,/#dialog \.artwork-editorial-v68 \.buyer-progress/);
+assert.match(progressCss,/@media\(max-width:600px\)/);
 const artistCss=await read('artist-art-direction.css');
 assert.ok(Buffer.byteLength(artistCss,'utf8')>4500 && Buffer.byteLength(artistCss,'utf8')<12500,'artist stylesheet must be locally bounded');
 assert.doesNotMatch(artistCss,/@import\b|url\s*\(|!important|@font-face|https?:\/\//i,'artist stylesheet cannot fetch media/fonts or override authority');
