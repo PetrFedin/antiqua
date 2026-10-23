@@ -1,13 +1,14 @@
 import {safe,copy,esc,local} from './core.js';
+import {formatMinorCurrencyExactV90} from './money-display.js';
 
 let loading=false;
 const metric=(value,label)=>`<div class="kpi"><strong>${esc(value)}</strong><span>${label}</span></div>`;
-const exactGross=(amount,currency)=>new Intl.NumberFormat(
- document.documentElement.lang==='en'?'en-GB':'ru-RU',{
-  style:'currency',currency,minimumFractionDigits:2,maximumFractionDigits:2
- }).format(amount/100);
-const moneyByCurrency=groups=>Object.entries(groups||{}).map(
- ([currency,amount])=>exactGross(amount,currency)).join(' · ')||'—';
+const moneyByCurrency=groups=>Object.entries(groups||{}).map(([currency,amount])=>{
+ try{
+  return formatMinorCurrencyExactV90(amount,currency,
+   document.documentElement.lang==='en'?'en-GB':'ru-RU');
+ }catch{return null}
+}).filter(Boolean).join(' · ')||'—';
 const settledText=summary=>moneyByCurrency(summary.grossPaidByCurrency||summary.settledByCurrency);
 
 function rowCard(x){
