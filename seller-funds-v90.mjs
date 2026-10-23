@@ -2,6 +2,7 @@
 // The amount is NOT seller payout, profit, GMV on offer, or net proceeds.
 const PAID=new Set(['PAID','FULFILLMENT','COMPLETED']);
 const CONTESTED=new Set(['DISPUTED']);
+const AWAITING=new Set(['PAYMENT_DUE','PAYMENT_PROCESSING']);
 const ALLOWED=new Set(['PAYMENT_DUE','PAYMENT_PROCESSING','PAID','FULFILLMENT',
  'COMPLETED','DISPUTED','NONPAYMENT','REOFFERED','VOID']);
 const CURRENCY=/^[A-Z]{3}$/;
@@ -15,7 +16,7 @@ const add=(map,c,n)=>map.set(c,(map.get(c)||0)+n);
 export function summarizeSettlementFundsV90(records=[]){
  if(!Array.isArray(records))throw new TypeError('Settlement records must be an array');
  const gross=new Map(),contested=new Map();
- let paidCount=0,contestedCount=0,pendingCount=0,invalidCount=0;
+ let paidCount=0,contestedCount=0,awaitingCount=0,unpaidFinalCount=0,invalidCount=0;
  const seen=new Set();
  for(const record of records){
   const id=record?.id;
@@ -33,7 +34,8 @@ export function summarizeSettlementFundsV90(records=[]){
    add(gross,currency,amount);paidCount++;
   }else if(CONTESTED.has(status)){
    add(contested,currency,amount);contestedCount++;
-  }else pendingCount++;
+  }else if(AWAITING.has(status))awaitingCount++;
+  else unpaidFinalCount++;
  }
  for(const map of [gross,contested]){
   for(const [currency,n] of map){
@@ -46,9 +48,9 @@ export function summarizeSettlementFundsV90(records=[]){
   denominator:'DISTINCT_VALID_SETTLEMENT_RECORDS',
   grossPaidByCurrency:sortedObject(gross),
   contestedByCurrency:sortedObject(contested),
-  paidCount,contestedCount,pendingCount,invalidCount,
+  paidCount,contestedCount,awaitingCount,unpaidFinalCount,invalidCount,
   boundaries:{
-   grossNotNet:true,notPayoutConfirmation:true,
+   grossNotNet:true,notPayoutConfirmation:true,notBankReconciled:true,
    pendingExcluded:true,disputesExcludedFromPaid:true,
    crossCurrencySummation:false
   }
