@@ -14,6 +14,8 @@ on:
       - public/index.html
       - tests/buyer-diligence-v90.mjs
       - tests/seller-funds-v90.mjs
+      - tests/money-display-v90.mjs
+      - public/modules/money-display.js
       - tests/postgres-buyer-diligence-http-v90.mjs
       - inquiry-v21.mjs
       - tests/browser/buyer-diligence-v90.spec.mjs
@@ -72,6 +74,8 @@ jobs:
           node --check public/modules/seller-analytics.js
           node tests/buyer-diligence-v90.mjs
           node tests/seller-funds-v90.mjs
+          node --check tests/money-display-v90.mjs
+          node tests/money-display-v90.mjs
       - name: Validate bounded museum source imports
         run: |
           node --check museum-optional-v89.mjs
