@@ -14,6 +14,8 @@ on:
       - public/index.html
       - tests/buyer-diligence-v90.mjs
       - tests/seller-funds-v90.mjs
+      - tests/postgres-buyer-diligence-http-v90.mjs
+      - inquiry-v21.mjs
       - tests/browser/buyer-diligence-v90.spec.mjs
       - decision-dossier-v56.mjs
       - museum-optional-v89.mjs
@@ -120,3 +122,5 @@ jobs:
       - run: node --check routes-decision-dossier-v86.mjs
       - run: node --check tests/postgres-decision-dossier-http-v86.mjs
       - run: node tests/postgres-decision-dossier-http-v86.mjs
+      - run: node --check tests/postgres-buyer-diligence-http-v90.mjs
+      - run: node tests/postgres-buyer-diligence-http-v90.mjs
