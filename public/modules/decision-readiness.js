@@ -47,6 +47,97 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[ch]));
 const local=(ru,en)=>lang()==='en'?en:ru;
+// v90 — buyer-only service progress, separate from public research status.
+// Every displayed status derives from a permitted existing workflow read.
+const progressStates={
+ NOT_REQUESTED:['Не запрашивалось','Not requested'],
+ SENT:['Запрос направлен','Request sent'],
+ SELLER_REPLIED:['Получен ответ продавца','Dealer replied'],
+ REQUESTED:['Отчёт запрошен','Report requested'],
+ REPORT_PUBLISHED:['Опубликована версия отчёта','Report version available'],
+ CANCELLED:['Запрос отменён','Request cancelled']
+};
+const progressCalls=new WeakMap();
+function validProgress(payload,id,listingId){
+ const p=payload?.progress;
+ if(p?.schemaVersion!=='antiqua-buyer-diligence-v1'||
+  p?.objectId!==id||p?.listingId!==listingId||
+  p?.scope!=='CURRENT_BUYER_ONLY'||
+  p?.authority!=='BUYER_SCOPED_WORKFLOW_EVENTS'||
+  !Array.isArray(p.tracks)||p.tracks.length!==2||
+  p.tracks[0]?.code!=='PROVENANCE'||p.tracks[1]?.code!=='CONDITION'||
+  !p.tracks.every(t=>Boolean(progressStates[t.state])&&
+    (t.updatedAt==null||typeof t.updatedAt==='string'&&
+     Number.isFinite(Date.parse(t.updatedAt))))||
+  p.limitations?.authenticityCertified!==false||
+  p.limitations?.legalTitleVerified!==false||
+  p.limitations?.sourceDocumentsDelivered!==false||
+  p.limitations?.conditionProfessionallyCertified!==false||
+  p.limitations?.privateDocumentAccessGranted!==false||
+  p.limitations?.transactionCompleted!==false)return false;
+ const sent=new Set(['SENT','SELLER_REPLIED','REQUESTED','REPORT_PUBLISHED']);
+ const answered=new Set(['SELLER_REPLIED','REPORT_PUBLISHED']);
+ return p.summary?.tracks===2&&
+  p.summary.initiated===p.tracks.filter(t=>sent.has(t.state)).length&&
+  p.summary.repliedOrPublished===p.tracks.filter(t=>answered.has(t.state)).length;
+}
+function progressMarkup(p){
+ const ix=lang()==='en'?1:0;
+ const date=t=>{
+  if(!t.updatedAt)return '';
+  const d=new Date(t.updatedAt);
+  return '<time datetime="'+esc(t.updatedAt)+'">'+
+    esc(new Intl.DateTimeFormat(lang()==='en'?'en-GB':'ru-RU',{
+      day:'numeric',month:'short',year:'numeric'
+    }).format(d))+'</time>';
+ };
+ return '<div class="buyer-progress-heading"><h4>'+
+  local('После обращения','After your enquiry')+'</h4><span>'+
+  local('Ваши обращения по этой картине','Your requests for this painting')+'</span></div>'+
+  '<ol class="buyer-progress-list">'+p.tracks.map(t=>
+   '<li data-progress-track="'+t.code+'" data-progress-state="'+t.state+'">'+
+    '<span class="buyer-progress-label">'+esc(labels[t.code][ix])+'</span>'+
+    '<strong>'+esc(progressStates[t.state][ix])+'</strong>'+date(t)+'</li>'
+  ).join('')+'</ol><p class="buyer-progress-note">'+
+  local('Статусы показывают ход переписки и получения отчётов — они не подтверждают подлинность картины или законность владения.',
+   'Statuses track correspondence and reports. They do not certify authenticity or legal title.')+'</p>';
+}
+async function loadBuyerProgress(section,dialog,id,listingId){
+ const host=dialog.querySelector('.dossier-body');
+ const output=section.querySelector('[data-buyer-progress]');
+ if(!output||!validListingId(listingId)||!host)return;
+ const stamp={section,id,listingId};
+ progressCalls.set(section,stamp);
+ output.dataset.progressState='loading';
+ output.textContent=local('Проверяем статус ваших обращений…','Checking your request progress…');
+ let result;
+ try{
+  const response=await fetch('/api/listings/'+encodeURIComponent(listingId)+'/diligence-progress',{
+   headers:{accept:'application/json'},cache:'no-store'
+  });
+  result={status:response.status,data:response.ok?await response.json():null};
+ }catch{result={status:0,data:null}}
+ if(!dialog.open||!section.isConnected||!host.isConnected||
+  dialog.querySelector('.dossier-body')!==host||
+  section.dataset.readinessState!=='ready'||
+  section.dataset.readinessObjectId!==id||
+  section.dataset.readinessListingId!==listingId||
+  progressCalls.get(section)!==stamp)return;
+ if(result.status===200&&validProgress(result.data,id,listingId)){
+  output.dataset.progressState='ready';
+  output.innerHTML=progressMarkup(result.data.progress);
+ }else{
+  output.dataset.progressState=result.status===401?'sign-in':
+   result.status===403?'buyer-only':'unavailable';
+  output.textContent=result.status===401?
+   local('Войдите как покупатель, чтобы видеть ответы и отчёты по этой картине.',
+    'Sign in as a buyer to view replies and reports for this painting.'):
+   result.status===403?
+   local('История запросов доступна покупателю.','Request history is available to the buyer.'):
+   local('Состояние обращений сейчас недоступно. Данные не считаются подтверждёнными.',
+    'Request progress is currently unavailable; no status is assumed.');
+ }
+}
 const requests=new WeakMap();
 let actionObserver=null;
 function resetActionObserver(){actionObserver?.disconnect();actionObserver=null}
@@ -194,7 +285,16 @@ async function update(event){
  if(result.status===200&&validReport(result.data,id)){
   section.dataset.readinessState='ready';
   output.innerHTML=reportMarkup(result.data.readiness,listingId);
+  if(validListingId(listingId)){
+   const followup=document.createElement('section');
+   followup.className='buyer-progress';
+   followup.dataset.buyerProgress='';
+   followup.setAttribute('aria-live','polite');
+   output.append(followup);
+  }
   synchronizeActions(section,dialog);
+  loadBuyerProgress(section,dialog,id,listingId).catch(error=>
+   console.error('Buyer progress:',error?.name||'UNKNOWN'));
  }else{
   section.dataset.readinessState='unavailable';
   output.innerHTML=unavailableMarkup(result.status);
@@ -204,6 +304,16 @@ window.addEventListener('antiqua:passport',event=>{
  update(event).catch(error=>console.error('Decision readiness display:',error?.name||'UNKNOWN'));
 });
 
+window.addEventListener('antiqua:diligence-updated',event=>{
+ const listingId=event.detail?.listingId;
+ if(!validListingId(listingId))return;
+ const dialog=document.querySelector('#dialog[open]');
+ const section=dialog?.querySelector('#dossier-readiness[data-readiness-state="ready"]');
+ if(!section||section.dataset.readinessListingId!==listingId)return;
+ loadBuyerProgress(section,dialog,section.dataset.readinessObjectId,listingId).catch(
+  error=>console.error('Buyer progress refresh:',error?.name||'UNKNOWN')
+ );
+});
 document.addEventListener('close',event=>{
  if(event.target?.id==='dialog')resetActionObserver();
 },true);
