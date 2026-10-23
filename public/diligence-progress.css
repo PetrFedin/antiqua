@@ -1,0 +1,83 @@
+/* ANTIQUA — collector's private correspondence ledger, v90.
+   Restrained gallery typography; no artificial score or progress meter.
+   Presentation only. Server identity remains the authority. */
+#dialog .artwork-editorial-v68 .buyer-progress{
+ margin-top:27px;padding:25px 0 8px;
+ border-top:1px solid #b7aa97;
+ color:#293d31;max-width:100%;min-width:0;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-heading{
+ display:flex;justify-content:space-between;align-items:baseline;
+ flex-wrap:wrap;gap:7px 16px;margin-bottom:15px;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-heading h4{
+ margin:0;color:#283c31;
+ font:400 clamp(22px,2.4vw,30px)/1.15 var(--aq-serif,Georgia,serif);
+ letter-spacing:-.026em;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-heading span{
+ color:#73695c;font:600 10px/1.5 Arial,sans-serif;
+ text-transform:uppercase;letter-spacing:.095em;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-list{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ list-style:none;margin:0;padding:0;gap:0;border-top:1px solid #d2c6b6;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-list li{
+ min-width:0;display:flex;flex-direction:column;gap:9px;
+ padding:17px 18px 19px 0;border-bottom:1px solid #d2c6b6;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-list li:nth-child(2n){
+ padding-left:18px;border-left:1px solid #d2c6b6;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-label{
+ color:#786853;font:600 10px/1.45 Arial,sans-serif;
+ letter-spacing:.055em;text-transform:uppercase;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-list strong{
+ color:#283c31;font:400 20px/1.24 var(--aq-serif,Georgia,serif);
+ letter-spacing:-.015em;overflow-wrap:anywhere;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-list time{
+ color:#76685a;font:400 11px/1.4 Arial,sans-serif;
+}
+#dialog .artwork-editorial-v68 .buyer-progress-note{
+ max-width:58ch;margin:15px 0 0;color:#6b6156;
+ font:400 12px/1.6 Arial,sans-serif;
+}
+#dialog .artwork-editorial-v68 .buyer-progress[data-progress-state="sign-in"],
+#dialog .artwork-editorial-v68 .buyer-progress[data-progress-state="buyer-only"],
+#dialog .artwork-editorial-v68 .buyer-progress[data-progress-state="unavailable"]{
+ color:#64594d;font:400 13px/1.65 Arial,sans-serif;
+}
+@media(max-width:600px){
+ #dialog .artwork-editorial-v68 .buyer-progress{padding-top:19px}
+ #dialog .artwork-editorial-v68 .buyer-progress-list{grid-template-columns:minmax(0,1fr)}
+ #dialog .artwork-editorial-v68 .buyer-progress-list li:nth-child(2n){
+  border-left:0;padding-left:0;
+ }
+ #dialog .artwork-editorial-v68 .buyer-progress-list li{padding:14px 0}
+}
+
+
+/* Inquiry and condition request use one deliberate fine-art form language. */
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm){width:min(600px,calc(100vw - 28px));max-height:calc(100dvh - 24px);overflow-y:auto;border:1px solid #d4c6b3;border-radius:10px;background:#f8f5ee;box-shadow:0 24px 72px #191f1940}
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-body{padding:clamp(20px,3vw,36px);min-width:0}
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-head{gap:14px;align-items:flex-start;margin-bottom:24px}
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-head h2{margin:9px 0 12px;color:#263f32;font:400 clamp(31px,4vw,42px)/1.08 Georgia,serif;letter-spacing:-.035em}
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-head p{color:#625e55;font:400 14px/1.6 Arial,sans-serif}
+#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-close{min-width:44px;min-height:44px;background:#ece7dd;border:1px solid #d5c9b9;color:#273d31}
+#v21InquiryForm .action-sheet-field{margin:20px 0}
+#v21InquiryForm .action-sheet-field label,#v23ServiceRequestForm>label{display:grid;gap:10px;color:#3d4a3f;font:600 12px/1.5 Arial,sans-serif;letter-spacing:.025em}
+#v21InquiryForm select,#v21InquiryForm textarea,#v23ServiceRequestForm>label textarea{box-sizing:border-box;width:100%;max-width:100%;min-height:52px;padding:13px 16px;border:1px solid #bdae9c;border-radius:5px;background:#fffdfa;color:#24382d;font:400 15px/1.55 Arial,sans-serif;outline:none;transition:border-color .15s,box-shadow .15s}
+#v21InquiryForm select{appearance:none;padding-right:39px;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,#395743 50%),linear-gradient(135deg,#395743 50%,transparent 50%);background-position:calc(100% - 20px) 22px,calc(100% - 14px) 22px;background-size:6px 6px;background-repeat:no-repeat}
+#v21InquiryForm textarea,#v23ServiceRequestForm textarea{min-height:150px;resize:vertical}
+#v21InquiryForm textarea::placeholder,#v23ServiceRequestForm textarea::placeholder{color:#82796d;opacity:1}
+#v21InquiryForm :is(select,textarea):focus-visible,#v23ServiceRequestForm textarea:focus-visible{border-color:#356348;box-shadow:0 0 0 3px #35634826}
+#v21InquiryForm .inquiry-note-v21,#v23ServiceRequestForm .inquiry-note-v21{border:0;border-top:1px solid #d5c9ba;border-radius:0;background:transparent;padding:16px 0 2px;margin:18px 0;color:#6a6359;font:400 12px/1.6 Arial,sans-serif}
+#v21InquiryForm .action-sheet-actions{gap:10px;margin-top:22px}
+#v21InquiryForm .action-sheet-actions button,#v23ServiceRequestForm>button[type="submit"]{min-height:50px;border-radius:5px;font:600 12px/1.3 Arial,sans-serif;letter-spacing:.02em}
+#v21InquiryForm .primary-button,#v23ServiceRequestForm>button[type="submit"]{background:#284636;border-color:#284636;color:#fff}
+#v21InquiryForm .primary-button:hover:not(:disabled),#v23ServiceRequestForm>button[type="submit"]:hover:not(:disabled){background:#37604a;border-color:#37604a}
+#v21InquiryForm button:focus-visible,#v23ServiceRequestForm button:focus-visible,#actionSheet:has(#v21InquiryForm,#v23ServiceRequestForm) .action-sheet-close:focus-visible{outline:3px solid #8c623c;outline-offset:3px}
+@media(max-width:600px){#v21InquiryForm .action-sheet-actions{grid-template-columns:minmax(0,1fr)}}

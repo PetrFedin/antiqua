@@ -2,6 +2,7 @@ import {db,listings,auctions,draftItems,offers,orders,lot} from './runtime-v09.m
 import {aggregateObjectFlags} from './preferences-v14.mjs';
 import {listConversations,listSettlements,listDisputes} from './domain-e2e-v14.mjs';
 import {aggregateObjectViews,engagementCapabilities} from './engagement-v17.mjs';
+import {summarizeSettlementFundsV90,conversationIntensityV90} from './seller-funds-v90.mjs';
 
 const clone=x=>x==null?x:structuredClone(x);
 const localTitle=o=>o?.title||{en:o?.objectId||o?.id||'Object',ru:o?.objectId||o?.id||'Предмет'};
@@ -11,18 +12,54 @@ const sum=(xs,key)=>xs.reduce((n,x)=>n+Number(x[key]||0),0);
 const terminalDispute=new Set(['RESOLVED_BUYER','RESOLVED_SELLER','PARTIAL_REFUND','FULL_REFUND','CLOSED']);
 
 function buildResult({account,objects,listingRows,draftRows,flags,views,conversations,offerRows,orderRows,auctionRows,settlements,disputes},{limit=24}={}){
- const byObject=new Map(objects.map(o=>[o.id,{objectId:o.id,objectCode:o.objectCode||o.objectId||o.id,title:localTitle(o),listingStatus:null,listingPrice:null,currency:o.currency||'EUR',views:Number(views[o.id]?.views||0),saved:Number(flags[o.id]?.SAVED||0),watching:Number(flags[o.id]?.WATCH||0),conversations:0,offers:0,acceptedOffers:0,orders:0,bids:0,bidders:0,settlements:0,settledValueMinor:0,settlementCurrency:null,openDisputes:0}]));
- const ensure=id=>{if(!byObject.has(id)){const o=lot(id)||{id,objectId:id,title:{en:id,ru:id},currency:'EUR'};byObject.set(id,{objectId:id,objectCode:o.objectId||id,title:localTitle(o),listingStatus:null,listingPrice:null,currency:o.currency||'EUR',views:Number(views[id]?.views||0),saved:Number(flags[id]?.SAVED||0),watching:Number(flags[id]?.WATCH||0),conversations:0,offers:0,acceptedOffers:0,orders:0,bids:0,bidders:0,settlements:0,settledValueMinor:0,settlementCurrency:null,openDisputes:0})}return byObject.get(id)};
+ const byObject=new Map(objects.map(o=>[o.id,{objectId:o.id,objectCode:o.objectCode||o.objectId||o.id,title:localTitle(o),listingStatus:null,listingPrice:null,currency:o.currency||'EUR',views:Number(views[o.id]?.views||0),saved:Number(flags[o.id]?.SAVED||0),watching:Number(flags[o.id]?.WATCH||0),conversations:0,offers:0,acceptedOffers:0,orders:0,bids:0,bidders:0,settlements:0,settledValueMinor:null,settlementCurrency:null,grossPaidByCurrency:{},contestedByCurrency:{},openDisputes:0}]));
+ const ensure=id=>{if(!byObject.has(id)){const o=lot(id)||{id,objectId:id,title:{en:id,ru:id},currency:'EUR'};byObject.set(id,{objectId:id,objectCode:o.objectId||id,title:localTitle(o),listingStatus:null,listingPrice:null,currency:o.currency||'EUR',views:Number(views[id]?.views||0),saved:Number(flags[id]?.SAVED||0),watching:Number(flags[id]?.WATCH||0),conversations:0,offers:0,acceptedOffers:0,orders:0,bids:0,bidders:0,settlements:0,settledValueMinor:null,settlementCurrency:null,grossPaidByCurrency:{},contestedByCurrency:{},openDisputes:0})}return byObject.get(id)};
  for(const x of listingRows){const r=ensure(x.objectId);r.listingStatus=x.status;r.listingPrice=x.price??null;r.currency=x.currency||r.currency}
  for(const x of conversations)ensure(x.objectId).conversations++;
  for(const x of offerRows){const r=ensure(x.objectId);r.offers+=Number(x.total||1);r.acceptedOffers+=Number(x.accepted||0)}
  for(const x of orderRows)ensure(x.objectId).orders+=Number(x.total||1);
  for(const x of auctionRows){const r=ensure(x.objectId);r.bids+=Number(x.bidCount||0);r.bidders+=Number(x.bidderCount||0)}
- for(const x of settlements){const r=ensure(x.objectId);r.settlements++;r.settledValueMinor+=Number(x.winningAmountMinor||0);r.settlementCurrency=x.currency||r.settlementCurrency||'EUR'}
+ // An auction win is not a payment. Do not mix pending, disputed and
+ // actually paid states, or add nominal amounts from different currencies.
+ const objectFunds=new Map();
+ for(const x of settlements){
+  if(!x?.objectId)continue;
+  ensure(x.objectId).settlements++;
+  if(!objectFunds.has(x.objectId))objectFunds.set(x.objectId,[]);
+  objectFunds.get(x.objectId).push(x);
+ }
+ for(const [id,items] of objectFunds){
+  const r=ensure(id),funds=summarizeSettlementFundsV90(items);
+  r.grossPaidByCurrency=funds.grossPaidByCurrency;
+  r.contestedByCurrency=funds.contestedByCurrency;
+  const values=Object.entries(r.grossPaidByCurrency);
+  if(values.length===1){
+   r.settlementCurrency=values[0][0];r.settledValueMinor=values[0][1];
+  }
+ }
  for(const x of disputes)if(!terminalDispute.has(String(x.status)))ensure(x.objectId).openDisputes++;
  const rows=[...byObject.values()].sort((a,b)=>b.orders-a.orders||b.offers-a.offers||b.conversations-a.conversations||(b.saved+b.watching)-(a.saved+a.watching)||b.bids-a.bids||b.views-a.views||String(a.objectCode).localeCompare(String(b.objectCode)));
- const settledByCurrency=settlements.reduce((a,x)=>{const currency=String(x.currency||'EUR').toUpperCase();a[currency]=(a[currency]||0)+Number(x.winningAmountMinor||0);return a},{});const summary={objects:rows.length,views:sum(rows,'views'),activeListings:listingRows.filter(x=>x.status==='ACTIVE').length,drafts:draftRows.length,saved:sum(rows,'saved'),watching:sum(rows,'watching'),conversations:sum(rows,'conversations'),offers:sum(rows,'offers'),acceptedOffers:sum(rows,'acceptedOffers'),orders:sum(rows,'orders'),bids:sum(rows,'bids'),bidders:sum(rows,'bidders'),settlements:sum(rows,'settlements'),settledByCurrency,openDisputes:sum(rows,'openDisputes')};
- limit=Math.max(1,Math.min(500,Number(limit)||24));return{sellerId:account.sellerId,measurement:{mode:'EVENTS_ONLY',viewsTracked:true,viewDefinition:'DEDUPED_30_MINUTE_PASSPORT_SESSIONS',windowMinutes:engagementCapabilities().windowMinutes,visitorIdentityExposed:false,generatedAt:new Date().toISOString()},summary,portfolio:{listings:statuses(listingRows),drafts:statuses(draftRows)},objects:rows.slice(0,limit)};
+ const funds=summarizeSettlementFundsV90(settlements);
+ const summary={
+  objects:rows.length,views:sum(rows,'views'),
+  activeListings:listingRows.filter(x=>x.status==='ACTIVE').length,
+  drafts:draftRows.length,saved:sum(rows,'saved'),watching:sum(rows,'watching'),
+  conversations:sum(rows,'conversations'),offers:sum(rows,'offers'),
+  acceptedOffers:sum(rows,'acceptedOffers'),orders:sum(rows,'orders'),
+  bids:sum(rows,'bids'),bidders:sum(rows,'bidders'),
+  settlements:sum(rows,'settlements'),
+  // Compatibility alias is now status-filtered, never nominal auction value.
+  settledByCurrency:funds.grossPaidByCurrency,
+  grossPaidByCurrency:funds.grossPaidByCurrency,
+  contestedByCurrency:funds.contestedByCurrency,
+  paidSettlements:funds.paidCount,disputedSettlements:funds.contestedCount,
+  awaitingSettlements:funds.awaitingCount,unpaidFinalSettlements:funds.unpaidFinalCount,invalidFinancialRecords:funds.invalidCount,
+  conversationsPer100ViewSessions:conversationIntensityV90({
+   threads:sum(rows,'conversations'),viewSessions:sum(rows,'views')
+  }),
+  openDisputes:sum(rows,'openDisputes')
+ };
+ limit=Math.max(1,Math.min(500,Number(limit)||24));return{sellerId:account.sellerId,measurement:{mode:'EVENTS_ONLY',viewsTracked:true,viewDefinition:'DEDUPED_30_MINUTE_PASSPORT_SESSIONS',windowMinutes:engagementCapabilities().windowMinutes,visitorIdentityExposed:false,financialGrossDefinition:'SETTLEMENT_STATUS_PAID_FULFILLMENT_COMPLETED_ONLY_NOT_BANK_RECONCILED_NO_FX',ratioDefinition:'THREADS_PER_100_VIEW_SESSIONS_NOT_CONVERSION',generatedAt:new Date().toISOString()},summary,portfolio:{listings:statuses(listingRows),drafts:statuses(draftRows)},objects:rows.slice(0,limit)};
 }
 
 async function postgresAnalytics(account,{limit=24}={}){
