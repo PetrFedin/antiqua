@@ -4,13 +4,20 @@ const SAFE_CODE=/^[A-Z][A-Z0-9_]{1,79}$/;
 export function httpErrorEnvelopeV91(error){
  const n=error?.status;
  const status=Number.isInteger(n)&&n>=400&&n<=599?n:500;
- if(status>=500)return{
-  status,
-  body:{
-   error:status===503?'Service temporarily unavailable':'Unexpected server error',
-   code:status===503?'SERVICE_UNAVAILABLE':'INTERNAL_ERROR'
-  }
- };
+ if(status>=500){
+  // Only already-known infrastructure *categories* may be shown. Never
+  // forward provider responses, connection strings or missing secret keys.
+  if(status===503&&error?.code==='STORAGE_NOT_CONFIGURED')return{
+   status,body:{error:'Object storage is not configured',code:'STORAGE_NOT_CONFIGURED'}
+  };
+  return{
+   status,
+   body:{
+    error:status===503?'Service temporarily unavailable':'Unexpected server error',
+    code:status===503?'SERVICE_UNAVAILABLE':'INTERNAL_ERROR'
+   }
+  };
+ }
  const message=typeof error?.message==='string'&&error.message.trim()?
   error.message.slice(0,240):'Request could not be completed';
  const body={error:message};
