@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main, hardening/v015-provider-webhook-security, hardening/db-identity-gate-v55, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88]
+    branches: [main, hardening/v015-provider-webhook-security, hardening/db-identity-gate-v55, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88, feature/collector-operating-ledger-v90]
 concurrency:
   group: antiqua-browser-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

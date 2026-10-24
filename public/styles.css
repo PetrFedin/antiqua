@@ -974,3 +974,55 @@ html.museum-modal-open{overflow:hidden}
     margin:0 12px 12px;
   }
 }
+
+
+/* ANTIQUA v91 · Session clarity and collection-safe recovery. Deliberately
+   reuses the canonical typography, surface and spacing tokens. */
+.header-actions .account-session-action{
+ min-height:42px;border:1px solid var(--line-strong);border-radius:5px;
+ background:rgba(255,253,249,.9);padding:0 12px;color:var(--ink);
+ font-size:12px;font-weight:600;letter-spacing:.005em;white-space:nowrap;
+}
+.header-actions .account-session-action:focus-visible,
+.account-signout:focus-visible,#login [data-auth-totp] input:focus-visible,
+#actionSheet .two-factor-recovery button:focus-visible{
+ outline:3px solid #9a764e;outline-offset:3px;
+}
+.header-actions #persona{
+ max-width:105px;padding:0 5px;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;font-size:10px;font-weight:500;
+}
+#login [data-auth-totp]{margin-top:16px;padding:14px 0 4px;border-top:1px solid var(--line)}
+#login [data-auth-totp][hidden]{display:none}
+#login [data-auth-totp] input{
+ width:100%;min-height:48px;margin-top:6px;box-sizing:border-box;
+ border:1px solid var(--line-strong);border-radius:5px;padding:10px 14px;
+ background:#fffdfa;color:var(--ink);font:500 15px/1.4 var(--ui,Arial,sans-serif);
+}
+#login .auth-second-factor-hint{
+ max-width:39ch;margin:9px 0 3px;color:var(--muted);
+ font:400 12px/1.55 var(--ui,Arial,sans-serif);
+}
+.account-identity .account-signout{align-self:flex-start;margin-top:10px;min-height:44px;border-radius:5px}
+#actionSheet .two-factor-recovery .secret-box{
+ max-height:260px;overflow:auto;user-select:text;white-space:pre-wrap;overflow-wrap:anywhere;
+ padding:18px;border:1px solid var(--line-strong);border-radius:5px;
+ background:#fffdfa;color:var(--ink);font:500 14px/1.75 ui-monospace,monospace;
+}
+#actionSheet .two-factor-recovery .action-sheet-actions{
+ grid-template-columns:1fr 1fr;margin-top:16px;
+}
+@media(max-width:800px){
+ .header-actions #persona{display:none}
+ .header-actions{gap:8px}
+ .header-actions .account-session-action{min-width:62px;padding:0 9px}
+ #actionSheet .two-factor-recovery .action-sheet-actions{grid-template-columns:1fr}
+}
+
+@media(max-width:360px){
+ .masthead{gap:4px;padding-left:10px;padding-right:8px}
+ .masthead>.wordmark{font-size:18px;letter-spacing:.12em}
+ .header-actions .language-switch{min-width:76px}
+ .header-actions .language-switch button{min-width:34px}
+ .header-actions .account-session-action{min-width:52px;padding:0 6px;font-size:11px}
+}

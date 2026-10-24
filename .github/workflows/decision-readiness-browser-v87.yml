@@ -2,7 +2,7 @@ name: ANTIQUA v87 Readiness Browser Proof
 
 on:
   pull_request:
-    branches: [feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88]
+    branches: [feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88, feature/collector-operating-ledger-v90]
     paths:
       - 'public/modules/decision-readiness.js'
       - 'public/modules/object-desire.js'
@@ -10,6 +10,10 @@ on:
       - 'public/main.js'
       - 'tests/browser/decision-readiness-v87.spec.mjs'
       - 'tests/browser/buyer-diligence-v90.spec.mjs'
+      - 'tests/browser/account-security-v91.spec.mjs'
+      - 'public/app.js'
+      - 'public/index.html'
+      - 'routes-auth-v09.mjs'
       - 'public/diligence-progress.css'
       - 'public/modules/inquiry.js'
       - 'public/modules/services.js'
@@ -47,8 +51,9 @@ jobs:
       - run: node --check tests/browser/decision-readiness-v87.spec.mjs
       - run: node --check tests/browser/collector-due-diligence-v88.spec.mjs
       - run: node --check tests/browser/buyer-diligence-v90.spec.mjs
+      - run: node --check tests/browser/account-security-v91.spec.mjs
       - name: Run v90 two-sided collector evidence journeys
-        run: ./node_modules/.bin/playwright test -c playwright.config.mjs tests/browser/decision-readiness-v87.spec.mjs tests/browser/collector-due-diligence-v88.spec.mjs tests/browser/buyer-diligence-v90.spec.mjs
+        run: ./node_modules/.bin/playwright test -c playwright.config.mjs tests/browser/decision-readiness-v87.spec.mjs tests/browser/collector-due-diligence-v88.spec.mjs tests/browser/buyer-diligence-v90.spec.mjs tests/browser/account-security-v91.spec.mjs
       - name: Save labelled browser fixture screenshots and traces
         if: always()
         uses: actions/upload-artifact@v4
