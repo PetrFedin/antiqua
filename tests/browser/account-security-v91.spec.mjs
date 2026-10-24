@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import crypto from 'node:crypto';
+import {mkdir} from 'node:fs/promises';
 
 const unique=()=>crypto.randomUUID().replaceAll('-','');
 const credentials=()=>({
@@ -82,6 +83,8 @@ test('v91 complete account lifecycle: sign in/out, 2FA code, recovery-once, iden
  await expect(otp).toBeVisible();
  const field=otp.locator('input[name="totp"]');
  await expect(field).toBeFocused();
+ await mkdir('artifacts/visual-proof',{recursive:true});
+ await page.screenshot({path:'artifacts/visual-proof/v91-'+test.info().project.name+'-second-factor-PREVIEW.png'});
  await field.fill(codes[0]);
  await login.locator('button').click();
  await expect(account(page)).toBeVisible();
@@ -129,6 +132,10 @@ test('v91 actual session switch keeps buyer, seller and operator separated and v
   if(persona==='BUYER')expect(roles).toContain('BUYER');
   if(persona==='SELLER')expect(roles).toContain('SELLER');
   if(persona==='OPERATOR')expect(roles).toContain('ADMIN');
+  if(persona==='SELLER'){
+   await mkdir('artifacts/visual-proof',{recursive:true});
+   await page.screenshot({path:'artifacts/visual-proof/v91-mobile-collector-to-dealer-PREVIEW.png'});
+  }
   const cockpitStatus=await page.evaluate(async()=>{
    const r=await fetch('/api/operator/cockpit');return r.status;
   });
