@@ -1,7 +1,7 @@
 name: ANTIQUA DD-01 Read-Only Dossier Contract
 on:
   pull_request:
-    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88]
+    branches: [main, design/art-direction-v63, feature/decision-dossier-integration-v85, feature/decision-dossier-http-v86, feature/collector-evidence-readiness-v87, feature/collector-due-diligence-actions-v88, feature/collector-operating-ledger-v90]
     paths:
       - buyer-diligence-v90.mjs
       - routes-buyer-diligence-v90.mjs
@@ -14,6 +14,12 @@ on:
       - public/index.html
       - tests/buyer-diligence-v90.mjs
       - tests/seller-funds-v90.mjs
+      - tests/error-envelope-v91.mjs
+      - error-envelope-v91.mjs
+      - routes-auth-v09.mjs
+      - public/app.js
+      - public/styles.css
+      - tests/browser/account-security-v91.spec.mjs
       - tests/money-display-v90.mjs
       - public/modules/money-display.js
       - tests/postgres-buyer-diligence-http-v90.mjs
@@ -76,6 +82,10 @@ jobs:
           node tests/seller-funds-v90.mjs
           node --check tests/money-display-v90.mjs
           node tests/money-display-v90.mjs
+          node --check error-envelope-v91.mjs
+          node --check routes-auth-v09.mjs
+          node --check tests/error-envelope-v91.mjs
+          node tests/error-envelope-v91.mjs
       - name: Validate bounded museum source imports
         run: |
           node --check museum-optional-v89.mjs
