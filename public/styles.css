@@ -1018,3 +1018,11 @@ html.museum-modal-open{overflow:hidden}
  .header-actions .account-session-action{min-width:62px;padding:0 9px}
  #actionSheet .two-factor-recovery .action-sheet-actions{grid-template-columns:1fr}
 }
+
+@media(max-width:360px){
+ .masthead{gap:4px;padding-left:10px;padding-right:8px}
+ .masthead>.wordmark{font-size:18px;letter-spacing:.12em}
+ .header-actions .language-switch{min-width:76px}
+ .header-actions .language-switch button{min-width:34px}
+ .header-actions .account-session-action{min-width:52px;padding:0 6px;font-size:11px}
+}
