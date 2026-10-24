@@ -18,6 +18,7 @@ on:
       - error-envelope-v91.mjs
       - legacy-catalog-admission-v91.mjs
       - tests/legacy-catalog-admission-v91.mjs
+      - tests/http-guest-isolation-v91.mjs
       - routes-auth-v09.mjs
       - public/app.js
       - public/styles.css
@@ -91,6 +92,8 @@ jobs:
           node --check legacy-catalog-admission-v91.mjs
           node --check tests/legacy-catalog-admission-v91.mjs
           node tests/legacy-catalog-admission-v91.mjs
+          node --check tests/http-guest-isolation-v91.mjs
+          node tests/http-guest-isolation-v91.mjs
       - name: Validate bounded museum source imports
         run: |
           node --check museum-optional-v89.mjs
