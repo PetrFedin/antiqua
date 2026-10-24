@@ -32,6 +32,8 @@ async function signIn(page,creds){
 
 test('v91 complete account lifecycle: sign in/out, 2FA code, recovery-once, identity revocation',async({page})=>{
  const creds=credentials();
+ // Explicit anonymous entry: other preview flows may have seeded browser cookies.
+ await page.context().clearCookies();
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
  await expect(header(page)).toBeVisible();
  await expect(header(page)).toContainText(/Войти|Sign in/);
@@ -106,6 +108,7 @@ test('v91 complete account lifecycle: sign in/out, 2FA code, recovery-once, iden
 
 test('v91 actual session switch keeps buyer, seller and operator separated and visible login/out on phone',async({page})=>{
  await page.setViewportSize({width:320,height:720});
+ await page.context().clearCookies();
  await page.goto('/#account',{waitUntil:'domcontentloaded'});
  await expect(header(page)).toBeVisible();
  await expect(page.locator('#persona')).toBeHidden();
