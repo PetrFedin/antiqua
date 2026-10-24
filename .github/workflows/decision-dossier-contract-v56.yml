@@ -16,6 +16,8 @@ on:
       - tests/seller-funds-v90.mjs
       - tests/error-envelope-v91.mjs
       - error-envelope-v91.mjs
+      - legacy-catalog-admission-v91.mjs
+      - tests/legacy-catalog-admission-v91.mjs
       - routes-auth-v09.mjs
       - public/app.js
       - public/styles.css
@@ -86,6 +88,9 @@ jobs:
           node --check routes-auth-v09.mjs
           node --check tests/error-envelope-v91.mjs
           node tests/error-envelope-v91.mjs
+          node --check legacy-catalog-admission-v91.mjs
+          node --check tests/legacy-catalog-admission-v91.mjs
+          node tests/legacy-catalog-admission-v91.mjs
       - name: Validate bounded museum source imports
         run: |
           node --check museum-optional-v89.mjs
