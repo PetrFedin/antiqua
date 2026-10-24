@@ -16,6 +16,16 @@ assert.deepEqual(result,{status:503,body:{
 }});
 assert.ok(!JSON.stringify(result).includes(secret));
 
+result=httpErrorEnvelopeV91({
+ status:503,code:'STORAGE_NOT_CONFIGURED',message:secret,
+ missing:['OBJECT_STORAGE_ACCESS_SECRET','OBJECT_STORAGE_ENDPOINT']
+});
+assert.deepEqual(result,{status:503,body:{
+ error:'Object storage is not configured',code:'STORAGE_NOT_CONFIGURED'
+}});
+assert.ok(!JSON.stringify(result).includes(secret));
+assert.ok(!JSON.stringify(result).includes('OBJECT_STORAGE_ACCESS_SECRET'));
+
 result=httpErrorEnvelopeV91({status:403,code:'FORBIDDEN',message:'Permission required'});
 assert.deepEqual(result,{status:403,body:{error:'Permission required',code:'FORBIDDEN'}});
 result=httpErrorEnvelopeV91({status:409,code:'TWO_FACTOR_ALREADY_ENABLED',
